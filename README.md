@@ -445,34 +445,200 @@ Track A và Track B cần thống nhất contract sớm để Phú có thể là
 }
 ```
 
-## Cấu Trúc Repo Dự Kiến
+## Cấu Trúc Repo Hiện Tại
 
 ```text
 .
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── api/
-│   │   ├── consumers/
-│   │   ├── normalizers/
-│   │   ├── ai_integration/
-│   │   ├── fusion/
-│   │   ├── db/
-│   │   └── websocket/
-│   └── requirements.txt
-├── frontend/
+├── frontend/                          # React + Vite SOC Dashboard
 │   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── types/
-│   │   └── styles/
-│   └── package.json
-├── ai-engine/
-├── simulator/
-├── datasets/
-└── README.md
+│   │   ├── components/               # Reusable UI components
+│   │   ├── pages/                    # Dashboard pages
+│   │   ├── services/                 # API and WebSocket services
+│   │   ├── store/                    # Zustand state management
+│   │   ├── types/                    # TypeScript type definitions
+│   │   └── styles/                   # Tailwind CSS styles
+│   ├── Dockerfile                    # Frontend containerization
+│   ├── nginx.conf                    # Nginx configuration for production
+│   └── package.json                  # Frontend dependencies
+├── backend/                          # FastAPI AI Backend
+│   ├── app/
+│   │   ├── main.py                   # FastAPI application entry point
+│   │   ├── config.py                 # Pydantic settings configuration
+│   │   ├── database.py               # SQLAlchemy database setup
+│   │   ├── models/                   # SQLAlchemy ORM models
+│   │   │   ├── alert.py             # Alert model
+│   │   │   ├── user.py              # User authentication model
+│   │   │   └── system.py            # System status models
+│   │   ├── schemas/                  # Pydantic API schemas
+│   │   │   ├── alert.py             # Alert API schemas
+│   │   │   ├── user.py              # User API schemas
+│   │   │   └── system.py            # System API schemas
+│   │   ├── routers/                  # FastAPI route handlers
+│   │   │   ├── auth.py              # Authentication endpoints
+│   │   │   ├── alerts.py            # Alert management endpoints
+│   │   │   ├── system.py            # System status endpoints
+│   │   │   └── websocket.py         # WebSocket endpoints
+│   │   └── services/                 # Business logic services
+│   │       ├── auth.py              # Authentication service
+│   │       ├── alerts.py            # Alert processing service
+│   │       ├── system.py            # System monitoring service
+│   │       ├── websocket.py         # WebSocket connection manager
+│   │       ├── ai_engine.py         # AI processing engine
+│   │       ├── sqs_service.py       # AWS SQS message processing
+│   │       └── alert_processor.py   # Alert queue processor
+│   ├── Dockerfile                    # Backend containerization
+│   └── requirements.txt              # Python dependencies
+├── docker-compose.yml                # Multi-service orchestration
+├── .env.example                      # Environment variables template
+└── README.md                         # Project documentation
 ```
+
+## Cách Chạy Dự Án
+
+### Yêu Cầu Hệ Thống
+
+- Docker và Docker Compose
+- Node.js 18+ (cho development frontend)
+- Python 3.11+ (cho development backend)
+- Git
+
+### Chạy Toàn Bộ Hệ Thống Với Docker Compose
+
+1. **Clone repository:**
+   ```bash
+   git clone <repository-url>
+   cd AI-Powered-Multi-Model-Hybrid-Cloud-Security-Monitoring-Platform
+   ```
+
+2. **Tạo file environment:**
+   ```bash
+   cp .env.example .env
+   # Chỉnh sửa .env với thông tin AWS và database thực tế
+   ```
+
+3. **Chạy toàn bộ hệ thống:**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Truy cập:**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Docs: http://localhost:8000/docs
+   - pgAdmin: http://localhost:5050
+
+### Development Mode
+
+#### Frontend (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+# Truy cập: http://localhost:3000
+```
+
+#### Backend (FastAPI)
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+# Truy cập: http://localhost:8000/docs
+```
+
+### Cấu Hình Environment Variables
+
+Tạo file `.env` từ `.env.example` và điền thông tin cần thiết:
+
+```env
+# Database
+DATABASE_URL=postgresql://soc_user:soc_password@localhost:5432/soc_db
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# AWS SQS (tùy chọn cho production)
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=us-east-1
+SQS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/123456789012/soc-alerts
+
+# JWT
+SECRET_KEY=your-secret-key-here-change-this-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# CORS
+ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:80"]
+ALLOWED_HOSTS=["localhost", "127.0.0.1"]
+```
+
+## API Endpoints
+
+### Authentication
+- `POST /auth/login` - Đăng nhập
+- `POST /auth/register` - Đăng ký (development only)
+- `GET /auth/me` - Thông tin user hiện tại
+
+### Alerts
+- `GET /alerts` - Danh sách alerts với filter
+- `POST /alerts` - Tạo alert mới
+- `GET /alerts/{alert_id}` - Chi tiết alert
+- `PUT /alerts/{alert_id}` - Cập nhật alert
+
+### System
+- `GET /system/status` - Trạng thái hệ thống
+- `GET /system/metrics` - Metrics hệ thống
+- `GET /system/health` - Health check tổng quan
+- `GET /system/threats/stats` - Thống kê threat
+
+### WebSocket
+- `WS /ws/alerts` - Real-time alerts
+- `WS /ws/system` - System status updates
+- `WS /ws/threats` - Threat intelligence
+
+## Database Schema
+
+### Alerts Table
+- `id`: String (Primary Key)
+- `timestamp`: DateTime
+- `severity`: String (CRITICAL, HIGH, MEDIUM, LOW)
+- `source_ip`: String
+- `destination_ip`: String
+- `port`: Integer
+- `attack_type`: String
+- `risk_score`: Float (0-100)
+- `zeek_evidence`: JSON
+- `suricata_evidence`: String
+- `mitre_attack`: String
+- `ai_source`: String
+- `processed`: Boolean
+- `created_at`: DateTime
+- `updated_at`: DateTime
+
+### Users Table
+- `id`: Integer (Primary Key)
+- `username`: String (Unique)
+- `email`: String (Unique)
+- `full_name`: String
+- `role`: String (admin, analyst, user)
+- `hashed_password`: String
+- `is_active`: Boolean
+- `created_at`: DateTime
+- `updated_at`: DateTime
+
+### System Status Table
+- `component`: String (Primary Key)
+- `status`: String
+- `details`: JSON
+- `last_updated`: DateTime
+
+### System Metrics Table
+- `metric_name`: String (Primary Key)
+- `metric_value`: Float
+- `timestamp`: DateTime
+- `metadata`: JSON
 
 ## Tech Stack
 

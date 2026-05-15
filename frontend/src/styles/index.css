@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-soc-dark text-white;
+  }
+}
+
+@layer components {
+  .glassmorphism {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-lg;
+  }
+
+  .neon-glow {
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  }
+}
