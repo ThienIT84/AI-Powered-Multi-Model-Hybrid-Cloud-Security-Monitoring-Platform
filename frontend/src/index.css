@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-bg-dark: #050608;
+  --color-card-bg: #0d1117;
+  --color-border-neon: #1e293b;
+  
+  --color-cyan-neon: #22d3ee;
+  --color-blue-neon: #3b82f6;
+  --color-purple-neon: #a855f7;
+  
+  --color-critical: #ef4444;
+  --color-high: #f97316;
+  --color-medium: #eab308;
+  --color-low: #3b82f6;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-dark text-gray-400 font-sans antialiased selection:bg-cyan-neon/30;
+  }
+}
+
+@layer components {
+  .neon-glow-cyan {
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+  }
+  .neon-glow-red {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+  }
+  .glass-card {
+    @apply bg-card-bg border border-white/5 backdrop-blur-md rounded-lg;
+  }
+  
+  .status-pill {
+    @apply bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1.5;
+  }
+
+  .status-dot {
+    @apply w-1.5 h-1.5 bg-current rounded-full shadow-[0_0_5px_currentColor];
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-cyan-neon/30 transition-colors;
+  }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}

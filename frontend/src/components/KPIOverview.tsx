@@ -1,0 +1,111 @@
+import { 
+  ShieldAlert, 
+  Activity,
+  Globe,
+  Bug,
+  Crosshair
+} from "lucide-react";
+import { cn } from "../lib/utils";
+import { 
+  LineChart, 
+  Line, 
+  ResponsiveContainer,
+} from "recharts";
+
+const sparklineData = Array.from({ length: 15 }, (_, i) => ({ value: 30 + Math.random() * 50 }));
+
+export function KPIOverview() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <StatCard 
+        title="TOTAL NETWORK TRAFFIC" 
+        value="8.42 Tbps" 
+        change="12.6%" 
+        subtitle="vs last 24h"
+        icon={Globe}
+        iconColor="text-blue-500"
+        sparklineColor="#3b82f6"
+      />
+      <StatCard 
+        title="TOTAL AI THREATS DETECTED" 
+        value="1,247" 
+        change="23.8%" 
+        subtitle="vs last 24h"
+        icon={Bug}
+        iconColor="text-red-500"
+        sparklineColor="#ef4444"
+        isRed
+      />
+      <StatCard 
+        title="CLASSIFIED ATTACKS" 
+        value="356" 
+        change="15.3%" 
+        subtitle="vs last 24h"
+        icon={Crosshair}
+        iconColor="text-purple-500"
+        sparklineColor="#a855f7"
+      />
+    </div>
+  );
+}
+
+interface StatCardProps {
+  title: string;
+  value: string;
+  change: string;
+  subtitle: string;
+  icon: any;
+  iconColor: string;
+  sparklineColor: string;
+  isRed?: boolean;
+}
+
+function StatCard({ 
+  title, value, change, subtitle, icon: Icon, iconColor, sparklineColor, isRed 
+}: StatCardProps) {
+  return (
+    <div className="bg-[#0f1115] border border-white/5 rounded-xl p-4 flex flex-col justify-between min-h-30 relative group overflow-hidden shadow-2xl">
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">{title}</h3>
+        <div className={cn("p-1.5 rounded bg-white/5", iconColor)}>
+          <Icon className="w-4 h-4" />
+        </div>
+      </div>
+
+      <div className="flex items-end justify-between">
+        <div className="space-y-2">
+          <div className="text-2xl font-black text-gray-100 tracking-tighter leading-none">
+            {value}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={cn("text-[10px] font-black flex items-center gap-0.5", isRed ? "text-red-500" : "text-green-500")}>
+              ↑ {change}
+            </span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">{subtitle}</span>
+          </div>
+        </div>
+
+        <div className="h-10 w-24 opacity-40 group-hover:opacity-80 transition-opacity">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={sparklineData}>
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke={sparklineColor} 
+                strokeWidth={2} 
+                dot={false} 
+                isAnimationActive={true}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      
+      {/* Decorative gradient overlay */}
+      <div className={cn(
+        "absolute -bottom-1 -right-1 w-24 h-24 blur-[60px] opacity-10 pointer-events-none transition-all duration-700 group-hover:opacity-20",
+        isRed ? "bg-red-500" : "bg-blue-500"
+      )} />
+    </div>
+  );
+}
