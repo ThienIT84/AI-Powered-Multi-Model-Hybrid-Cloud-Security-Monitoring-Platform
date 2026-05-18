@@ -62,7 +62,7 @@ export function AlertStats({ alerts }: { alerts: Alert[] }) {
     low: alerts.filter(a => a.severity === Severity.LOW).length,
     resolved: alerts.filter(a => a.status === AlertStatus.RESOLVED).length,
     active: alerts.filter(a => [AlertStatus.NEW, AlertStatus.INVESTIGATING, AlertStatus.ESCALATED].includes(a.status)).length,
-    aiInvolved: alerts.filter(a => a.confidence > 0.9).length
+    aiInvolved: alerts.filter(a => a.confidenceScore > 0.9).length
   };
 
   return (

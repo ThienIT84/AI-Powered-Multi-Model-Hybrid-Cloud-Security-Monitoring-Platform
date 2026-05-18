@@ -51,7 +51,7 @@ function AlertItem({ alert, onClick, index }: AlertItemProps) {
       </div>
 
       <p className="text-[10px] text-muted-foreground/80 font-medium line-clamp-1 mb-2 relative z-10">
-         <span className="font-bold opacity-60">SRX:</span> <span className="text-foreground/90 font-mono" style={{ color: theme.primary }}>{alert.sourceIp}</span> <span className="mx-1 opacity-20">|</span> <span className="font-bold opacity-60">DST:</span> <span className="text-foreground/90 font-mono">{alert.destIp}</span>
+         <span className="font-bold opacity-60">SRX:</span> <span className="text-foreground/90 font-mono" style={{ color: theme.primary }}>{alert.sourceIp}</span> <span className="mx-1 opacity-20">|</span> <span className="font-bold opacity-60">DST:</span> <span className="text-foreground/90 font-mono">{alert.destinationIp}</span>
       </p>
 
       <div className="flex items-center justify-between relative z-10">
@@ -61,7 +61,7 @@ function AlertItem({ alert, onClick, index }: AlertItemProps) {
                <span className="text-[10px] font-black transition-all font-mono tracking-tighter" style={{ 
                  color: theme.primary,
                  textShadow: `0 0 8px ${theme.glow}`
-               }}>{(alert.confidence * 100).toFixed(1)}%</span>
+               }}>{(alert.confidenceScore * 100).toFixed(1)}%</span>
             </div>
          </div>
          <span className="text-[9px] font-black uppercase tracking-widest group-hover:translate-x-1 transition-transform flex items-center gap-1.5" style={{ color: theme.primary }}>

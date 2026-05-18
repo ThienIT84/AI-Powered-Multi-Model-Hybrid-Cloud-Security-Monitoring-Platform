@@ -19,9 +19,10 @@ import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "./lib/utils";
+import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/securityData";
 
 export default function App() {
-  const { isConnected, alerts, traffic } = useSocket();
+  const { isConnected, alerts, traffic, error, dataMode } = useSocket();
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentView, setCurrentView] = useState<"dashboard" | "settings" | "alerts">("dashboard");
@@ -52,9 +53,9 @@ export default function App() {
     const q = searchQuery.toLowerCase();
     return (
       alert.sourceIp.toLowerCase().includes(q) ||
-      alert.destIp.toLowerCase().includes(q) ||
+      alert.destinationIp.toLowerCase().includes(q) ||
       alert.attackType.toLowerCase().includes(q) ||
-      alert.payload?.toLowerCase().includes(q) ||
+      alert.rawPayload?.toLowerCase().includes(q) ||
       alert.severity.toLowerCase().includes(q)
     );
   });
@@ -79,6 +80,8 @@ export default function App() {
           onToggleAlerts={() => openPanel('alerts')}
           onToggleSettings={() => openPanel('settings')}
           onClosePanels={closePanel}
+          socketError={error}
+          dataMode={dataMode}
         />
         
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
@@ -91,7 +94,7 @@ export default function App() {
                 exit={{ opacity: 0, x: 10 }}
                 className="space-y-4"
               >
-                <KPIOverview />
+                <KPIOverview summary={mockSummary} />
                 
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
                   <motion.div 
@@ -115,7 +118,7 @@ export default function App() {
                     />
                   </motion.div>
                   
-                  < AnimatePresence mode="popLayout">
+                  <AnimatePresence mode="popLayout">
                     {selectedAlert && (
                       <motion.div 
                         initial={{ opacity: 0, x: 20, width: 0 }}
@@ -133,7 +136,7 @@ export default function App() {
                   </AnimatePresence>
                 </div>
                 
-                <BottomWidgets />
+                <BottomWidgets modelStatus={mockModelStatus} dataSourceHealth={mockDataSourceHealth} />
               </motion.div>
             ) : currentView === "alerts" ? (
               <AlertsPage key="alerts" />

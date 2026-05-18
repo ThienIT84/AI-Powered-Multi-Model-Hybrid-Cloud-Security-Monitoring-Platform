@@ -6,6 +6,7 @@ import {
   Crosshair
 } from "lucide-react";
 import { cn } from "../lib/utils";
+import { DashboardSummary } from "../types";
 import { 
   LineChart, 
   Line, 
@@ -14,22 +15,33 @@ import {
 
 const sparklineData = Array.from({ length: 15 }, (_, i) => ({ value: 30 + Math.random() * 50 }));
 
-export function KPIOverview() {
+interface KPIOverviewProps {
+  summary: DashboardSummary;
+}
+
+function formatCompact(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export function KPIOverview({ summary }: KPIOverviewProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
       <StatCard 
-        title="TOTAL NETWORK TRAFFIC" 
-        value="8.42 Tbps" 
-        change="12.6%" 
+        title="TOTAL NETWORK FLOWS" 
+        value={formatCompact(summary.totalNetworkFlows)} 
+        change={`${summary.flowChangePercent}%`} 
         subtitle="vs last 24h"
         icon={Globe}
         iconColor="text-blue-500"
         sparklineColor="#3b82f6"
       />
       <StatCard 
-        title="TOTAL AI THREATS DETECTED" 
-        value="1,247" 
-        change="23.8%" 
+        title="TOTAL FUSION ALERTS" 
+        value={formatCompact(summary.totalFusionAlerts)} 
+        change={`${summary.alertChangePercent}%`} 
         subtitle="vs last 24h"
         icon={Bug}
         iconColor="text-red-500"
@@ -37,10 +49,10 @@ export function KPIOverview() {
         isRed
       />
       <StatCard 
-        title="CLASSIFIED ATTACKS" 
-        value="356" 
-        change="15.3%" 
-        subtitle="vs last 24h"
+        title="TOP THREAT" 
+        value={summary.topThreat} 
+        change={`${summary.classifiedAttackChangePercent}%`} 
+        subtitle="classification lift"
         icon={Crosshair}
         iconColor="text-purple-500"
         sparklineColor="#a855f7"

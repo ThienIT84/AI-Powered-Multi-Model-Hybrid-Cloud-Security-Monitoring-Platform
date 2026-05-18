@@ -153,10 +153,10 @@ function AlertTableRow({ alert, isSelected, onClick, index }: AlertTableRowProps
           <div className="flex items-center gap-1.5">
             <span className="text-[9px] font-bold font-mono tracking-tighter" style={{ color: theme.primary }}>{alert.sourceIp}</span>
             <Globe className="w-2.5 h-2.5 text-muted-foreground/30" />
-            <span className="text-[9px] font-bold text-foreground font-mono tracking-tighter">{alert.destIp}</span>
+            <span className="text-[9px] font-bold text-foreground font-mono tracking-tighter">{alert.destinationIp}</span>
           </div>
           <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1">
-            PORT: <span className="text-foreground">{alert.destPort}</span>
+            PORT: <span className="text-foreground">{alert.destinationPort}</span>
             <span className="mx-1 opacity-30">|</span>
             PROTO: <span className="text-foreground">{alert.protocol}</span>
           </span>
@@ -176,10 +176,10 @@ function AlertTableRow({ alert, isSelected, onClick, index }: AlertTableRowProps
           <div className="h-1.5 w-12 bg-muted rounded-full overflow-hidden">
             <div 
               className="h-full transition-all duration-700" 
-              style={{ backgroundColor: theme.primary, width: `${alert.confidence * 100}%`, boxShadow: `0 0 8px ${theme.glow}` }}
+              style={{ backgroundColor: theme.primary, width: `${alert.confidenceScore * 100}%`, boxShadow: `0 0 8px ${theme.glow}` }}
             />
           </div>
-          <span className="text-[10px] font-mono font-black" style={{ color: theme.primary }}>{(alert.confidence * 100).toFixed(0)}%</span>
+          <span className="text-[10px] font-mono font-black" style={{ color: theme.primary }}>{(alert.confidenceScore * 100).toFixed(0)}%</span>
         </div>
       </td>
       <td className="px-5 py-4">
@@ -257,7 +257,7 @@ function AlertGridItem({ alert, isSelected, onClick, index }: AlertGridItemProps
            </div>
            <div className="flex flex-col">
               <span className="text-[13px] font-black text-foreground uppercase tracking-wider leading-none">{alert.attackType}</span>
-              <span className="text-[10px] text-muted-foreground font-medium mt-1">Confidence Score: <span className="font-bold font-mono" style={{ color: theme.primary }}>{(alert.confidence * 100).toFixed(0)}%</span></span>
+              <span className="text-[10px] text-muted-foreground font-medium mt-1">Confidence Score: <span className="font-bold font-mono" style={{ color: theme.primary }}>{(alert.confidenceScore * 100).toFixed(0)}%</span></span>
            </div>
         </div>
 
@@ -268,7 +268,7 @@ function AlertGridItem({ alert, isSelected, onClick, index }: AlertGridItemProps
            </div>
            <div className="space-y-1 text-right">
              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest block">Destination IP</span>
-             <span className="text-[12px] font-mono font-black text-foreground leading-none">{alert.destIp}</span>
+             <span className="text-[12px] font-mono font-black text-foreground leading-none">{alert.destinationIp}</span>
            </div>
         </div>
 
@@ -315,7 +315,9 @@ function SeverityBadge({ severity }: { severity: Severity }) {
 function StatusBadge({ status }: { status: AlertStatus }) {
   const settings: Record<AlertStatus, { text: string, color: string }> = {
     [AlertStatus.NEW]: { text: "New", color: "text-blue-500 bg-blue-500/10" },
+    [AlertStatus.BLOCKING]: { text: "Blocking", color: "text-red-500 bg-red-500/10" },
     [AlertStatus.INVESTIGATING]: { text: "Investigating", color: "text-purple-500 bg-purple-500/10" },
+    [AlertStatus.MONITORING]: { text: "Monitoring", color: "text-yellow-500 bg-yellow-500/10" },
     [AlertStatus.MITIGATED]: { text: "Mitigated", color: "text-cyan-500 bg-cyan-500/10" },
     [AlertStatus.ESCALATED]: { text: "Escalated", color: "text-orange-500 bg-orange-500/10" },
     [AlertStatus.RESOLVED]: { text: "Resolved", color: "text-emerald-500 bg-emerald-500/10" },

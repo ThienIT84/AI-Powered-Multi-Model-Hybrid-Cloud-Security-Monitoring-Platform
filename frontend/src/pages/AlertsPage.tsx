@@ -32,7 +32,7 @@ export function AlertsPage() {
       return (
         alert.id.toLowerCase().includes(q) ||
         alert.sourceIp.toLowerCase().includes(q) ||
-        alert.destIp.toLowerCase().includes(q) ||
+        alert.destinationIp.toLowerCase().includes(q) ||
         alert.attackType.toLowerCase().includes(q) ||
         alert.severity.toLowerCase().includes(q)
       );

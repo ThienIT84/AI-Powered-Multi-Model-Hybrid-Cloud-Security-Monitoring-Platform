@@ -1,19 +1,29 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Alert, TrafficData } from "./types";
+import { useState, useEffect, useRef } from "react";
+import { appConfig } from "./config";
+import { mapBackendAlertToAlert } from "./lib/alertMapper";
+import { Alert, BackendAlertDTO, TrafficData } from "./types";
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [traffic, setTraffic] = useState<TrafficData[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const socket = new WebSocket(`${protocol}//${host}`);
+    const socketUrl = appConfig.dataMode === "api" ? appConfig.wsUrl : appConfig.mockWsUrl;
+    const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
-    socket.onopen = () => setIsConnected(true);
+    socket.onopen = () => {
+      setIsConnected(true);
+      setError(null);
+    };
+
+    socket.onerror = () => {
+      setError(`Unable to connect to ${socketUrl}`);
+    };
+
     socket.onclose = () => setIsConnected(false);
     
     socket.onmessage = (event) => {
@@ -21,10 +31,13 @@ export function useSocket() {
       
       switch (message.type) {
         case "INITIAL_DATA":
-          setAlerts(message.data);
+          setAlerts((message.data as BackendAlertDTO[]).map(mapBackendAlertToAlert));
           break;
         case "NEW_ALERT":
-          setAlerts((prev) => [message.data, ...prev].slice(0, 50));
+          setAlerts((prev) => [mapBackendAlertToAlert(message.data), ...prev].slice(0, 50));
+          break;
+        case "alert.created":
+          setAlerts((prev) => [mapBackendAlertToAlert(message.data), ...prev].slice(0, 50));
           break;
         case "TRAFFIC_UPDATE":
           setTraffic((prev) => [...prev, message.data].slice(-100));
@@ -37,5 +50,5 @@ export function useSocket() {
     };
   }, []);
 
-  return { isConnected, alerts, traffic };
+  return { isConnected, alerts, traffic, error, dataMode: appConfig.dataMode };
 }

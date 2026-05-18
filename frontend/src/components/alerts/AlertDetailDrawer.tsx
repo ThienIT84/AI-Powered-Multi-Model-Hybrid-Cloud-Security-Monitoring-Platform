@@ -224,8 +224,8 @@ export function AlertDetailDrawer({ alert, onClose }: AlertDetailDrawerProps) {
                    <p className="text-cyan-500/80"># Zeek Connection Log</p>
                    <p>ts: {new Date(alert.timestamp).getTime() / 1000}</p>
                    <p>uid: CQK3Z11K6r2aN2m7k</p>
-                   <p>id.orig_h: {alert.sourceIp} id.orig_p: {alert.destPort - 124}</p>
-                   <p>id.resp_h: {alert.destIp} id.resp_p: {alert.destPort}</p>
+                   <p>id.orig_h: {alert.sourceIp} id.orig_p: {(alert.sourcePort ?? alert.destinationPort) - 124}</p>
+                   <p>id.resp_h: {alert.destinationIp} id.resp_p: {alert.destinationPort}</p>
                    <p>proto: {alert.protocol.toLowerCase()}</p>
                    <p>service: {alert.protocol === 'HTTPS' ? 'ssl' : 'http'}</p>
                    <p>duration: {alert.zeekData.duration}s</p>
@@ -233,7 +233,7 @@ export function AlertDetailDrawer({ alert, onClose }: AlertDetailDrawerProps) {
                    <p>resp_bytes: {alert.zeekData.respBytes}</p>
                    <p>conn_state: {alert.zeekData.connState}</p>
                    <p className="pt-2 text-red-500/80"># Payload Segment (AI Extracted)</p>
-                   <p className="text-red-500 font-bold">{alert.payload}</p>
+                   <p className="text-red-500 font-bold">{alert.rawPayload ?? "No raw payload captured"}</p>
                 </div>
              </div>
           </div>

@@ -1,20 +1,35 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Hybrid SOC Frontend
 
-# Run and deploy your AI Studio app
+React + Vite dashboard for the AI-powered hybrid cloud security monitoring platform.
 
-This contains everything you need to run your app locally.
+## Requirements
 
-View your app in AI Studio: https://ai.studio/apps/67d3d669-3b29-4bcb-a2d3-e0fe48366efd
+- Node.js 20+
+- pnpm 9+
 
-## Run Locally
+## Environment
 
-**Prerequisites:**  Node.js
+Copy `.env.example` to `.env.local` when you need local overrides.
 
+```bash
+VITE_DATA_MODE=mock
+VITE_API_BASE_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8000/ws/alerts
+VITE_MOCK_WS_URL=ws://localhost:3000
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+`VITE_DATA_MODE=mock` uses the local mock WebSocket server in `server.ts`. `VITE_DATA_MODE=api` points the client to the future FastAPI backend.
+
+## Commands
+
+```bash
+pnpm install
+pnpm dev
+pnpm lint
+pnpm build
+pnpm start
+```
+
+## Data Contract
+
+Backend responses should follow the README contract with `snake_case` fields. The frontend maps those DTOs into internal React types with `camelCase` fields before rendering components.
