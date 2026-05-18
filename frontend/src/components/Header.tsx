@@ -44,6 +44,8 @@ interface HeaderProps {
   onThemeToggle: () => void;
   currentView: "dashboard" | "settings";
   onViewChange: (view: "dashboard" | "settings") => void;
+  socketError?: string | null;
+  dataMode?: "mock" | "api";
 }
 
 export function Header({ 
@@ -53,7 +55,9 @@ export function Header({
   isDarkMode,
   onThemeToggle,
   currentView,
-  onViewChange
+  onViewChange,
+  socketError,
+  dataMode = "mock"
 }: HeaderProps) {
   const [time, setTime] = React.useState(new Date());
 
@@ -84,8 +88,14 @@ export function Header({
           <div className={cn("flex flex-col pr-6 border-r", isDarkMode ? "border-white/5" : "border-gray-100")}>
             <span className="text-[7px] font-black text-gray-500 uppercase tracking-[0.22em] leading-none mb-1">SYSTEM STATUS</span>
             <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,1)] animate-pulse" />
-              <span className="text-[9px] font-black text-green-500 uppercase tracking-[0.15em]">OPERATIONAL</span>
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full animate-pulse",
+                isConnected ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,1)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]"
+              )} />
+              <span className={cn(
+                "text-[9px] font-black uppercase tracking-[0.15em]",
+                isConnected ? "text-green-500" : "text-red-500"
+              )}>{isConnected ? "OPERATIONAL" : "DISCONNECTED"}</span>
             </div>
           </div>
 
@@ -115,7 +125,7 @@ export function Header({
 
           <div className={cn("flex flex-col px-6 border-r hidden lg:flex", isDarkMode ? "border-white/5" : "border-gray-100")}>
             <span className="text-[7px] font-black text-gray-500 uppercase tracking-[0.22em] leading-none mb-1">LAST UPDATED</span>
-            <span className={cn("text-[9px] font-black uppercase tracking-[0.1em] font-mono leading-none", isDarkMode ? "text-white" : "text-gray-900")}>{formatTime(time)}</span>
+            <span className={cn("text-[9px] font-black uppercase tracking-[0.1em] font-mono leading-none", isDarkMode ? "text-white" : "text-gray-900")}>{formatTime(time)} / {dataMode}</span>
           </div>
         </div>
       </div>
@@ -148,6 +158,11 @@ export function Header({
 
         {/* Action Icons */}
         <div className="flex items-center gap-4 lg:gap-6">
+          {socketError && (
+            <span className="hidden xl:inline text-[8px] font-black text-red-500 uppercase tracking-widest max-w-[220px] truncate">
+              {socketError}
+            </span>
+          )}
           <div className="relative">
             <Bell className={cn("w-4 h-4 cursor-pointer transition-colors", isDarkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900")} />
             <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[7px] font-black px-1.5 rounded-full border border-current shadow-[0_0_10px_rgba(239,68,68,0.3)]">

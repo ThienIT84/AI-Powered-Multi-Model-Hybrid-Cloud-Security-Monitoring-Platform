@@ -221,7 +221,6 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert }: AnalyticsZoneP
                     if (latestAlert && onSelectAlert) onSelectAlert(latestAlert);
                   }}
                   label={<CustomMarker />} 
-                  isFront={true} 
                 />
               ))}
             </AreaChart>

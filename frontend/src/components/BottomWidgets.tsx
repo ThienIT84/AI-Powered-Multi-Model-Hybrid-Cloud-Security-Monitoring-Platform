@@ -10,27 +10,20 @@ import {
   Cell
 } from "recharts";
 import { Activity, ShieldCheck, Zap, Brain, Database, Cloud, Network } from "lucide-react";
+import { DataSourceHealth, ModelStatus } from "../types";
 
-export function BottomWidgets() {
+interface BottomWidgetsProps {
+  modelStatus: ModelStatus[];
+  dataSourceHealth: DataSourceHealth[];
+}
+
+export function BottomWidgets({ modelStatus, dataSourceHealth }: BottomWidgetsProps) {
   const shapData = [
     { name: "Contains SQL Keyword", value: 0.42 },
     { name: "SQL Comment Pattern", value: 0.28 },
     { name: "Special Characters", value: 0.13 },
     { name: "Login Field Detected", value: 0.09 },
     { name: "Payload Length", value: 0.04 },
-  ];
-
-  const modelStatus = [
-    { name: "NLP Threat Detection", status: "Active", accuracy: "96.3%", lastTrained: "May 19, 2025 02:15 AM" },
-    { name: "Behavior Analysis", status: "Active", accuracy: "94.7%", lastTrained: "May 18, 2025 11:40 PM" },
-    { name: "Traffic Analysis", status: "Active", accuracy: "93.1%", lastTrained: "May 19, 2025 01:05 AM" },
-  ];
-
-  const dataSourceHealth = [
-    { name: "Zeek Logs", status: "Healthy", eps: "1.2K/s", icon: Database },
-    { name: "Suricata Alerts", status: "Healthy", eps: "850/s", icon: ShieldCheck },
-    { name: "AWS VPC Flow Logs", status: "Healthy", eps: "320/s", icon: Cloud },
-    { name: "CloudTrail", status: "Healthy", eps: "45/s", icon: Activity },
   ];
 
   return (
@@ -58,10 +51,10 @@ export function BottomWidgets() {
            {/* Section 3: Models */}
            <div className="space-y-2">
               <p className="text-red-500 mb-2">Models</p>
-              <PipelineSmallNode label="NLP-SQLi" active />
-              <PipelineSmallNode label="Anomaly" />
-              <PipelineSmallNode label="NLP-XSS" />
-              <PipelineSmallNode label="Behavior" />
+              <PipelineSmallNode label="AI2B" active />
+              <PipelineSmallNode label="AI1" />
+              <PipelineSmallNode label="AI2A" />
+              <PipelineSmallNode label="Fusion" />
            </div>
            {/* Section 4: Output */}
            <div className="space-y-2">
@@ -126,11 +119,20 @@ export function BottomWidgets() {
       <div className="bg-[#0f1115] dark:bg-[#0f1115] light:bg-white border border-white/5 dark:border-white/5 light:border-gray-200 rounded-xl p-4 flex flex-col shadow-2xl">
         <h3 className="text-[10px] font-black text-gray-100 dark:text-gray-100 light:text-gray-900 uppercase tracking-[0.2em] mb-4">DATA SOURCES HEALTH</h3>
         <div className="grid grid-cols-1 gap-3">
-           {dataSourceHealth.map((source, idx) => (
+           {dataSourceHealth.map((source, idx) => {
+             const SourceIcon = source.name.includes("Suricata")
+               ? ShieldCheck
+               : source.name.includes("SQS")
+                 ? Cloud
+                 : source.name.includes("Fusion")
+                   ? Brain
+                   : Database;
+
+             return (
              <div key={idx} className="flex items-center justify-between group">
                 <div className="flex items-center gap-2">
                    <div className="p-1.5 rounded bg-white/5 dark:bg-white/5 light:bg-gray-100 border border-white/10 dark:border-white/10 light:border-gray-200 group-hover:border-white/20 dark:group-hover:border-white/20 light:group-hover:border-blue-200 transition-colors">
-                      <source.icon className="w-3 h-3 text-gray-400 dark:text-gray-400 light:text-gray-500 group-hover:text-blue-400" />
+                      <SourceIcon className="w-3 h-3 text-gray-400 dark:text-gray-400 light:text-gray-500 group-hover:text-blue-400" />
                    </div>
                    <div className="flex flex-col">
                       <span className="text-[9px] font-black text-gray-300 dark:text-gray-300 light:text-gray-700 uppercase leading-none tracking-tight">{source.name}</span>
@@ -139,10 +141,10 @@ export function BottomWidgets() {
                 </div>
                 <div className="flex items-center gap-1.5">
                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
-                   <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Healthy</span>
+                   <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">{source.status}</span>
                 </div>
              </div>
-           ))}
+           )})}
         </div>
       </div>
     </div>
