@@ -68,21 +68,21 @@ export function Sidebar({
   currentView, 
   onViewChange 
 }: { 
-  currentView: "dashboard" | "settings"; 
-  onViewChange: (view: "dashboard" | "settings") => void;
+  currentView: "dashboard" | "settings" | "alerts"; 
+  onViewChange: (view: "dashboard" | "settings" | "alerts") => void;
 }) {
   return (
-    <aside className="w-[220px] h-full bg-[#030408] dark:bg-[#030408] light:bg-[#f8fafc] border-r border-white/5 dark:border-white/5 light:border-gray-200 flex flex-col overflow-y-auto custom-scrollbar select-none transition-colors duration-500">
+    <aside className="w-[220px] h-full bg-card border-r border-border flex flex-col overflow-y-auto custom-scrollbar select-none transition-colors duration-300">
       {/* GLOWING LOGO */}
       <div className="p-6 flex items-center gap-4">
         <div className="relative group shrink-0">
           {/* Animated glow layers */}
-          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse" />
-          <div className="absolute inset-0 bg-cyan-400/10 blur-md rounded-full" />
+          <div className="absolute inset-0 bg-cyan-500/10 blur-2xl rounded-full animate-pulse" />
+          <div className="absolute inset-0 bg-cyan-400/5 blur-md rounded-full" />
           
-          <div className="relative w-12 h-12 bg-[#0a0c10] border border-cyan-500/30 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.15)] overflow-hidden">
+          <div className="relative w-12 h-12 bg-background border border-cyan-500/20 rounded-xl flex items-center justify-center shadow-sm overflow-hidden group-hover:border-cyan-500/50 transition-colors">
             {/* Circuit-like background pattern */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="absolute inset-0 opacity-5 pointer-events-none">
               <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <pattern id="circuit" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
@@ -93,15 +93,15 @@ export function Sidebar({
               </svg>
             </div>
             
-            <ShieldAlert className="w-6 h-6 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+            <ShieldAlert className="w-6 h-6 text-cyan-500 drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]" />
           </div>
         </div>
         
         <div className="flex flex-col">
-          <h1 className="text-white dark:text-white light:text-gray-900 font-black text-xl tracking-tight leading-none drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]">
+          <h1 className="text-foreground font-black text-xl tracking-tight leading-none">
             NEXUS
           </h1>
-          <p className="text-[9px] text-cyan-500/80 font-black tracking-[0.3em] mt-1 uppercase">SECURITY</p>
+          <p className="text-[9px] text-cyan-500 font-black tracking-[0.3em] mt-1 uppercase">SECURITY</p>
         </div>
       </div>
 
@@ -112,11 +112,11 @@ export function Sidebar({
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border group transition-all",
             currentView === 'dashboard' 
-              ? "bg-blue-600/10 border-blue-500/30 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.15)]" 
-              : "border-transparent text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]"
+              ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400 shadow-sm" 
+              : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
           )}
         >
-          <Home className={cn("w-4 h-4", currentView === 'dashboard' ? "text-blue-500" : "")} />
+          <Home className={cn("w-4 h-4", currentView === 'dashboard' ? "text-cyan-500" : "")} />
           <span className="text-[10px] font-black uppercase tracking-[0.2em] flex-1 text-left">DASHBOARD</span>
         </button>
       </div>
@@ -124,30 +124,34 @@ export function Sidebar({
       <nav className="flex-1 px-3 py-4 space-y-7">
         {menuItems.map((group, idx) => (
           <div key={idx} className="space-y-2">
-            <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-[0.25em] px-3 mb-3">
+            <h3 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.25em] px-3 mb-3">
               {group.group}
             </h3>
             {group.items.map((item, idy) => {
               const isSettings = item.label === "Settings";
-              const isActive = (isSettings && currentView === 'settings');
+              const isAlerts = item.label === "Alerts";
+              const isActive = (isSettings && currentView === 'settings') || (isAlerts && currentView === 'alerts');
               
               return (
                 <button
                   key={idy}
-                  onClick={() => isSettings ? onViewChange('settings') : null}
+                  onClick={() => {
+                    if (isSettings) onViewChange('settings');
+                    else if (isAlerts) onViewChange('alerts');
+                  }}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
+                    "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-200 group",
                     isActive 
-                      ? "text-blue-400 bg-blue-500/10 border border-blue-500/20" 
-                      : "text-gray-500 hover:text-gray-200 hover:bg-white/[0.03] border border-transparent"
+                      ? "text-cyan-500 bg-cyan-500/5 border border-cyan-500/20" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted border border-transparent"
                   )}
                 >
                   <item.icon className={cn(
                     "w-4 h-4 transition-colors",
-                    isActive ? "text-blue-400 drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]" : "text-gray-500 group-hover:text-blue-400"
+                    isActive ? "text-cyan-500" : "text-muted-foreground group-hover:text-cyan-500"
                   )} />
                   <span className="flex-1 text-left whitespace-nowrap">{item.label}</span>
-                  <ChevronRight className="w-3 h-3 text-gray-700 opacity-50 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/30 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </button>
               );
             })}
@@ -155,14 +159,14 @@ export function Sidebar({
         ))}
       </nav>
 
-      <div className="p-4 border-t border-white/5 bg-black/20">
+      <div className="p-4 border-t border-border bg-secondary/30">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white uppercase border border-white/10 shadow-lg">
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white uppercase border border-white/10 shadow-sm">
             Ad
           </div>
           <div className="flex-1">
-            <p className="text-xs font-bold text-gray-300 leading-none">Admin</p>
-            <p className="text-[10px] text-gray-500 mt-1 uppercase font-bold">SOC Analyst</p>
+            <p className="text-xs font-bold text-foreground leading-none">Admin</p>
+            <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold">SOC Analyst</p>
           </div>
         </div>
       </div>

@@ -13,23 +13,37 @@ async function startServer() {
   const wss = new WebSocketServer({ server });
 
   // Mock Data Generator for real-time alerts
-  const attackTypes = ["DDoS", "SQL Injection", "XSS", "Brute Force", "Port Scan", "Unauthorized Access"];
+  const attackTypes = ["DDoS", "SQL Injection", "XSS", "Brute Force", "Port Scan", "Unauthorized Access", "Ransomware Attempt", "Privilege Escalation", "Malware Beaconing", "Suspicious Login"];
   const severities = ["Critical", "High", "Medium", "Low"];
   const protocols = ["HTTP", "HTTPS", "TCP", "UDP", "SSH", "SMB"];
-  const statuses = ["blocking", "investigating", "monitoring", "resolved"];
+  const statuses = ["new", "investigating", "mitigated", "escalated", "resolved", "false_positive"];
+  const providers = ["AWS", "Azure", "GCP"];
+  const regions = ["us-east-1", "us-west-2", "eu-central-1", "ap-southeast-1"];
+  const analysts = ["Admin_Phu", "Sarah_SOC", "John_Sec", "AI_Agent_01"];
+  
+  const mitreTechniques = [
+    { id: "T1190", tactic: "Initial Access", technique: "Exploit Public-Facing Application", description: "Adversaries may attempt to exploit a software vulnerability in an Internet-facing application or system to achieve code execution or gain initial access." },
+    { id: "T1595", tactic: "Reconnaissance", technique: "Active Scanning", description: "Adversaries may execute active reconnaissance scans to gather information that can be used during targeting." },
+    { id: "T1110", tactic: "Credential Access", technique: "Brute Force", description: "Adversaries may use brute force techniques to gain access to accounts." },
+    { id: "T1068", tactic: "Privilege Escalation", technique: "Exploitation for Privilege Escalation", description: "Adversaries may exploit software vulnerabilities in an attempt to elevate privileges." },
+  ];
 
   let alertCounter = 0;
   function generateAlert() {
     alertCounter++;
     const uniqueId = `THR-${110 + (alertCounter % 900)}`;
     const sourceIp = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-    const destIp = "10.0.0.45";
+    const destIp = "10.0.12.15";
     const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
     const severity = severities[Math.floor(Math.random() * severities.length)];
     const riskScore = Math.floor(Math.random() * 100);
-    const confidence = (0.7 + Math.random() * 0.3).toFixed(2);
+    const confidence = parseFloat((0.7 + Math.random() * 0.3).toFixed(2));
     const status = statuses[Math.floor(Math.random() * statuses.length)];
-    
+    const provider = providers[Math.floor(Math.random() * providers.length)];
+    const region = regions[Math.floor(Math.random() * regions.length)];
+    const analyst = analysts[Math.floor(Math.random() * analysts.length)];
+    const mitre = mitreTechniques[Math.floor(Math.random() * mitreTechniques.length)];
+
     return {
       id: uniqueId,
       timestamp: new Date().toISOString(),
@@ -42,6 +56,16 @@ async function startServer() {
       riskScore,
       confidence,
       status,
+      cloudProvider: provider,
+      region,
+      description: `Possible ${attackType} detected from ${sourceIp} targeting internal host ${destIp}.`,
+      assignedAnalyst: analyst,
+      mitreAttack: mitre,
+      timeline: [
+        { id: "ev-1", timestamp: new Date(Date.now() - 5000).toISOString(), type: "Detection", description: `Initial detection by AI Model ${attackType}-NLP` },
+        { id: "ev-2", timestamp: new Date(Date.now() - 2000).toISOString(), type: "Analysis", description: "Multi-modal correlation engine confirmed threat patterns" }
+      ],
+      payload: "username=admin' OR '1'='1'--#apasswordanything&submit=Login",
       zeekData: {
         duration: (Math.random() * 10).toFixed(2),
         origBytes: Math.floor(Math.random() * 50000),
@@ -50,7 +74,7 @@ async function startServer() {
       },
       suricataData: {
         signatureId: `[1:201${Math.floor(Math.random() * 1000)}:2]`,
-        category: "Attempted User Privilege Gain",
+        category: mitre.tactic,
       },
       aiDecision: {
         ai1: (0.5 + Math.random() * 0.5).toFixed(2),

@@ -6,10 +6,12 @@ export enum Severity {
 }
 
 export enum AlertStatus {
-  BLOCKING = "blocking",
+  NEW = "new",
   INVESTIGATING = "investigating",
-  MONITORING = "monitoring",
-  RESOLVED = "resolved"
+  MITIGATED = "mitigated",
+  ESCALATED = "escalated",
+  RESOLVED = "resolved",
+  FALSE_POSITIVE = "false_positive"
 }
 
 export interface ZeekData {
@@ -30,6 +32,22 @@ export interface AiDecision {
   ai2b: string;
 }
 
+export interface MitreAttack {
+  id: string;
+  tactic: string;
+  technique: string;
+  description: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  timestamp: string;
+  type: string;
+  description: string;
+  actor?: string;
+  status?: string;
+}
+
 export interface Alert {
   id: string;
   timestamp: string;
@@ -40,16 +58,22 @@ export interface Alert {
   protocol: string;
   severity: Severity;
   riskScore: number;
-  confidence: string;
+  confidence: number;
   zeekData: ZeekData;
   suricataData: SuricataData;
   aiDecision: AiDecision;
   status: AlertStatus;
+  cloudProvider: "AWS" | "Azure" | "GCP";
+  region: string;
+  description: string;
+  assignedAnalyst?: string;
+  mitreAttack?: MitreAttack;
+  timeline: TimelineEvent[];
+  payload?: string;
 }
 
 export interface TrafficData {
   timestamp: string;
-  formattedTime: string;
   flows: number;
   anomalies: number;
   inbound: number;

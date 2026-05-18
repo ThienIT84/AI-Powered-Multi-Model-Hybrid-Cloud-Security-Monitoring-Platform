@@ -12,8 +12,10 @@ import { AnalyticsZone } from "./components/AnalyticsZone";
 import { AlertTable } from "./components/AlertTable";
 import { BottomWidgets } from "./components/BottomWidgets";
 import { IncidentDetail } from "./components/IncidentDetail";
-import { SettingsPage } from "./components/SettingsPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { AlertsPage } from "./pages/AlertsPage";
 import { useSocket } from "./useSocket";
+import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "./lib/utils";
@@ -22,8 +24,15 @@ export default function App() {
   const { isConnected, alerts, traffic } = useSocket();
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState<"dashboard" | "settings">("dashboard");
+  const [currentView, setCurrentView] = useState<"dashboard" | "settings" | "alerts">("dashboard");
   const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  const { 
+    isAlertsOpen, 
+    isSettingsOpen, 
+    openPanel, 
+    closePanel 
+  } = usePanelState();
 
   // Apply theme to document
   useEffect(() => {
@@ -51,10 +60,7 @@ export default function App() {
   });
 
   return (
-    <div className={cn(
-      "flex h-screen font-sans overflow-hidden transition-colors duration-500",
-      isDarkMode ? "bg-[#06070a] text-gray-100 dark" : "bg-gray-50 text-gray-900"
-    )}>
+    <div className="flex h-screen font-sans overflow-hidden transition-colors duration-500 bg-background text-foreground">
       <Sidebar currentView={currentView} onViewChange={setCurrentView} />
       
       <main className="flex-1 flex flex-col min-w-0 relative">
@@ -66,6 +72,13 @@ export default function App() {
           onThemeToggle={() => setIsDarkMode(!isDarkMode)}
           currentView={currentView}
           onViewChange={setCurrentView}
+          alerts={alerts}
+          onSelectAlert={setSelectedAlert}
+          isAlertsOpen={isAlertsOpen}
+          isSettingsOpen={isSettingsOpen}
+          onToggleAlerts={() => openPanel('alerts')}
+          onToggleSettings={() => openPanel('settings')}
+          onClosePanels={closePanel}
         />
         
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
@@ -92,7 +105,8 @@ export default function App() {
                     <AnalyticsZone 
                       traffic={traffic} 
                       alerts={alerts} 
-                      onSelectAlert={setSelectedAlert} 
+                      onSelectAlert={setSelectedAlert}
+                      isDarkMode={isDarkMode}
                     />
                     <AlertTable 
                       alerts={filteredAlerts} 
@@ -101,7 +115,7 @@ export default function App() {
                     />
                   </motion.div>
                   
-                  <AnimatePresence mode="popLayout">
+                  < AnimatePresence mode="popLayout">
                     {selectedAlert && (
                       <motion.div 
                         initial={{ opacity: 0, x: 20, width: 0 }}
@@ -121,8 +135,10 @@ export default function App() {
                 
                 <BottomWidgets />
               </motion.div>
+            ) : currentView === "alerts" ? (
+              <AlertsPage key="alerts" />
             ) : (
-              <SettingsPage />
+              <SettingsPage key="settings" />
             )}
           </AnimatePresence>
         </div>

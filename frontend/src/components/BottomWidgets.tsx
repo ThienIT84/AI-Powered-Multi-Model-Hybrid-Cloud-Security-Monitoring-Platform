@@ -10,6 +10,7 @@ import {
   Cell
 } from "recharts";
 import { Activity, ShieldCheck, Zap, Brain, Database, Cloud, Network } from "lucide-react";
+import { useAttackTheme } from "../hooks/useAttackTheme";
 
 export function BottomWidgets() {
   const shapData = [
@@ -33,15 +34,17 @@ export function BottomWidgets() {
     { name: "CloudTrail", status: "Healthy", eps: "45/s", icon: Activity },
   ];
 
+  const sqliTheme = useAttackTheme("SQL Injection", true);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 pb-8 transition-colors duration-500">
       {/* AI Detection Pipeline */}
-      <div className="bg-[#0f1115] dark:bg-[#0f1115] light:bg-white border border-white/5 dark:border-white/5 light:border-gray-200 rounded-xl p-4 flex flex-col shadow-2xl relative overflow-hidden h-[220px]">
-        <h3 className="text-[10px] font-black text-gray-100 dark:text-gray-100 light:text-gray-900 uppercase tracking-[0.2em] mb-4">AI DETECTION PIPELINE</h3>
+      <div className="bg-card border border-border rounded-xl p-4 flex flex-col shadow-sm relative overflow-hidden h-[220px]">
+        <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] mb-4">AI DETECTION PIPELINE</h3>
         <div className="flex-1 grid grid-cols-4 gap-2 text-[7px] font-black uppercase tracking-widest leading-none">
            {/* Section 1: Sources */}
            <div className="space-y-2">
-              <p className="text-blue-500 mb-2">Sources</p>
+              <p className="text-cyan-500 mb-2">Sources</p>
               <PipelineSmallNode label="Zeek" />
               <PipelineSmallNode label="Suricata" />
               <PipelineSmallNode label="VPC Flow" />
@@ -75,18 +78,18 @@ export function BottomWidgets() {
       </div>
 
       {/* AI Models Status */}
-      <div className="bg-[#0f1115] dark:bg-[#0f1115] light:bg-white border border-white/5 dark:border-white/5 light:border-gray-200 rounded-xl p-4 flex flex-col shadow-2xl">
-        <h3 className="text-[10px] font-black text-gray-100 dark:text-gray-100 light:text-gray-900 uppercase tracking-[0.2em] mb-4">AI MODELS STATUS</h3>
+      <div className="bg-card border border-border rounded-xl p-4 flex flex-col shadow-sm">
+        <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] mb-4">AI MODELS STATUS</h3>
         <div className="space-y-4">
            {modelStatus.map((model, idx) => (
              <div key={idx} className="space-y-2">
                 <div className="flex items-center justify-between">
-                   <span className="text-[9px] font-black text-gray-300 dark:text-gray-300 light:text-gray-700 uppercase tracking-tight">{model.name}</span>
+                   <span className="text-[9px] font-black text-muted-foreground uppercase tracking-tight">{model.name}</span>
                    <span className="text-[8px] font-black text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20">{model.status}</span>
                 </div>
-                <div className="flex items-center justify-between text-[8px] font-bold text-gray-500 uppercase tracking-widest">
+                <div className="flex items-center justify-between text-[8px] font-bold text-muted-foreground uppercase tracking-widest">
                    <span>Accuracy: {model.accuracy}</span>
-                   <span className="text-[7px] text-gray-600 italic">Last Trained: {model.lastTrained}</span>
+                   <span className="text-[7px] text-muted-foreground/60 italic">Last Trained: {model.lastTrained}</span>
                 </div>
              </div>
            ))}
@@ -94,8 +97,8 @@ export function BottomWidgets() {
       </div>
 
       {/* SHAP Explainability */}
-      <div className="bg-[#0f1115] dark:bg-[#0f1115] light:bg-white border border-white/5 dark:border-white/5 light:border-gray-200 rounded-xl p-4 flex flex-col shadow-2xl">
-        <h3 className="text-[10px] font-black text-gray-100 dark:text-gray-100 light:text-gray-900 uppercase tracking-[0.2em] mb-4">SHAP EXPLAINABILITY (SQL INJECTION)</h3>
+      <div className="bg-card border border-border rounded-xl p-4 flex flex-col shadow-sm">
+        <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] mb-4">SHAP EXPLAINABILITY (SQL INJECTION)</h3>
         <div className="flex-1 min-h-[140px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={shapData} layout="vertical" margin={{ left: -10, right: 20 }}>
@@ -104,17 +107,21 @@ export function BottomWidgets() {
                 type="category" 
                 dataKey="name" 
                 stroke="currentColor" 
-                className="text-gray-500 group-hover:text-gray-300 transition-colors"
+                className="text-muted-foreground transition-colors"
                 fontSize={7} 
                 width={85} 
                 tick={{ fontWeight: 'bold' }}
                 axisLine={false}
                 tickLine={false}
               />
-              <Tooltip cursor={{ fill: 'rgba(59,130,246,0.02)' }} content={<CustomBarTooltip />} />
+              <Tooltip cursor={{ fill: 'var(--muted)', opacity: 0.2 }} content={<CustomBarTooltip />} />
               <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={8}>
                 {shapData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={index === 0 ? "#ef4444" : index === 1 ? "#f97316" : "#3b82f6"} />
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={index === 0 ? sqliTheme.primary : index === 1 ? sqliTheme.secondary : sqliTheme.border} 
+                    style={{ filter: index === 0 ? `drop-shadow(0 0 4px ${sqliTheme.glow})` : 'none' }}
+                  />
                 ))}
               </Bar>
             </BarChart>
@@ -123,22 +130,22 @@ export function BottomWidgets() {
       </div>
 
       {/* Data Sources Health */}
-      <div className="bg-[#0f1115] dark:bg-[#0f1115] light:bg-white border border-white/5 dark:border-white/5 light:border-gray-200 rounded-xl p-4 flex flex-col shadow-2xl">
-        <h3 className="text-[10px] font-black text-gray-100 dark:text-gray-100 light:text-gray-900 uppercase tracking-[0.2em] mb-4">DATA SOURCES HEALTH</h3>
+      <div className="bg-card border border-border rounded-xl p-4 flex flex-col shadow-sm">
+        <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] mb-4">DATA SOURCES HEALTH</h3>
         <div className="grid grid-cols-1 gap-3">
            {dataSourceHealth.map((source, idx) => (
              <div key={idx} className="flex items-center justify-between group">
                 <div className="flex items-center gap-2">
-                   <div className="p-1.5 rounded bg-white/5 dark:bg-white/5 light:bg-gray-100 border border-white/10 dark:border-white/10 light:border-gray-200 group-hover:border-white/20 dark:group-hover:border-white/20 light:group-hover:border-blue-200 transition-colors">
-                      <source.icon className="w-3 h-3 text-gray-400 dark:text-gray-400 light:text-gray-500 group-hover:text-blue-400" />
+                   <div className="p-1.5 rounded bg-muted border border-border group-hover:border-cyan-500/30 transition-colors">
+                      <source.icon className="w-3 h-3 text-muted-foreground group-hover:text-cyan-500" />
                    </div>
                    <div className="flex flex-col">
-                      <span className="text-[9px] font-black text-gray-300 dark:text-gray-300 light:text-gray-700 uppercase leading-none tracking-tight">{source.name}</span>
-                      <span className="text-[7px] text-gray-600 font-bold uppercase tracking-widest mt-1">{source.eps} EPS</span>
+                      <span className="text-[9px] font-black text-foreground uppercase leading-none tracking-tight">{source.name}</span>
+                      <span className="text-[7px] text-muted-foreground font-bold uppercase tracking-widest mt-1">{source.eps} EPS</span>
                    </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]" />
+                   <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.3)]" />
                    <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Healthy</span>
                 </div>
              </div>
@@ -152,10 +159,10 @@ export function BottomWidgets() {
 function PipelineSmallNode({ label, active }: { label: string, active?: boolean }) {
   return (
     <div className={cn(
-      "px-1.5 py-1 rounded border transition-all duration-500",
+      "px-1.5 py-1 rounded border transition-all duration-300",
       active 
-        ? "bg-white/10 dark:bg-white/10 light:bg-blue-600/10 border-white/20 dark:border-white/20 light:border-blue-600/30 text-white dark:text-white light:text-blue-600 shadow-[0_0_8px_rgba(255,255,255,0.1)]" 
-        : "bg-black/20 dark:bg-black/20 light:bg-gray-100 border-white/5 dark:border-white/5 light:border-gray-200 text-gray-600"
+        ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400 shadow-sm font-black" 
+        : "bg-muted border-border text-muted-foreground"
     )}>
       {label}
     </div>
@@ -173,9 +180,9 @@ function PipelineNode({ label, color }: { label: string, color: string }) {
 const CustomBarTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#0f172a] border border-white/10 p-2 rounded shadow-xl backdrop-blur-md">
-        <p className="text-[8px] font-black text-gray-100 uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
-        <p className="text-[10px] font-mono text-cyan-400 font-black">+{payload[0].value.toFixed(2)} SHAP Value</p>
+      <div className="bg-card border border-border p-2 rounded shadow-xl backdrop-blur-md">
+        <p className="text-[8px] font-black text-foreground uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
+        <p className="text-[10px] font-mono text-cyan-500 font-black">+{payload[0].value.toFixed(2)} SHAP Value</p>
       </div>
     );
   }
