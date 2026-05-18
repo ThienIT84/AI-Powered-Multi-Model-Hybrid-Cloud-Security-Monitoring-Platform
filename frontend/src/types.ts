@@ -57,3 +57,4 @@ export interface TrafficData {
   isAnomaly?: boolean;
   isPeak?: boolean;
 }
+
