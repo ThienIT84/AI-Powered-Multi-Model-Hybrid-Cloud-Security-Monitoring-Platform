@@ -21,18 +21,16 @@ async function startServer() {
 
   wss.on("connection", (ws) => {
     console.log("Client connected to WebSocket");
-    
-    // Send initial batch of logs
+
     const initialLogs = Array.from({ length: 15 }, () => generateAlert());
     ws.send(JSON.stringify({ type: "INITIAL_DATA", data: initialLogs }));
 
-    // Stream new alerts
     const interval = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "NEW_ALERT", data: generateAlert() }));
-        ws.send(JSON.stringify({ 
-          type: "TRAFFIC_UPDATE", 
-          data: generateMockTrafficPoint()
+        ws.send(JSON.stringify({
+          type: "TRAFFIC_UPDATE",
+          data: generateMockTrafficPoint(),
         }));
       }
     }, 2000);
@@ -40,7 +38,6 @@ async function startServer() {
     ws.on("close", () => clearInterval(interval));
   });
 
-  // Vite integration
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -62,12 +59,12 @@ async function startServer() {
       if (!ifaceList) continue;
 
       for (const iface of ifaceList) {
-        if (iface.family === 'IPv4' && !iface.internal) {
+        if (iface.family === "IPv4" && !iface.internal) {
           return iface.address;
         }
       }
     }
-    return '127.0.0.1';
+    return "127.0.0.1";
   };
 
   server.listen(PORT, "0.0.0.0", () => {

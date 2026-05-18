@@ -6,10 +6,14 @@ export enum Severity {
 }
 
 export enum AlertStatus {
+  NEW = "new",
   BLOCKING = "blocking",
   INVESTIGATING = "investigating",
   MONITORING = "monitoring",
-  RESOLVED = "resolved"
+  MITIGATED = "mitigated",
+  ESCALATED = "escalated",
+  RESOLVED = "resolved",
+  FALSE_POSITIVE = "false_positive"
 }
 
 export interface BackendMitreDTO {
@@ -95,6 +99,22 @@ export interface MitreTechnique {
   url?: string;
 }
 
+export interface MitreAttack {
+  id: string;
+  tactic: string;
+  technique: string;
+  description: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  timestamp: string;
+  type: string;
+  description: string;
+  actor?: string;
+  status?: string;
+}
+
 export interface ZeekData {
   uri?: string;
   method?: string;
@@ -162,6 +182,12 @@ export interface Alert {
   aiDecision: AiDecision;
   decisionFlow: DecisionFlowStep[];
   status: AlertStatus;
+  cloudProvider: "AWS" | "Azure" | "GCP";
+  region: string;
+  description: string;
+  assignedAnalyst?: string;
+  mitreAttack?: MitreAttack;
+  timeline: TimelineEvent[];
 }
 
 export interface DashboardSummary {

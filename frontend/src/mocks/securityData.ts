@@ -152,9 +152,10 @@ const attackProfiles: AttackProfile[] = [
 ];
 
 const statuses = [
-  AlertStatus.BLOCKING,
+  AlertStatus.NEW,
   AlertStatus.INVESTIGATING,
-  AlertStatus.MONITORING,
+  AlertStatus.ESCALATED,
+  AlertStatus.MITIGATED,
   AlertStatus.RESOLVED,
 ];
 

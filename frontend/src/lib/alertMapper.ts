@@ -15,13 +15,31 @@ function normalizeSeverity(severity: string): Severity {
 
 function normalizeStatus(status?: string): AlertStatus {
   const normalized = status?.toLowerCase();
+  if (normalized === AlertStatus.NEW) return AlertStatus.NEW;
   if (normalized === AlertStatus.BLOCKING) return AlertStatus.BLOCKING;
-  if (normalized === AlertStatus.RESOLVED) return AlertStatus.RESOLVED;
+  if (normalized === AlertStatus.INVESTIGATING) return AlertStatus.INVESTIGATING;
   if (normalized === AlertStatus.MONITORING) return AlertStatus.MONITORING;
+  if (normalized === AlertStatus.MITIGATED) return AlertStatus.MITIGATED;
+  if (normalized === AlertStatus.ESCALATED) return AlertStatus.ESCALATED;
+  if (normalized === AlertStatus.RESOLVED) return AlertStatus.RESOLVED;
+  if (normalized === AlertStatus.FALSE_POSITIVE) return AlertStatus.FALSE_POSITIVE;
   return AlertStatus.INVESTIGATING;
 }
 
+function buildMitreUrl(techniqueId: string) {
+  return `https://attack.mitre.org/techniques/${techniqueId.replace(".", "/")}/`;
+}
+
 export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
+  const mitreUrl = dto.mitre.url ?? buildMitreUrl(dto.mitre.technique_id);
+  const decisionFlow =
+    dto.decision_flow?.map((step) => ({
+      stage: step.stage,
+      output: step.output,
+      confidence: step.confidence,
+    })) ?? [];
+  const fusionReason = dto.ai_analysis?.fusion?.reason;
+
   return {
     id: dto.id,
     timestamp: dto.timestamp,
@@ -40,9 +58,7 @@ export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
       techniqueId: dto.mitre.technique_id,
       techniqueName: dto.mitre.technique_name,
       tactic: dto.mitre.tactic,
-      url:
-        dto.mitre.url ??
-        `https://attack.mitre.org/techniques/${dto.mitre.technique_id.replace(".", "/")}/`,
+      url: mitreUrl,
     },
     rawPayload: dto.raw_payload,
     zeekData: {
@@ -90,13 +106,37 @@ export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
           }
         : undefined,
     },
-    decisionFlow:
-      dto.decision_flow?.map((step) => ({
-        stage: step.stage,
-        output: step.output,
-        confidence: step.confidence,
-      })) ?? [],
+    decisionFlow,
     status: normalizeStatus(dto.status),
+    cloudProvider: "AWS",
+    region: "ap-southeast-1",
+    description:
+      fusionReason ??
+      `${dto.attack_type} detected from ${dto.source_ip} targeting ${dto.destination_ip}:${dto.destination_port}.`,
+    assignedAnalyst: "Admin_Phu",
+    mitreAttack: {
+      id: dto.mitre.technique_id,
+      tactic: dto.mitre.tactic ?? "Mapped",
+      technique: dto.mitre.technique_name,
+      description: `${dto.mitre.technique_name} mapped from Fusion Layer evidence.`,
+    },
+    timeline:
+      decisionFlow.length > 0
+        ? decisionFlow.map((step, index) => ({
+            id: `flow-${index + 1}`,
+            timestamp: dto.timestamp,
+            type: step.stage,
+            description: step.output,
+            status: step.confidence !== undefined ? `${Math.round(step.confidence * 100)}%` : undefined,
+          }))
+        : [
+            {
+              id: "flow-1",
+              timestamp: dto.timestamp,
+              type: "Fusion Layer",
+              description: fusionReason ?? `${dto.attack_type} alert created`,
+            },
+          ],
   };
 }
 
