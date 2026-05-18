@@ -26,13 +26,13 @@ export function EventModal({ alert, onClose }: EventModalProps) {
   if (!alert) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex justify-end">
+    <div className="fixed inset-0 z-[100] flex justify-end">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+        className="absolute inset-0 bg-black/60 backdrop-blur-[4px]"
       />
       
       <motion.div 
@@ -40,7 +40,7 @@ export function EventModal({ alert, onClose }: EventModalProps) {
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: 400, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-100 bg-[#0a0c10] h-full border-l border-white/10 relative z-10 flex flex-col shadow-2xl"
+        className="w-[400px] bg-[#0a0c10] h-full border-l border-white/10 relative z-10 flex flex-col shadow-2xl"
       >
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {/* Header */}
@@ -77,7 +77,7 @@ export function EventModal({ alert, onClose }: EventModalProps) {
               <h2 className="text-[11px] font-black text-gray-100 uppercase tracking-widest">AI ANALYSIS FLOW</h2>
             </div>
             <div className="space-y-3 relative pl-4">
-               <div className="absolute left-1.75 top-2 bottom-2 w-px bg-white/5 border-l border-dashed border-gray-700" />
+               <div className="absolute left-[7px] top-2 bottom-2 w-px bg-white/5 border-l border-dashed border-gray-700" />
                <FlowStep label="Data Source: Zeek Sensor" status="completed" />
                <FlowStep label="AI1: Feature Extraction" value={`${(parseFloat(alert.aiDecision.ai1) * 100).toFixed(0)}%`} status="active" />
                <FlowStep label="AI2A: Attack Classifier" value={alert.attackType} status="completed" />
@@ -124,7 +124,7 @@ function FlowStep({ label, value, status }: { label: string, value?: string, sta
       "relative bg-black/40 border px-3 py-2.5 rounded-lg text-[10px] flex justify-between items-center transition-all",
       status === 'active' ? "border-blue-500/50 shadow-[0_0_10px_rgba(59,130,246,0.1)]" : "border-white/5"
     )}>
-      <div className="absolute -left-3.25 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-gray-700 bg-bg-dark z-10" />
+      <div className="absolute -left-[13px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-gray-700 bg-bg-dark z-10" />
       <span className="font-bold text-gray-400 uppercase tracking-tighter">{label}</span>
       {status === 'active' && <span className="font-black text-blue-400 font-mono">{value}</span>}
       {status === 'completed' && <span className="text-green-500 bg-green-500/10 px-1 rounded">DECODED</span>}

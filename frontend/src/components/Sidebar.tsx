@@ -64,9 +64,15 @@ const menuItems = [
   ]}
 ];
 
-export function Sidebar() {
+export function Sidebar({ 
+  currentView, 
+  onViewChange 
+}: { 
+  currentView: "dashboard" | "settings"; 
+  onViewChange: (view: "dashboard" | "settings") => void;
+}) {
   return (
-    <aside className="w-[220px] h-full bg-[#030408] border-r border-white/5 flex flex-col overflow-y-auto custom-scrollbar select-none">
+    <aside className="w-[220px] h-full bg-[#030408] dark:bg-[#030408] light:bg-[#f8fafc] border-r border-white/5 dark:border-white/5 light:border-gray-200 flex flex-col overflow-y-auto custom-scrollbar select-none transition-colors duration-500">
       {/* GLOWING LOGO */}
       <div className="p-6 flex items-center gap-4">
         <div className="relative group shrink-0">
@@ -92,7 +98,7 @@ export function Sidebar() {
         </div>
         
         <div className="flex flex-col">
-          <h1 className="text-white font-black text-xl tracking-tight leading-none drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]">
+          <h1 className="text-white dark:text-white light:text-gray-900 font-black text-xl tracking-tight leading-none drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]">
             NEXUS
           </h1>
           <p className="text-[9px] text-cyan-500/80 font-black tracking-[0.3em] mt-1 uppercase">SECURITY</p>
@@ -101,8 +107,16 @@ export function Sidebar() {
 
       {/* DASHBOARD Highlighted Bar */}
       <div className="px-3 pb-2">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600/10 border border-blue-500/30 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.15)] group transition-all hover:bg-blue-600/20">
-          <Home className="w-4 h-4" />
+        <button 
+          onClick={() => onViewChange('dashboard')}
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border group transition-all",
+            currentView === 'dashboard' 
+              ? "bg-blue-600/10 border-blue-500/30 text-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.15)]" 
+              : "border-transparent text-gray-500 hover:text-gray-300 hover:bg-white/[0.03]"
+          )}
+        >
+          <Home className={cn("w-4 h-4", currentView === 'dashboard' ? "text-blue-500" : "")} />
           <span className="text-[10px] font-black uppercase tracking-[0.2em] flex-1 text-left">DASHBOARD</span>
         </button>
       </div>
@@ -113,19 +127,30 @@ export function Sidebar() {
             <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-[0.25em] px-3 mb-3">
               {group.group}
             </h3>
-            {group.items.map((item, idy) => (
-              <button
-                key={idy}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
-                  "text-gray-500 hover:text-gray-200 hover:bg-white/[0.03]"
-                )}
-              >
-                <item.icon className="w-4 h-4 text-gray-500 group-hover:text-blue-400 group-hover:drop-shadow-[0_0_5px_rgba(59,130,246,0.5)] transition-colors" />
-                <span className="flex-1 text-left whitespace-nowrap">{item.label}</span>
-                <ChevronRight className="w-3 h-3 text-gray-700 opacity-50 group-hover:opacity-100 transition-opacity" />
-              </button>
-            ))}
+            {group.items.map((item, idy) => {
+              const isSettings = item.label === "Settings";
+              const isActive = (isSettings && currentView === 'settings');
+              
+              return (
+                <button
+                  key={idy}
+                  onClick={() => isSettings ? onViewChange('settings') : null}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-300 group",
+                    isActive 
+                      ? "text-blue-400 bg-blue-500/10 border border-blue-500/20" 
+                      : "text-gray-500 hover:text-gray-200 hover:bg-white/[0.03] border border-transparent"
+                  )}
+                >
+                  <item.icon className={cn(
+                    "w-4 h-4 transition-colors",
+                    isActive ? "text-blue-400 drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]" : "text-gray-500 group-hover:text-blue-400"
+                  )} />
+                  <span className="flex-1 text-left whitespace-nowrap">{item.label}</span>
+                  <ChevronRight className="w-3 h-3 text-gray-700 opacity-50 group-hover:opacity-100 transition-opacity" />
+                </button>
+              );
+            })}
           </div>
         ))}
       </nav>

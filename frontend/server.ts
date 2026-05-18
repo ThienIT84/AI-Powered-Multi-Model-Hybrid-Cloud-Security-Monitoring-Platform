@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import os from "os";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
@@ -110,8 +111,26 @@ async function startServer() {
     });
   }
 
+  const getLocalIpAddress = () => {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      const ifaceList = interfaces[name];
+      if (!ifaceList) continue;
+
+      for (const iface of ifaceList) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+    return '127.0.0.1';
+  };
+
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    const localIp = getLocalIpAddress();
+    console.log(`\n  ✓ Server running on:`);
+    console.log(`    Local:   http://localhost:${PORT}/`);
+    console.log(`    Network: http://${localIp}:${PORT}/\n`);
   });
 }
 

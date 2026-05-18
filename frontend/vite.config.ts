@@ -19,7 +19,6 @@ export default defineConfig(({mode}) => {
       // HMR configuration for proper WebSocket HMR over localhost
       hmr: process.env.DISABLE_HMR === 'true' ? false : {
         host: 'localhost',
-        port: 5173,
         protocol: 'ws',
       },
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.

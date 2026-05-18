@@ -49,6 +49,7 @@ export interface Alert {
 
 export interface TrafficData {
   timestamp: string;
+  formattedTime: string;
   flows: number;
   anomalies: number;
   inbound: number;
