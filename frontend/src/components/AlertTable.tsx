@@ -95,9 +95,9 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                       </td>
                       <td className="px-5 py-2.5">
                         <div className="flex items-center gap-2">
-                           <span className={cn("text-[10px] font-mono font-bold tracking-tight", isSelected ? "text-white dark:text-white light:text-gray-900" : "text-gray-300 dark:text-gray-300 light:text-gray-700")}>{alert.sourceIp}</span>
+                          <span className={cn("text-[10px] font-mono font-bold tracking-tight", isSelected ? "text-white dark:text-white light:text-gray-900" : "text-gray-300 dark:text-gray-300 light:text-gray-700")}>{alert.sourceIp}</span>
                            <span className="text-gray-600 text-[10px]">→</span>
-                           <span className="text-[10px] font-mono text-gray-400 dark:text-gray-400 light:text-gray-600 font-bold tracking-tight">{alert.destIp}</span>
+                           <span className="text-[10px] font-mono text-gray-400 dark:text-gray-400 light:text-gray-600 font-bold tracking-tight">{alert.destinationIp}:{alert.destinationPort}</span>
                         </div>
                       </td>
                       <td className="px-5 py-2.5">
@@ -105,24 +105,24 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                       </td>
                       <td className="px-5 py-2.5">
                          <div className="flex items-center gap-2 max-w-[120px]">
-                            <span className={cn("text-[10px] font-black font-mono w-8", isSelected ? "text-red-400" : "text-gray-100 dark:text-gray-100 light:text-gray-900")}>{alert.confidence}</span>
+                            <span className={cn("text-[10px] font-black font-mono w-8", isSelected ? "text-red-400" : "text-gray-100 dark:text-gray-100 light:text-gray-900")}>{Math.round(alert.confidenceScore * 100)}%</span>
                             <div className="flex-1 h-1 bg-white/5 dark:bg-white/5 light:bg-gray-200 rounded-full overflow-hidden">
                                <div 
-                                 className={cn("h-full", parseFloat(alert.confidence) > 0.9 ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "bg-orange-500")} 
-                                 style={{ width: `${parseFloat(alert.confidence) * 100}%` }} 
+                                 className={cn("h-full", alert.confidenceScore > 0.9 ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "bg-orange-500")} 
+                                 style={{ width: `${alert.confidenceScore * 100}%` }} 
                                />
                             </div>
                          </div>
                       </td>
                       <td className="px-5 py-2.5">
-                        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-400 light:text-gray-500 italic">AI Model (NLP-SQLi)</span>
+                        <span className="text-[9px] font-bold text-gray-400 dark:text-gray-400 light:text-gray-500 italic">{alert.detectedBy.join(" + ") || "Unknown"}</span>
                       </td>
                       <td className="px-5 py-2.5">
                         <span className={cn(
                           "text-[9px] font-black bg-red-900/10 border px-2 py-0.5 rounded tracking-widest leading-none",
                           isSelected ? "text-red-400 border-red-500/30" : "text-red-500 border-red-900/20"
                         )}>
-                          T1190
+                          {alert.mitre.techniqueId}
                         </span>
                       </td>
                     </motion.tr>
@@ -135,7 +135,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
       </div>
       
       <div className="p-3 border-t border-white/5 dark:border-white/5 light:border-gray-100 flex items-center justify-between text-[8px] font-black text-gray-500 uppercase tracking-widest">
-         <span>Showing 1 to 8 of 1,247 events</span>
+         <span>Showing 1 to {Math.min(alerts.length, 8)} of {alerts.length} events</span>
          <div className="flex items-center gap-1">
             <button className="px-1.5 py-1 hover:text-white dark:hover:text-white light:hover:text-gray-900 transition-colors">{'<'}</button>
             <button className="w-5 h-5 flex items-center justify-center bg-blue-600 text-white rounded">1</button>

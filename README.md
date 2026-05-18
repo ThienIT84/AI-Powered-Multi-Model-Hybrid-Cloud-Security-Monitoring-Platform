@@ -6,9 +6,17 @@ README này phản ánh hướng phân công đã được nhóm cập nhật: d
 
 ## Trạng Thái Hiện Tại
 
-Repo hiện đang ở giai đoạn **thiết kế/đề cương dự án**. Source code backend, frontend, AI engine và simulator sẽ được bổ sung trong các giai đoạn tiếp theo.
+Repo hiện đang ở giai đoạn **thiết kế/đề cương dự án**. Source code backend, AI engine và simulator sẽ được bổ sung trong các giai đoạn tiếp theo; frontend hiện có dashboard mock-first để phục vụ demo UI và chuẩn bị contract tích hợp backend.
 
-Dashboard hiện tại là **AI-generated concept UI** dựa trên mô tả tính năng của hệ thống, chưa phải giao diện đã tích hợp source code thật.
+Dashboard hiện tại là **AI-generated concept UI** dựa trên mô tả tính năng của hệ thống, dùng dữ liệu mock theo contract backend dự kiến và chưa tích hợp backend/AI thật.
+
+Chạy frontend mock dashboard:
+
+```bash
+cd frontend
+pnpm install
+pnpm dev
+```
 
 ## Thành Viên Và Vai Trò Cập Nhật
 

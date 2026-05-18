@@ -61,11 +61,11 @@ export function EventModal({ alert, onClose }: EventModalProps) {
                </div>
                <div className="flex justify-between items-center">
                  <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">DESTINATION IP:</span>
-                 <span className="font-mono text-blue-400 font-bold">{alert.destIp}</span>
+                 <span className="font-mono text-blue-400 font-bold">{alert.destinationIp}</span>
                </div>
                <div className="flex justify-between items-center">
                  <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">SERVICE:</span>
-                 <span className="text-[10px] font-black text-gray-100 bg-white/5 px-2 py-0.5 rounded border border-white/10 tracking-widest">{alert.protocol} ({alert.destPort})</span>
+                 <span className="text-[10px] font-black text-gray-100 bg-white/5 px-2 py-0.5 rounded border border-white/10 tracking-widest">{alert.protocol} ({alert.destinationPort})</span>
                </div>
             </div>
           </div>
@@ -79,7 +79,7 @@ export function EventModal({ alert, onClose }: EventModalProps) {
             <div className="space-y-3 relative pl-4">
                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-white/5 border-l border-dashed border-gray-700" />
                <FlowStep label="Data Source: Zeek Sensor" status="completed" />
-               <FlowStep label="AI1: Feature Extraction" value={`${(parseFloat(alert.aiDecision.ai1) * 100).toFixed(0)}%`} status="active" />
+               <FlowStep label="AI1: Feature Extraction" value={`${Math.round((alert.aiDecision.ai1?.anomalyScore ?? 0) * 100)}%`} status="active" />
                <FlowStep label="AI2A: Attack Classifier" value={alert.attackType} status="completed" />
                <FlowStep label="AI2B: Threat Intel Sync" value="MATCHED" status="completed" />
                <FlowStep label="Fusion Layer: Final Choice" value="CONFIRMED" status="confirmed" />
@@ -93,8 +93,8 @@ export function EventModal({ alert, onClose }: EventModalProps) {
               <h2 className="text-[11px] font-black text-gray-100 uppercase tracking-widest">MITRE ATT&CK MAPPING</h2>
             </div>
             <div className="bg-orange-500/5 p-4 rounded-xl border border-orange-500/20">
-               <div className="font-black text-xs text-orange-500 mb-1 tracking-tighter">T1190 - Exploit Public-Facing Application</div>
-               <div className="text-[10px] text-gray-500 font-medium leading-relaxed">Adversaries may attempt to exploit a software vulnerability in an Internet-facing application or system to achieve code execution or gain initial access.</div>
+               <div className="font-black text-xs text-orange-500 mb-1 tracking-tighter">{alert.mitre.techniqueId} - {alert.mitre.techniqueName}</div>
+               <div className="text-[10px] text-gray-500 font-medium leading-relaxed">{alert.mitre.tactic ?? "Mapped MITRE ATT&CK technique for this final Fusion alert."}</div>
             </div>
           </div>
         </div>

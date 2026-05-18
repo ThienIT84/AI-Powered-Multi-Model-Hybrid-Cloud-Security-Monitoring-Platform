@@ -4,6 +4,7 @@ import os from "os";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
+import { generateMockAlertDTO, generateMockTrafficPoint } from "./src/mocks/securityData";
 
 const PORT = 3000;
 
@@ -12,52 +13,10 @@ async function startServer() {
   const server = createServer(app);
   const wss = new WebSocketServer({ server });
 
-  // Mock Data Generator for real-time alerts
-  const attackTypes = ["DDoS", "SQL Injection", "XSS", "Brute Force", "Port Scan", "Unauthorized Access"];
-  const severities = ["Critical", "High", "Medium", "Low"];
-  const protocols = ["HTTP", "HTTPS", "TCP", "UDP", "SSH", "SMB"];
-  const statuses = ["blocking", "investigating", "monitoring", "resolved"];
-
   let alertCounter = 0;
   function generateAlert() {
     alertCounter++;
-    const uniqueId = `THR-${110 + (alertCounter % 900)}`;
-    const sourceIp = `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-    const destIp = "10.0.0.45";
-    const attackType = attackTypes[Math.floor(Math.random() * attackTypes.length)];
-    const severity = severities[Math.floor(Math.random() * severities.length)];
-    const riskScore = Math.floor(Math.random() * 100);
-    const confidence = (0.7 + Math.random() * 0.3).toFixed(2);
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    
-    return {
-      id: uniqueId,
-      timestamp: new Date().toISOString(),
-      sourceIp,
-      destIp,
-      destPort: Math.floor(Math.random() * 65535),
-      attackType,
-      protocol: protocols[Math.floor(Math.random() * protocols.length)],
-      severity,
-      riskScore,
-      confidence,
-      status,
-      zeekData: {
-        duration: (Math.random() * 10).toFixed(2),
-        origBytes: Math.floor(Math.random() * 50000),
-        respBytes: Math.floor(Math.random() * 20000),
-        connState: "SF",
-      },
-      suricataData: {
-        signatureId: `[1:201${Math.floor(Math.random() * 1000)}:2]`,
-        category: "Attempted User Privilege Gain",
-      },
-      aiDecision: {
-        ai1: (0.5 + Math.random() * 0.5).toFixed(2),
-        ai2a: attackType,
-        ai2b: severity,
-      }
-    };
+    return generateMockAlertDTO(alertCounter);
   }
 
   wss.on("connection", (ws) => {
@@ -71,24 +30,9 @@ async function startServer() {
     const interval = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "NEW_ALERT", data: generateAlert() }));
-        
-        // Also send traffic update
-        const inboundBase = Math.floor(Math.random() * 150) + 150;
-        const isAnomalyEvent = Math.random() > 0.85;
-        const inboundValue = isAnomalyEvent ? (Math.floor(Math.random() * 600) + 500) : inboundBase;
-        const isPeak = isAnomalyEvent && inboundValue > 850;
-
         ws.send(JSON.stringify({ 
           type: "TRAFFIC_UPDATE", 
-          data: {
-            timestamp: new Date().toISOString(),
-            flows: Math.floor(Math.random() * 500) + 1200,
-            anomalies: isAnomalyEvent ? 1 : 0,
-            inbound: inboundValue,
-            outbound: Math.floor(Math.random() * 200) + 100,
-            isAnomaly: isAnomalyEvent,
-            isPeak: isPeak
-          }
+          data: generateMockTrafficPoint()
         }));
       }
     }, 2000);
