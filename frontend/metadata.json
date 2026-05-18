@@ -1,0 +1,8 @@
+{
+  "name": "Hybrid SOC Guardian",
+  "description": "AI-Powered Multi-Model Hybrid Cloud Security Monitoring Platform Dashboard with Real-time Zeek, Suricata, and AI Fusion analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
