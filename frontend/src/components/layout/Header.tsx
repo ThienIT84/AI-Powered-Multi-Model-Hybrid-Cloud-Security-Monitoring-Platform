@@ -3,13 +3,42 @@ import {
   Bell,
   Settings,
   Search,
+  Shield,
   Moon,
   Sun
 } from "lucide-react";
-import { Alert } from "../types";
-import { cn } from "../lib/utils";
-import { AlertDropdownPanel } from "./panels/AlertDropdownPanel";
-import { SettingsQuickPanel } from "./panels/SettingsQuickPanel";
+import { cn } from "../../lib/utils";
+
+interface StatusIndicatorProps {
+  label: string;
+  status: string;
+  active?: boolean;
+  warning?: boolean;
+}
+
+function StatusIndicator({ label, status, active, warning }: StatusIndicatorProps) {
+  return (
+    <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/5 transition-colors cursor-default">
+      <div className={cn(
+        "w-1.5 h-1.5 rounded-full ring-2 ring-opacity-20",
+        active ? "bg-green-500 ring-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : 
+        warning ? "bg-yellow-500 ring-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)]" : 
+        "bg-gray-600 ring-gray-600"
+      )} />
+      <div className="flex flex-col">
+        <span className="text-[8px] font-black text-gray-500 uppercase tracking-widest leading-none">{label}</span>
+        <span className={cn(
+          "text-[9px] font-bold uppercase tracking-tighter leading-tight",
+          active ? "text-green-500" : warning ? "text-yellow-500" : "text-gray-400"
+        )}>{status}</span>
+      </div>
+    </div>
+  );
+}
+
+import { Alert } from "../../types";
+import { AlertDropdownPanel } from "../alerts/AlertDropdownPanel";
+import { SettingsQuickPanel } from "../panels/SettingsQuickPanel";
 
 interface HeaderProps {
   isConnected: boolean;
@@ -17,8 +46,8 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   isDarkMode: boolean;
   onThemeToggle: () => void;
-  currentView: "dashboard" | "settings" | "alerts";
-  onViewChange: (view: "dashboard" | "settings" | "alerts") => void;
+  currentView: "dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings";
+  onViewChange: (view: "dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings") => void;
   alerts: Alert[];
   onSelectAlert: (alert: Alert) => void;
   isAlertsOpen: boolean;

@@ -28,7 +28,7 @@ import {
   Shield,
   LayoutDashboard
 } from "lucide-react";
-import { cn } from "../lib/utils";
+import { cn } from "../../lib/utils";
 
 const menuItems = [
   { group: "MONITORING", items: [
@@ -68,8 +68,8 @@ export function Sidebar({
   currentView, 
   onViewChange 
 }: { 
-  currentView: "dashboard" | "settings" | "alerts"; 
-  onViewChange: (view: "dashboard" | "settings" | "alerts") => void;
+  currentView: "dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings"; 
+  onViewChange: (view: "dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings") => void;
 }) {
   return (
     <aside className="w-[220px] h-full bg-card border-r border-border flex flex-col overflow-y-auto custom-scrollbar select-none transition-colors duration-300">
@@ -128,16 +128,26 @@ export function Sidebar({
               {group.group}
             </h3>
             {group.items.map((item, idy) => {
-              const isSettings = item.label === "Settings";
               const isAlerts = item.label === "Alerts";
-              const isActive = (isSettings && currentView === 'settings') || (isAlerts && currentView === 'alerts');
+              const isIntegrations = item.label === "Integrations";
+              const isPlaybooks = item.label === "Playbooks";
+              const isReports = item.label === "Reports";
+              const isSettings = item.label === "Settings";
+              const isActive = (isAlerts && currentView === 'alerts') ||
+                               (isIntegrations && currentView === 'integrations') ||
+                               (isPlaybooks && currentView === 'playbooks') ||
+                               (isReports && currentView === 'reports') ||
+                               (isSettings && currentView === 'settings');
               
               return (
                 <button
                   key={idy}
                   onClick={() => {
-                    if (isSettings) onViewChange('settings');
-                    else if (isAlerts) onViewChange('alerts');
+                    if (isAlerts) onViewChange('alerts');
+                    else if (isIntegrations) onViewChange('integrations');
+                    else if (isPlaybooks) onViewChange('playbooks');
+                    else if (isReports) onViewChange('reports');
+                    else if (isSettings) onViewChange('settings');
                   }}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-200 group",

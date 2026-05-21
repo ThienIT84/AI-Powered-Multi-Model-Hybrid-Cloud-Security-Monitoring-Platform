@@ -1,8 +1,8 @@
 import React from "react";
 import { ShieldAlert, X, Copy, ExternalLink, Zap, Terminal, Globe, Search, Lock, UserX, Cpu, Eye } from "lucide-react";
-import { Alert, Severity } from "../types";
-import { cn } from "../lib/utils";
-import { useAttackTheme } from "../hooks/useAttackTheme";
+import { Alert, Severity } from "../../types";
+import { cn } from "../../lib/utils";
+import { useAttackTheme } from "../../hooks/useAttackTheme";
 
 function getAttackIcon(name: string) {
   switch (name) {

@@ -5,8 +5,8 @@ import {
   Bug,
   Crosshair
 } from "lucide-react";
-import { cn } from "../lib/utils";
-import { DashboardSummary } from "../types";
+import { cn } from "../../lib/utils";
+import { DashboardSummary } from "../../types";
 import { 
   LineChart, 
   Line, 

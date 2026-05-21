@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { appConfig } from "./config";
 import { mapBackendAlertToAlert } from "./lib/alertMapper";
-import { Alert, BackendAlertDTO, TrafficData } from "./types";
+import { Alert, BackendAlertDTO, TrafficData } from "../types";
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);

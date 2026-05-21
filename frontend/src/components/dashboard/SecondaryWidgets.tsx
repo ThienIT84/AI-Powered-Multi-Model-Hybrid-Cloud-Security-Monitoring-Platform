@@ -14,7 +14,7 @@ import {
   PolarRadiusAxis,
   Cell
 } from "recharts";
-import { cn } from "../lib/utils";
+import { cn } from "../../lib/utils";
 import { Database, Server, Cloud, Cpu, Activity, ShieldCheck, AlertTriangle, Zap } from "lucide-react";
 
 export function SecondaryWidgets() {

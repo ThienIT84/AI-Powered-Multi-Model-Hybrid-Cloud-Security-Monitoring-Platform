@@ -4,7 +4,7 @@ import os from "os";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
-import { generateMockAlertDTO, generateMockTrafficPoint } from "./src/mocks/securityData";
+import { generateMockAlertDTO, generateMockTrafficPoint } from "./src/mocks/sercurityData";
 
 const PORT = 3000;
 

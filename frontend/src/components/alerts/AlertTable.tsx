@@ -1,7 +1,13 @@
 import React from "react";
-import { ShieldX } from "lucide-react";
-import { Alert, Severity, AlertStatus } from "../types";
-import { cn } from "../lib/utils";
+import { 
+  ShieldAlert, 
+  ShieldX, 
+  Eye, 
+  Filter, 
+  Download
+} from "lucide-react";
+import { Alert, Severity, AlertStatus } from "../../types";
+import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 
 interface AlertTableProps {
@@ -14,13 +20,17 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col mb-4 shadow-sm transition-all duration-300">
       <div className="p-3 border-b border-border flex items-center justify-between bg-secondary/50">
-        <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em]">REAL-TIME AI SECURITY EVENTS</h3>
-        <div className="flex items-center gap-2 bg-background border border-border px-2 py-0.5 rounded">
-          <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Auto Refresh</span>
-          <div className="w-6 h-3 bg-green-500/10 border border-green-500/30 rounded-full relative">
-            <div className="absolute right-0.5 top-0.5 w-2 h-2 bg-green-500 rounded-full" />
-          </div>
-          <span className="text-[8px] font-black text-green-500 uppercase">ON</span>
+        <div className="flex items-center gap-2">
+           <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em]">REAL-TIME AI SECURITY EVENTS</h3>
+        </div>
+        <div className="flex items-center gap-4">
+           <div className="flex items-center gap-2 bg-background border border-border px-2 py-0.5 rounded">
+              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Auto Refresh</span>
+              <div className="w-6 h-3 bg-green-500/10 border border-green-500/30 rounded-full relative">
+                 <div className="absolute right-0.5 top-0.5 w-2 h-2 bg-green-500 rounded-full" />
+              </div>
+              <span className="text-[8px] font-black text-green-500 uppercase">ON</span>
+           </div>
         </div>
       </div>
 

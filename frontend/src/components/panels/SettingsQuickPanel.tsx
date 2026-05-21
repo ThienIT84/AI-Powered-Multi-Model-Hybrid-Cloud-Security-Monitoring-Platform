@@ -1,5 +1,5 @@
 import React from "react";
-import { FloatingPanel } from "./FloatingPanel";
+import { FloatingPanel } from "../common/FloatingPanel";
 import { cn } from "../../lib/utils";
 import { Sun, Moon, Palette, Sliders, Settings as SettingsIcon, Bell } from "lucide-react";
 import { useSettingsStore } from "../../store/useSettingsStore";
