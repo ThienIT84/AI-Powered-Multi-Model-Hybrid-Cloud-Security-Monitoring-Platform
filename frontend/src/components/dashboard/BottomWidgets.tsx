@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "../lib/utils";
+import { cn } from "../../lib/utils";
 import {
   BarChart,
   Bar,
@@ -10,8 +10,8 @@ import {
   Cell
 } from "recharts";
 import { ShieldCheck, Brain, Database, Cloud } from "lucide-react";
-import { DataSourceHealth, ModelStatus } from "../types";
-import { useAttackTheme } from "../hooks/useAttackTheme";
+import { DataSourceHealth, ModelStatus } from "../../types";
+import { useAttackTheme } from "../../hooks/useAttackTheme";
 
 interface BottomWidgetsProps {
   modelStatus: ModelStatus[];

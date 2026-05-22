@@ -1,5 +1,5 @@
 import React from "react";
-import { FloatingPanel } from "./FloatingPanel";
+import { FloatingPanel } from "../common/FloatingPanel";
 import { Alert, Severity } from "../../types";
 import { cn } from "../../lib/utils";
 import { ShieldAlert, Clock, ExternalLink, CheckCheck } from "lucide-react";

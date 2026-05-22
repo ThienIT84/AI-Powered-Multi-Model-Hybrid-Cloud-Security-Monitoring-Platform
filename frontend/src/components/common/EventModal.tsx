@@ -1,5 +1,5 @@
-import { Alert } from "../types";
-import { cn } from "../lib/utils";
+import { Alert } from "../../types";
+import { cn } from "../../lib/utils";
 import { X, ShieldAlert, ExternalLink, Brain, ShieldX } from "lucide-react";
 import { motion } from "motion/react";
 

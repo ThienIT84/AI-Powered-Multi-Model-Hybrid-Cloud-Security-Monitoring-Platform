@@ -5,27 +5,30 @@
 
 import { useState, useEffect } from "react";
 import React from "react";
-import { Sidebar } from "./components/Sidebar";
-import { Header } from "./components/Header";
-import { KPIOverview } from "./components/KPIOverview";
-import { AnalyticsZone } from "./components/AnalyticsZone";
-import { AlertTable } from "./components/AlertTable";
-import { BottomWidgets } from "./components/BottomWidgets";
-import { IncidentDetail } from "./components/IncidentDetail";
-import { SettingsPage } from "./pages/SettingsPage";
+import { Sidebar } from "./components/layout/Sidebar";
+import { Header } from "./components/layout/Header";
+import { KPIOverview } from "./components/dashboard/KPIOverview";
+import { AnalyticsZone } from "./components/dashboard/AnalyticsZone";
+import { AlertTable } from "./components/alerts/AlertTable";
+import { BottomWidgets } from "./components/dashboard/BottomWidgets";
+import { IncidentDetail } from "./components/alerts/IncidentDetail";
 import { AlertsPage } from "./pages/AlertsPage";
+import {IntegrationsPage} from "./pages/IntegrationsPage";
+import { PlaybooksPage } from "./pages/PlaybooksPage";
+import { ReportsPage } from "./pages/ReportsPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { useSocket } from "./useSocket";
 import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "./lib/utils";
-import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/securityData";
+import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/sercurityData";
 
 export default function App() {
   const { isConnected, alerts, traffic, error, dataMode } = useSocket();
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState<"dashboard" | "settings" | "alerts">("dashboard");
+  const [currentView, setCurrentView] = useState<"dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings">("dashboard");
   const [isDarkMode, setIsDarkMode] = useState(true);
   
   const { 
@@ -140,6 +143,12 @@ export default function App() {
               </motion.div>
             ) : currentView === "alerts" ? (
               <AlertsPage key="alerts" />
+            ) : currentView === "integrations" ? (
+              <IntegrationsPage key="integrations" />
+            ) : currentView === "playbooks" ? (
+              <PlaybooksPage key="playbooks" />
+            ) : currentView === "reports" ? (
+              <ReportsPage key="reports" />
             ) : (
               <SettingsPage key="settings" />
             )}

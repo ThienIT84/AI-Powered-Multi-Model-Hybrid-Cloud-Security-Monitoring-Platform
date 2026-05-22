@@ -13,12 +13,12 @@ import {
   ReferenceDot,
   ReferenceLine
 } from "recharts";
-import { TrafficData, Alert } from "../types";
-import { cn } from "../lib/utils";
+import { TrafficData, Alert } from "../../types";
+import { cn } from "../../lib/utils";
 import { Brain, ShieldAlert, Activity, ChevronUp, Maximize2, AlertTriangle, Zap, Search, Eye, Lock, Terminal, Globe, UserX, Cpu, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
-import { getCachedAttackTheme } from "../utils/attackColors";
+import { getCachedAttackTheme } from "../../utils/attackColors";
 
 interface AnalyticsZoneProps {
   traffic: TrafficData[];
@@ -76,7 +76,7 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
     }
     
     // Initial mock data
-    const data = [];
+    const data: TrafficData[] = [];
     const now = new Date();
     for (let i = 0; i <= 60; i++) {
       const time = new Date(now.getTime() - (60 - i) * 2000);
@@ -84,6 +84,9 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
         timestamp: time.toISOString(),
         formattedTime: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
         inbound: 150 + Math.random() * 100,
+        outbound: 50 + Math.random() * 50,
+        flows: 1000 + Math.random() * 500,
+        anomalies: 0,
         isAnomaly: false,
         isPeak: false
       });
@@ -230,162 +233,201 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
       {/* Attacks By Type */}
       <motion.div 
         layout
-        className="xl:col-span-4 bg-card border border-border rounded-xl p-4 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 group"
+        className="xl:col-span-4 bg-card border border-border rounded-xl p-6 flex flex-col shadow-sm relative overflow-hidden transition-all duration-300 group min-h-[420px]"
       >
-        {/* Color accents for the card */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500 opacity-50 group-hover:opacity-100 transition-opacity" />
+        {/* Decorative corner accent */}
+        <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 blur-3xl pointer-events-none" />
         
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-6 relative z-10">
            <div className="flex flex-col">
-              <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em]">ATTACKS BY TYPE</h3>
-              <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">Threat Distribution</span>
+              <h3 className="text-[11px] font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                <Brain className="w-3 h-3 text-cyan-500" />
+                ATTACKS BY TYPE
+              </h3>
+              <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mt-1 opacity-70">Heuristic Threat Distribution</span>
            </div>
-           <div className="p-2 bg-cyan-500/10 rounded-lg">
-              <Brain className="w-3 h-3 text-cyan-500 animate-pulse" />
+           <div className="flex items-center gap-1.5 bg-muted/30 px-2 py-1 rounded border border-border/50">
+              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Live Engine</span>
            </div>
         </div>
         
-        <div className="flex-1 relative flex items-center justify-center min-h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={filteredThreatData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={65}
-                  outerRadius={90}
-                  paddingAngle={8}
-                  dataKey="value"
-                  stroke="none"
-                  animationDuration={1000}
-                  animationBegin={0}
-                  isAnimationActive={true}
-                >
-                   {filteredThreatData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.theme.primary} 
-                      stroke={isDarkMode ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"}
-                      strokeWidth={1}
-                      fillOpacity={0.85}
-                      className="hover:fill-opacity-100 transition-all cursor-pointer outline-none"
-                      style={{ 
-                        filter: `drop-shadow(0 0 12px ${entry.theme.glow})`,
-                        transition: 'all 0.3s ease'
-                      }}
-                    />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-               <AnimatePresence mode="wait">
-                 <motion.span 
-                   key={totalVisible}
-                   initial={{ opacity: 0, scale: 0.8, y: 5 }}
-                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                   exit={{ opacity: 0, scale: 1.2, y: -5 }}
-                   transition={{ duration: 0.3, ease: "easeOut" }}
-                   className="text-4xl font-black text-foreground leading-none tracking-tighter drop-shadow-sm"
-                 >
-                   {totalVisible}
-                 </motion.span>
-               </AnimatePresence>
-               <span className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.3em] mt-2 opacity-80">Total Signals</span>
+        <div className="flex-1 flex flex-col lg:flex-row items-center gap-8 relative z-10 overflow-hidden">
+            {/* Left Column: Chart */}
+            <div className="w-full lg:w-[45%] flex flex-col items-center justify-center relative">
+                <div className="w-full aspect-square max-w-[200px] lg:max-w-none lg:h-[240px] relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={filteredThreatData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="65%"
+                          outerRadius="90%"
+                          paddingAngle={6}
+                          dataKey="value"
+                          stroke="none"
+                          animationDuration={1500}
+                          animationBegin={0}
+                          isAnimationActive={true}
+                        >
+                           {filteredThreatData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.theme.primary} 
+                              stroke={isDarkMode ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"}
+                              strokeWidth={1}
+                              fillOpacity={0.85}
+                              className="hover:fill-opacity-100 transition-all cursor-pointer outline-none"
+                              style={{ 
+                                filter: `drop-shadow(0 0 15px ${entry.theme.glow})`,
+                                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                              }}
+                            />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    
+                    {/* Centered Total Count */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                       <AnimatePresence mode="wait">
+                         <motion.div
+                           key={totalVisible}
+                           initial={{ opacity: 0, scale: 0.5, filter: "blur(4px)" }}
+                           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                           exit={{ opacity: 0, scale: 1.5, filter: "blur(10px)" }}
+                           className="flex flex-col items-center"
+                         >
+                            <span className="text-4xl font-black text-foreground leading-none tracking-tighter drop-shadow-sm">
+                              {totalVisible}
+                            </span>
+                            <span className="text-[8px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-2 opacity-60">Signals</span>
+                         </motion.div>
+                       </AnimatePresence>
+                    </div>
+                </div>
+                
+                {/* Mini Stats Legend underneath on small screens, integrated into list on large */}
+                <div className="flex lg:hidden flex-wrap justify-center gap-3 mt-4">
+                   {filteredThreatData.slice(0, 3).map((item, i) => (
+                     <div key={i} className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.theme.primary }} />
+                        <span className="text-[8px] font-black text-muted-foreground uppercase">{item.name}</span>
+                     </div>
+                   ))}
+                </div>
+            </div>
+
+            {/* Right Column: Detailed List */}
+            <div className="w-full lg:w-[55%] h-full flex flex-col">
+                <div className="flex items-center justify-between px-2 mb-3">
+                   <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em]">Threat Classification</span>
+                   <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em]">Freq / Vol</span>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2.5 max-h-[280px]">
+                   {threatData.map((item, idx) => {
+                     const AttackIcon = getAttackIcon(item.name);
+                     return (
+                       <motion.div 
+                          key={item.name} 
+                          layout
+                          onClick={() => toggleType(item.name)}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          whileHover={{ x: 4 }}
+                          className={cn(
+                            "flex flex-col p-3 rounded-xl border transition-all cursor-pointer relative overflow-hidden group/item",
+                            item.disabled 
+                              ? "opacity-30 grayscale border-transparent bg-muted/10" 
+                              : "bg-muted/10 border-border/50 hover:bg-muted/20 hover:border-border hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+                          )}
+                          style={{ 
+                            borderLeftColor: !item.disabled ? item.theme.primary : undefined,
+                            borderLeftWidth: !item.disabled ? '4px' : '1px'
+                          }}
+                        >
+                           {!item.disabled && (
+                             <div 
+                               className="absolute inset-0 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none" 
+                               style={{ background: item.theme.gradient }} 
+                             />
+                           )}
+                           
+                           {/* Row 1: Header & Counts */}
+                           <div className="flex items-center justify-between relative z-10 mb-2">
+                              <div className="flex items-center gap-3">
+                                 <div className="p-1.5 rounded-lg bg-background border border-border/50 text-muted-foreground group-hover/item:text-foreground transition-all shadow-sm" 
+                                      style={{ 
+                                        color: !item.disabled ? item.theme.primary : undefined,
+                                        boxShadow: !item.disabled ? `0 0 10px ${item.theme.glow}` : 'none'
+                                      }}>
+                                    <AttackIcon size={12} />
+                                 </div>
+                                 <div className="flex flex-col">
+                                    <span className="text-[10px] font-black text-muted-foreground group-hover/item:text-foreground uppercase tracking-widest transition-colors leading-none">
+                                      {item.name}
+                                    </span>
+                                    <span className="text-[8px] font-bold text-muted-foreground/60 uppercase tracking-tighter mt-1 leading-none">
+                                      {getSeverityLabel(item.name)}
+                                    </span>
+                                 </div>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                 <span className="text-[11px] font-mono font-black text-foreground drop-shadow-sm">
+                                   {item.value}
+                                 </span>
+                                 <div className="flex items-center gap-1">
+                                    <TrendingUp size={8} className="text-emerald-500" />
+                                    <span className="text-[7px] text-emerald-500 font-black uppercase">+{(item.value * 0.2).toFixed(0)}</span>
+                                 </div>
+                              </div>
+                           </div>
+
+                           {/* Row 2: Progress & Percentage */}
+                           {!item.disabled && (
+                             <div className="flex items-center gap-3 relative z-10">
+                                <div className="h-1 flex-1 bg-muted/40 rounded-full overflow-hidden border border-border/10">
+                                   <motion.div 
+                                     initial={{ width: 0 }}
+                                     animate={{ width: item.percentage }}
+                                     transition={{ duration: 1.5, ease: "anticipate" }}
+                                     className="h-full rounded-full" 
+                                     style={{ 
+                                       backgroundColor: item.theme.primary, 
+                                       boxShadow: `0 0 8px ${item.theme.glow}` 
+                                     }} 
+                                   />
+                                </div>
+                                <span className="text-[10px] font-mono font-black min-w-[32px] text-right" style={{ color: item.theme.primary }}>
+                                  {item.percentage}
+                                </span>
+                             </div>
+                           )}
+                        </motion.div>
+                     );
+                   })}
+                </div>
             </div>
         </div>
-
-        <div className="grid grid-cols-1 gap-2 mt-4 max-h-[140px] overflow-y-auto custom-scrollbar pr-1">
-           {threatData.map((item, idx) => {
-             const AttackIcon = getAttackIcon(item.name);
-             return (
-               <motion.div 
-                  key={idx} 
-                  layout
-                  onClick={() => toggleType(item.name)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  whileHover={{ scale: 1.01, x: 2 }}
-                  className={cn(
-                    "flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer relative overflow-hidden",
-                    item.disabled ? "opacity-30 grayscale border-transparent bg-muted/10 shadow-none" : "bg-muted/20 border-border group/item shadow-sm hover:shadow-md"
-                  )}
-                  style={{ 
-                    borderLeftColor: !item.disabled ? item.theme.primary : undefined,
-                    borderLeftWidth: !item.disabled ? '4px' : '1px'
-                  }}
-                >
-                   {!item.disabled && (
-                     <div 
-                       className="absolute inset-0 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none" 
-                       style={{ background: item.theme.gradient }} 
-                     />
-                   )}
-                   <div className="flex flex-col flex-1 gap-1.5 relative z-10">
-                      <div className="flex items-center gap-3">
-                         <div className="p-1.5 rounded-lg bg-background/50 border border-border/50 text-muted-foreground group-hover/item:text-foreground transition-colors shadow-sm" 
-                              style={{ 
-                                color: !item.disabled ? item.theme.primary : undefined,
-                                boxShadow: !item.disabled ? `0 0 10px ${item.theme.glow}` : 'none'
-                              }}>
-                            <AttackIcon size={14} />
-                         </div>
-                         <span className="text-[10px] font-black text-muted-foreground group-hover/item:text-foreground uppercase tracking-widest transition-colors">{item.name}</span>
-                      </div>
-                      {!item.disabled && (
-                        <div className="h-1 w-full bg-muted/40 rounded-full overflow-hidden">
-                           <motion.div 
-                             initial={{ width: 0 }}
-                             animate={{ width: item.percentage }}
-                             transition={{ duration: 1.2, ease: "anticipate" }}
-                             className="h-full rounded-full" 
-                             style={{ 
-                               backgroundColor: item.theme.primary, 
-                               boxShadow: `0 0 8px ${item.theme.glow}` 
-                             }} 
-                           />
-                        </div>
-                      )}
-                   </div>
-                   <div className="flex items-center gap-4 relative z-10">
-                      <AnimatePresence mode="wait">
-                        {!item.disabled && (
-                          <motion.span 
-                            key={item.percentage}
-                            initial={{ opacity: 0, x: 5 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -5 }}
-                            className="text-[10px] font-black tracking-tighter"
-                            style={{ color: item.theme.primary }}
-                          >
-                            {item.percentage}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                       <div className="flex items-center gap-3">
-                          <span className={cn(
-                            "text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm border",
-                          )} style={{ 
-                            backgroundColor: item.theme.muted, 
-                            color: item.theme.text, 
-                            borderColor: item.theme.border 
-                          }}>
-                             {getSeverityLabel(item.name)}
-                          </span>
-                          <div className="min-w-[35px] flex justify-end">
-                             <motion.span 
-                               layout
-                               className="text-[11px] font-mono font-black text-muted-foreground/80 group-hover/item:text-foreground transition-colors"
-                             >
-                               {item.value}
-                             </motion.span>
-                          </div>
-                       </div>
-                   </div>
-                </motion.div>
-             );
-           })}
+        
+        {/* Bottom Legend / Footer */}
+        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between relative z-10">
+           <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                 <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                 <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest">Critical</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                 <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                 <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest">High</span>
+              </div>
+           </div>
+           <button className="text-[8px] font-black text-cyan-500 uppercase tracking-widest hover:underline transition-all">
+             Full Analysis report
+           </button>
         </div>
       </motion.div>
     </div>
