@@ -13,6 +13,7 @@ import { AlertTable } from "./components/alerts/AlertTable";
 import { BottomWidgets } from "./components/dashboard/BottomWidgets";
 import { IncidentDetail } from "./components/alerts/IncidentDetail";
 import { AlertsPage } from "./pages/AlertsPage";
+import { NetworkMonitoringPage } from "./pages/NetworkMonitoringPage";
 import {IntegrationsPage} from "./pages/IntegrationsPage";
 import { PlaybooksPage } from "./pages/PlaybooksPage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -22,13 +23,13 @@ import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "./lib/utils";
-import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/sercurityData";
+import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/securityData";
 
 export default function App() {
   const { isConnected, alerts, traffic, error, dataMode } = useSocket();
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState<"dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings">("dashboard");
+  const [currentView, setCurrentView] = useState<"dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings">("dashboard");
   const [isDarkMode, setIsDarkMode] = useState(true);
   
   const { 
@@ -99,21 +100,23 @@ export default function App() {
               >
                 <KPIOverview summary={mockSummary} />
                 
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-                  <motion.div 
-                    layout
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
-                    className={cn(
-                      "space-y-4",
-                      selectedAlert ? "xl:col-span-9" : "xl:col-span-12"
-                    )}
-                  >
                     <AnalyticsZone 
                       traffic={traffic} 
                       alerts={alerts} 
                       onSelectAlert={setSelectedAlert}
                       isDarkMode={isDarkMode}
                     />
+
+                    <div className="flex flex-col xl:flex-row gap-4 w-full items-start">
+                      <motion.div 
+                        layout="size"
+                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                        className={cn(
+                          "space-y-4 grow min-w-0 w-full transition-all duration-300",
+                          selectedAlert ? "xl:max-w-[75%] xl:w-[75%]" : "xl:max-w-full xl:w-full"
+                        )}
+                      >
+                        
                     <AlertTable 
                       alerts={filteredAlerts} 
                       onSelectAlert={setSelectedAlert} 
@@ -124,11 +127,11 @@ export default function App() {
                   <AnimatePresence mode="popLayout">
                     {selectedAlert && (
                       <motion.div 
-                        initial={{ opacity: 0, x: 20, width: 0 }}
-                        animate={{ opacity: 1, x: 0, width: "auto" }}
-                        exit={{ opacity: 0, x: 10, width: 0 }}
-                        transition={{ type: "spring", damping: 20, stiffness: 100 }}
-                        className="xl:col-span-3 h-full overflow-hidden"
+                        initial={{ opacity: 0, x: 24, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: "25%" }}
+                        exit={{ opacity: 0, x: 24, width: 0 }}
+                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                        className="w-full xl:w-[25%] shrink-0 h-full overflow-hidden"
                       >
                         <IncidentDetail 
                           alert={selectedAlert} 
@@ -143,6 +146,8 @@ export default function App() {
               </motion.div>
             ) : currentView === "alerts" ? (
               <AlertsPage key="alerts" />
+            ) : currentView === "network" ? (
+              <NetworkMonitoringPage key="network" />
             ) : currentView === "integrations" ? (
               <IntegrationsPage key="integrations" />
             ) : currentView === "playbooks" ? (

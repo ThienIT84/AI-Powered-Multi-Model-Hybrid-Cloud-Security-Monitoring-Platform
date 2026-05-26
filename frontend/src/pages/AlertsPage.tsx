@@ -104,7 +104,7 @@ export function AlertsPage() {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-150px">
         <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-[10px] font-black text-foreground uppercase tracking-widest">

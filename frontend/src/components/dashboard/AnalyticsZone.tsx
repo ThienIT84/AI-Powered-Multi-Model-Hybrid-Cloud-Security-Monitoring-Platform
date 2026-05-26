@@ -97,7 +97,7 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
   const peaks = chartData.filter(d => d.isPeak);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-4 h-[420px]">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-4 h-105">
       {/* Main Traffic Chart */}
       <motion.div 
         layout
@@ -126,7 +126,7 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
            </div>
         </div>
 
-        <div className="h-[280px] w-full">
+        <div className="h-70 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={chartData} margin={{ top: 20, right: 10, left: -25, bottom: 0 }}>
               <defs>
@@ -233,7 +233,7 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
       {/* Attacks By Type */}
       <motion.div 
         layout
-        className="xl:col-span-4 bg-card border border-border rounded-xl p-6 flex flex-col shadow-sm relative overflow-hidden transition-all duration-300 group min-h-[420px]"
+        className="xl:col-span-4 bg-card border border-border rounded-xl p-6 flex flex-col shadow-sm relative overflow-hidden transition-all duration-300 group min-h-105"
       >
         {/* Decorative corner accent */}
         <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 blur-3xl pointer-events-none" />
@@ -255,7 +255,7 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
         <div className="flex-1 flex flex-col lg:flex-row items-center gap-8 relative z-10 overflow-hidden">
             {/* Left Column: Chart */}
             <div className="w-full lg:w-[45%] flex flex-col items-center justify-center relative">
-                <div className="w-full aspect-square max-w-[200px] lg:max-w-none lg:h-[240px] relative">
+                <div className="w-full aspect-square max-w-50 lg:max-w-none lg:h-60 relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -326,7 +326,7 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
                    <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em]">Freq / Vol</span>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2.5 max-h-[280px]">
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2.5 max-h-70">
                    {threatData.map((item, idx) => {
                      const AttackIcon = getAttackIcon(item.name);
                      return (
@@ -401,7 +401,7 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
                                      }} 
                                    />
                                 </div>
-                                <span className="text-[10px] font-mono font-black min-w-[32px] text-right" style={{ color: item.theme.primary }}>
+                                <span className="text-[10px] font-mono font-black min-w-8 text-right" style={{ color: item.theme.primary }}>
                                   {item.percentage}
                                 </span>
                              </div>
@@ -548,7 +548,7 @@ function AIProgressItem({ label, value, desc, color }: { label: string, value: n
        <div className="flex justify-between items-end">
           <div className="flex items-center gap-1.5">
              <span className="text-[8.5px] font-black bg-muted border border-border text-foreground px-1 py-0.5 rounded tracking-tighter uppercase leading-none">{label}</span>
-             <span className="text-[8.5px] text-muted-foreground truncate max-w-[150px] leading-none tracking-tight">{desc}</span>
+             <span className="text-[8.5px] text-muted-foreground truncate max-w-37.5 leading-none tracking-tight">{desc}</span>
           </div>
           <span className={cn("text-[9px] font-black font-mono", value > 94 ? "text-red-500" : "text-yellow-500")}>{value}%</span>
        </div>

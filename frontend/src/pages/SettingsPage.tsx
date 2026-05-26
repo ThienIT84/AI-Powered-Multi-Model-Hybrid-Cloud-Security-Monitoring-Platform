@@ -38,7 +38,7 @@ export function SettingsPage() {
       case "cloud": return <CloudIntegrationSettings />;
       case "users": return <UserManagementSettings />;
       default: return (
-        <div className="flex flex-col items-center justify-center h-[400px] text-center space-y-4">
+        <div className="flex flex-col items-center justify-center h-100px text-center space-y-4">
            <AlertCircle size={40} className="text-muted-foreground opacity-20" />
            <div>
               <h3 className="text-[11px] font-black text-muted-foreground uppercase tracking-widest leading-none">Category: {activeCategory}</h3>

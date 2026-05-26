@@ -12,13 +12,13 @@ export function EventModal({ alert, onClose }: EventModalProps) {
   if (!alert) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end">
+    <div className="fixed inset-0 z-100 flex justify-end">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-[4px]"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
       />
 
       <motion.div
@@ -26,7 +26,7 @@ export function EventModal({ alert, onClose }: EventModalProps) {
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: 400, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-[400px] bg-card h-full border-l border-border relative z-10 flex flex-col shadow-2xl transition-colors duration-300"
+        className="w-100 bg-card h-full border-l border-border relative z-10 flex flex-col shadow-2xl transition-colors duration-300"
       >
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="p-6 border-b border-border bg-muted/20">
@@ -52,7 +52,7 @@ export function EventModal({ alert, onClose }: EventModalProps) {
               <h2 className="text-[11px] font-black text-foreground uppercase tracking-widest">AI ANALYSIS FLOW</h2>
             </div>
             <div className="space-y-3 relative pl-4">
-              <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border border-l border-dashed border-border" />
+              <div className="absolute left-1.75 top-2 bottom-2 w-px bg-border border-l border-dashed border-border" />
               <FlowStep label="Data Source: Zeek Sensor" status="completed" />
               <FlowStep label="AI1: Feature Extraction" value={`${Math.round((alert.aiDecision.ai1?.anomalyScore ?? 0) * 100)}%`} status="active" />
               <FlowStep label="AI2A: Attack Classifier" value={alert.aiDecision.ai2a?.attackType ?? alert.attackType} status="completed" />
@@ -114,7 +114,7 @@ function FlowStep({ label, value, status }: { label: string, value?: string, sta
       "relative bg-muted/40 border px-3 py-2.5 rounded-lg text-[10px] flex justify-between items-center transition-all",
       status === "active" ? "border-cyan-500/50 shadow-sm" : "border-border"
     )}>
-      <div className="absolute -left-[13px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-border bg-card z-10" />
+      <div className="absolute -left-3.25 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-border bg-card z-10" />
       <span className="font-bold text-muted-foreground uppercase tracking-tighter">{label}</span>
       {status === "active" && <span className="font-black text-cyan-500 font-mono">{value}</span>}
       {status === "completed" && <span className="text-emerald-500 bg-emerald-500/10 px-1 rounded">{value ?? "DECODED"}</span>}

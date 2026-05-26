@@ -119,11 +119,11 @@ export function ReportStats() {
         return (
           <div
             key={i}
-            className={`bg-slate-950/60 backdrop-blur-md rounded-xl p-5 border ${stat.borderColor} ${stat.glowColor} transition-all duration-300 hover:scale-[1.02] hover:bg-slate-900/60 flex flex-col justify-between group relative overflow-hidden`}
+            className={`bg-card rounded-xl p-5 border ${stat.borderColor} ${stat.glowColor} transition-all duration-300 hover:scale-[1.02] hover:bg-card/90 flex flex-col justify-between group relative overflow-hidden`}
           >
             {/* Cyber Corner lines decorations */}
-            <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-slate-800 group-hover:border-cyan-500/40 transition-colors" />
-            <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-slate-800 group-hover:border-cyan-500/40 transition-colors" />
+            <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-border group-hover:border-cyan-500/40 transition-colors" />
+            <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-border group-hover:border-cyan-500/40 transition-colors" />
 
             <div className="flex justify-between items-start gap-3 relative z-10">
               <div className="space-y-2 flex-1">
@@ -134,38 +134,38 @@ export function ReportStats() {
                       <span className={`relative inline-flex rounded-full h-2 w-2 ${i === 1 ? 'bg-red-500' : 'bg-cyan-500'}`}></span>
                     </span>
                   )}
-                  <span className="text-[9px] font-mono font-bold text-slate-400 tracking-[0.18em] uppercase block leading-none">
+                  <span className="text-[9px] font-mono font-bold text-muted-foreground tracking-[0.18em] uppercase block leading-none">
                     {stat.title}
                   </span>
                 </div>
-                <div className="text-3xl font-black text-white tracking-tight block font-mono">
+                <div className="text-3xl font-black text-foreground tracking-tight block font-mono">
                   {stat.isFloat ? (
                     <span>
                       {(stat.value / 10).toFixed(1)}
-                      <span className="text-lg text-slate-500 font-sans ml-0.5">{stat.suffix}</span>
+                      <span className="text-lg text-muted-foreground font-sans ml-0.5">{stat.suffix}</span>
                     </span>
                   ) : (
                     <AnimatedCounter value={stat.value} suffix={stat.suffix} />
                   )}
                 </div>
               </div>
-              <div className={`p-2.5 rounded-lg bg-slate-900/90 border ${stat.color} transition-all duration-300 group-hover:shadow-[0_0_10px_rgba(6,182,212,0.15)]`}>
+              <div className={`p-2.5 rounded-lg bg-muted border border-border ${stat.color} transition-all duration-300 group-hover:shadow-[0_0_10px_rgba(6,182,212,0.15)]`}>
                 <Icon className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between border-t border-slate-900 pt-3 relative z-10">
+            <div className="mt-4 flex items-center justify-between border-t border-border pt-3 relative z-10">
               <div className="flex items-center gap-1">
                 {stat.isPositive ? (
-                  <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
+                  <TrendingDown className="w-3.5 h-3.5 text-emerald-500" />
                 ) : (
-                  <TrendingUp className="w-3.5 h-3.5 text-red-400" />
+                  <TrendingUp className="w-3.5 h-3.5 text-red-500" />
                 )}
-                <span className={`text-[10px] font-mono font-bold tracking-wider ${stat.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                <span className={`text-[10px] font-mono font-bold tracking-wider ${stat.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
                   {stat.change}
                 </span>
               </div>
-              <span className="text-[9px] font-mono font-bold uppercase text-slate-500 tracking-wider">
+              <span className="text-[9px] font-mono font-bold uppercase text-muted-foreground tracking-wider">
                 {stat.detail}
               </span>
             </div>

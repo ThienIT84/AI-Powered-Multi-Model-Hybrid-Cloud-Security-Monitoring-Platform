@@ -1,7 +1,7 @@
 import React from "react";
 import { Integration } from "./integrationsConfig";
 import { IntegrationCard } from "./IntegrationCard";
-import { Puzzle } from "lucide-react";
+import { Puzzle, AlertTriangle, RefreshCw } from "lucide-react";
 
 interface IntegrationGridProps {
   integrations: Integration[];
@@ -30,20 +30,27 @@ export function IntegrationGrid({
 
   if (filteredList.length === 0) {
     return (
-      <div className="bg-slate-900/30 backdrop-blur-sm border border-slate-800/80 rounded-xl p-12 text-center flex flex-col items-center justify-center space-y-4">
-        <div className="p-4 bg-slate-950 border border-slate-800 rounded-full text-slate-500 shadow-inner animate-pulse">
-          <svg className="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a2 2 0 002 2h3a2 2 0 012 2v3a2 2 0 002 2v1a2 2 0 11-4 0v-1a2 2 0 00-2-2h-3a2 2 0 01-2-2V9z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14a3 3 0 110-6 3 3 0 010 6z" />
-          </svg>
+      <div className="bg-card/70 backdrop-blur-md border border-border rounded-xl p-16 text-center flex flex-col items-center justify-center space-y-5 relative overflow-hidden">
+        {/* Subtle background tech radar animation lines */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.02)_0%,transparent_70%)]" />
+        
+        <div className="p-4 bg-muted border border-border rounded-full text-muted-foreground shadow-inner relative z-10">
+          <AlertTriangle className="w-9 h-9 text-amber-500/80 animate-pulse" />
         </div>
-        <div className="space-y-1">
-          <h3 className="text-xs font-black text-white uppercase tracking-widest font-mono">
-            No Integrations Found
+        
+        <div className="space-y-2 relative z-10 max-w-md">
+          <h3 className="text-sm font-black font-mono text-foreground uppercase tracking-widest leading-none">
+            SIEM INGESTION MATCH NOT FOUND
           </h3>
-          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-            Không tìm thấy công cụ hoặc kênh kết nối dữ liệu phù hợp với điều kiện lọc.
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-mono leading-relaxed">
+            No integrated system nodes, firewall rulesets, or incident webhooks matched your pipeline filters. Reset queries or check category classification labels.
           </p>
+        </div>
+
+        <div className="pt-2 relative z-10">
+          <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest font-black bg-muted px-3 py-1.5 border border-border rounded">
+            OPERATIONAL HEADROOM: IDLE STATE
+          </span>
         </div>
       </div>
     );

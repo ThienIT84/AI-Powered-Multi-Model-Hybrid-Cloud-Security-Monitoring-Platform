@@ -30,7 +30,7 @@ export function BottomWidgets({ modelStatus, dataSourceHealth }: BottomWidgetsPr
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 pb-8 transition-colors duration-500">
-      <div className="bg-card border border-border rounded-xl p-4 flex flex-col shadow-sm relative overflow-hidden h-[220px]">
+      <div className="bg-card border border-border rounded-xl p-4 flex flex-col shadow-sm relative overflow-hidden h-55">
         <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] mb-4">AI DETECTION PIPELINE</h3>
         <div className="flex-1 grid grid-cols-4 gap-2 text-[7px] font-black uppercase tracking-widest leading-none">
           <div className="space-y-2">
@@ -84,7 +84,7 @@ export function BottomWidgets({ modelStatus, dataSourceHealth }: BottomWidgetsPr
 
       <div className="bg-card border border-border rounded-xl p-4 flex flex-col shadow-sm">
         <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] mb-4">SHAP EXPLAINABILITY (SQL INJECTION)</h3>
-        <div className="flex-1 min-h-[140px]">
+        <div className="flex-1 min-h-35">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={shapData} layout="vertical" margin={{ left: -10, right: 20 }}>
               <XAxis type="number" hide />

@@ -63,7 +63,7 @@ export function AlertDetailedList({ alerts, viewMode, onSelectAlert, selectedAle
 
   return (
     <div className="flex-1 overflow-x-auto custom-scrollbar">
-      <table className="w-full text-left border-collapse min-w-[1000px]">
+      <table className="w-full text-left border-collapse min-w-250">
         <thead>
           <tr className="bg-muted/50 border-b border-border">
             <th className="px-5 py-4 text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] w-12">ID</th>
@@ -113,7 +113,7 @@ function AlertTableRow({ alert, isSelected, onClick, index }: AlertTableRowProps
       transition={{ delay: Math.min(index * 0.05, 0.5) }}
       onClick={onClick}
       className={cn(
-        "group cursor-pointer transition-all duration-200 border-l-[4px]",
+        "group cursor-pointer transition-all duration-200 border-l-4",
         isSelected ? "bg-muted/30" : "bg-transparent hover:bg-muted/50"
       )}
       style={{ 

@@ -68,11 +68,11 @@ export function Sidebar({
   currentView, 
   onViewChange 
 }: { 
-  currentView: "dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings"; 
-  onViewChange: (view: "dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings") => void;
+  currentView: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings"; 
+  onViewChange: (view: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings") => void;
 }) {
   return (
-    <aside className="w-[220px] h-full bg-card border-r border-border flex flex-col overflow-y-auto custom-scrollbar select-none transition-colors duration-300">
+    <aside className="w-55 h-full bg-card border-r border-border flex flex-col overflow-y-auto custom-scrollbar select-none transition-colors duration-300">
       {/* GLOWING LOGO */}
       <div className="p-6 flex items-center gap-4">
         <div className="relative group shrink-0">
@@ -129,11 +129,13 @@ export function Sidebar({
             </h3>
             {group.items.map((item, idy) => {
               const isAlerts = item.label === "Alerts";
+              const isNetwork = item.label === "Network";
               const isIntegrations = item.label === "Integrations";
               const isPlaybooks = item.label === "Playbooks";
               const isReports = item.label === "Reports";
               const isSettings = item.label === "Settings";
               const isActive = (isAlerts && currentView === 'alerts') ||
+                               (isNetwork && currentView === 'network') ||
                                (isIntegrations && currentView === 'integrations') ||
                                (isPlaybooks && currentView === 'playbooks') ||
                                (isReports && currentView === 'reports') ||
@@ -144,6 +146,7 @@ export function Sidebar({
                   key={idy}
                   onClick={() => {
                     if (isAlerts) onViewChange('alerts');
+                    else if (isNetwork) onViewChange('network');
                     else if (isIntegrations) onViewChange('integrations');
                     else if (isPlaybooks) onViewChange('playbooks');
                     else if (isReports) onViewChange('reports');
@@ -171,7 +174,7 @@ export function Sidebar({
 
       <div className="p-4 border-t border-border bg-secondary/30">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white uppercase border border-white/10 shadow-sm">
+          <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white uppercase border border-white/10 shadow-sm">
             Ad
           </div>
           <div className="flex-1">

@@ -76,21 +76,21 @@ export function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* Decorative cyber line decoration */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-900">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping" />
-            <span className="text-[10px] font-mono font-black tracking-[0.25em] text-cyan-500 uppercase">
+            <span className="text-[10px] font-mono font-black tracking-[0.25em] text-cyan-650 dark:text-cyan-500 uppercase">
               SECURE MANAGEMENT HUB
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight uppercase leading-none">
+          <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight uppercase leading-none">
             Cyber Threat Reports & SOC Analytics
           </h2>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden sm:block h-5 bg-slate-800 w-px" />
-          <span className="text-[9px] font-mono text-slate-500 uppercase font-black tracking-widest bg-slate-950 border border-slate-900 px-2.5 py-1 rounded">
+          <div className="hidden sm:block h-5 bg-border w-px" />
+          <span className="text-[9px] font-mono text-muted-foreground uppercase font-black tracking-widest bg-muted border border-border px-2.5 py-1 rounded">
             DB_REPORTS_V5.0_PRO
           </span>
         </div>
@@ -113,29 +113,29 @@ export function ReportsPage() {
 
       {/* Dynamic Tab Description */}
       <div 
-        className={`bg-slate-950/50 rounded-xl border p-4 flex items-start gap-4 transition-all duration-500 shadow-md backdrop-blur-md ${currentHeader.borderColor}`}
+        className={`bg-card/75 rounded-xl border p-4 flex items-start gap-4 transition-all duration-500 shadow-md backdrop-blur-md ${currentHeader.borderColor}`}
         style={{ 
           boxShadow: `inset 0 1px 2px rgba(255,255,255,0.01), 0 4px 20px ${currentHeader.glowColor}`
         }}
       >
-        <div className={`p-2.5 bg-slate-950 border border-slate-800 rounded-lg ${currentHeader.iconColor} shadow-inner`}>
+        <div className={`p-2.5 bg-background border border-border rounded-lg ${currentHeader.iconColor} shadow-inner`}>
           <HeaderIcon className="w-5 h-5" />
         </div>
         <div className="space-y-1">
-          <h3 className="text-xs font-black uppercase text-white tracking-wider flex items-center gap-2">
+          <h3 className="text-xs font-black uppercase text-foreground tracking-wider flex items-center gap-2">
             <span>{currentHeader.title}</span>
-            <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-mono text-slate-500 bg-slate-900 uppercase">
+            <span className="inline-block px-1.5 py-0.5 rounded text-[8px] font-mono text-muted-foreground bg-muted uppercase">
               {reportType} ACTIVE
             </span>
           </h3>
-          <p className="text-[10px] font-medium text-slate-400 uppercase leading-normal tracking-wide">
+          <p className="text-[10px] font-medium text-muted-foreground uppercase leading-normal tracking-wide">
             {currentHeader.desc}
           </p>
         </div>
       </div>
 
       {/* Dynamic Tab Element utilizing framer-motion AnimatePresence for smooth transitions */}
-      <div className="relative overflow-hidden min-h-[450px]">
+      <div className="relative overflow-hidden min-h-112.5px">
         <AnimatePresence mode="wait">
           <motion.div
             key={reportType + timeframe + startDate + endDate}
