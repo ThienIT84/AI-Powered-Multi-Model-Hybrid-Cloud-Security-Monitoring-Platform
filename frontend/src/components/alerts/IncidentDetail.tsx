@@ -112,7 +112,7 @@ export function IncidentDetail({ alert, onClose }: IncidentDetailProps) {
               <Terminal size={48} />
             </div>
             {alert.rawPayload ? (
-              <pre className="text-muted-foreground/80 whitespace-pre-wrap break-words relative z-10">{alert.rawPayload}</pre>
+              <pre className="text-muted-foreground/80 whitespace-pre-wrap wrap-break-word relative z-10">{alert.rawPayload}</pre>
             ) : (
               <p className="text-muted-foreground/60 uppercase tracking-widest font-black relative z-10">No raw payload captured for this event</p>
             )}
@@ -244,7 +244,7 @@ function EvidenceItem({ label, value, wide }: { label: string; value?: React.Rea
   return (
     <div className={cn("bg-muted/30 border border-border rounded-sm p-2", wide && "col-span-2")}>
       <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest block mb-1">{label}</span>
-      <span className="text-[9px] font-mono text-foreground/80 break-words">{value ?? "N/A"}</span>
+      <span className="text-[9px] font-mono text-foreground/80 wrap-break-word">{value ?? "N/A"}</span>
     </div>
   );
 }
@@ -266,7 +266,7 @@ function AIProgressItem({ label, value, desc, color }: { label: string; value?: 
       <div className="flex justify-between items-end">
         <div className="flex items-center gap-1.5">
           <span className="text-[8.5px] font-black bg-muted border border-border text-foreground px-1 py-0.5 rounded tracking-tighter uppercase leading-none">{label}</span>
-          <span className="text-[8.5px] text-muted-foreground truncate max-w-[180px] leading-none tracking-tight">{desc}</span>
+          <span className="text-[8.5px] text-muted-foreground truncate max-w-45 leading-none tracking-tight">{desc}</span>
         </div>
         <span className={cn("text-[9px] font-black font-mono", safeValue > 0.9 ? "text-red-500" : "text-yellow-500")}>{Math.round(safeValue * 100)}%</span>
       </div>

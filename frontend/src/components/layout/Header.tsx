@@ -46,8 +46,8 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   isDarkMode: boolean;
   onThemeToggle: () => void;
-  currentView: "dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings";
-  onViewChange: (view: "dashboard" | "alerts" | "integrations" | "playbooks" | "reports" | "settings") => void;
+  currentView: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings";
+  onViewChange: (view: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings") => void;
   alerts: Alert[];
   onSelectAlert: (alert: Alert) => void;
   isAlertsOpen: boolean;
@@ -94,7 +94,7 @@ export function Header({
   };
 
   return (
-    <header className="h-[56px] border-b border-border flex items-center justify-between px-6 sticky top-0 z-50 transition-all duration-300 bg-card/80 backdrop-blur-md shadow-sm">
+    <header className="h-14 border-b border-border flex items-center justify-between px-6 sticky top-0 z-50 transition-all duration-300 bg-card/80 backdrop-blur-md shadow-sm">
       <div className="flex items-center">
         <div className="flex items-center">
           <div className="flex flex-col pr-6 border-r border-border">
@@ -127,7 +127,7 @@ export function Header({
             </div>
           </div>
 
-          <div className="flex flex-col px-6 border-r hidden md:flex border-border">
+          <div className="md:flex flex-col px-6 border-r hidden border-border">
             <span className="text-[7px] font-black text-muted-foreground uppercase tracking-[0.22em] leading-none mb-1">EVENT RATE</span>
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black leading-none text-cyan-400">2.48K</span>
@@ -135,15 +135,15 @@ export function Header({
             </div>
           </div>
 
-          <div className="flex flex-col px-6 border-r hidden lg:flex border-border">
+          <div className="hidden lg:flex flex-col px-6 border-r border-border">
             <span className="text-[7px] font-black text-muted-foreground uppercase tracking-[0.22em] leading-none mb-1">LAST UPDATED</span>
-            <span className="text-[9px] font-black uppercase tracking-[0.1em] font-mono leading-none text-foreground">{formatTime(time)} / {dataMode}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest font-mono leading-none text-foreground">{formatTime(time)} / {dataMode}</span>
           </div>
         </div>
       </div>
 
       <div className="flex-1 flex justify-end items-center gap-4 lg:gap-8 px-4 lg:px-8">
-        <div className="relative group flex items-center bg-muted border border-border rounded px-4 py-2 gap-3 transition-all max-w-[500px] w-full hidden sm:flex focus-within:border-cyan-500/50">
+        <div className="relative group hidden sm:flex items-center bg-muted border border-border rounded px-4 py-2 gap-3 transition-all max-w-95 w-full focus-within:border-cyan-500/50">
           <Search className="w-4 h-4 text-muted-foreground group-focus-within:text-cyan-400 transition-colors" />
           <div className="flex-1 flex items-center relative">
             <input
@@ -154,14 +154,14 @@ export function Header({
               className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-[0.15em] w-full placeholder:text-muted-foreground text-foreground mb-0"
             />
             {!searchQuery && (
-              <div className="absolute left-[265px] w-0.5 h-3 bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,1)] animate-[pulse_1s_infinite]" />
+              <div className="absolute left-66.25 w-0.5 h-3 bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,1)] animate-[pulse_1s_infinite]" />
             )}
           </div>
         </div>
 
         <div className="flex items-center gap-4 lg:gap-6">
           {socketError && (
-            <span className="hidden xl:inline text-[8px] font-black text-red-500 uppercase tracking-widest max-w-[220px] truncate">
+            <span className="hidden xl:inline text-[8px] font-black text-red-500 uppercase tracking-widest max-w-55 truncate">
               {socketError}
             </span>
           )}

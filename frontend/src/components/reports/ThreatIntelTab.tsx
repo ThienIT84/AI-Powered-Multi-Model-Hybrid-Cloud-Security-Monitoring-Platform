@@ -36,12 +36,12 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-950 border border-slate-800 px-3 py-2 rounded-lg shadow-2xl backdrop-blur-md text-[10px] font-mono">
+        <div className="bg-card border border-border px-3 py-2 rounded-lg shadow-2xl backdrop-blur-md text-[10px] font-mono">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: data.color }} />
-            <span className="text-white font-bold uppercase">{data.name}</span>
+            <span className="text-foreground font-bold uppercase">{data.name}</span>
           </div>
-          <span className="text-slate-400 font-bold">COUNT: {data.value} SIGNALS</span>
+          <span className="text-muted-foreground font-bold">COUNT: {data.value} SIGNALS</span>
         </div>
       );
     }
@@ -51,24 +51,24 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
   return (
     <div className="space-y-6">
       {/* Simulation Controls for Threat Intelligence Verification */}
-      <div className="flex items-center justify-between gap-4 bg-slate-950/40 p-3 border border-slate-900 rounded-xl text-[10px] font-mono text-slate-500">
+      <div className="flex items-center justify-between gap-4 bg-muted/40 p-3 border border-border rounded-xl text-[10px] font-mono text-muted-foreground">
         <div className="flex items-center gap-1.5 uppercase">
-          <Loader2 className={`w-3.5 h-3.5 text-cyan-500 ${isLoading ? 'animate-spin' : ''}`} />
+          <Loader2 className={`w-3.5 h-3.5 text-cyan-555 dark:text-cyan-500 ${isLoading ? 'animate-spin' : ''}`} />
           <span>THREAT FEEDS • SEED SENSORS SYNCHRONIZED</span>
         </div>
         <button
           onClick={() => setIsEmptyStateTriggered(!isEmptyStateTriggered)}
-          className="flex items-center gap-1.5 hover:text-white transition cursor-pointer font-bold focus:outline-none"
+          className="flex items-center gap-1.5 hover:text-foreground transition cursor-pointer font-bold focus:outline-none"
         >
           {isEmptyStateTriggered ? (
             <>
-              <ToggleRight className="w-4 h-4 text-cyan-400" />
-              <span className="text-cyan-400 uppercase">SIMULATING EMPTY ACTORS</span>
+              <ToggleRight className="w-4 h-4 text-cyan-655 dark:text-cyan-400" />
+              <span className="text-cyan-655 dark:text-cyan-400 uppercase">SIMULATING EMPTY ACTORS</span>
             </>
           ) : (
             <>
-              <ToggleLeft className="w-4 h-4 text-slate-500" />
-              <span className="uppercase">FORCE NO-DATA FOUND TEST</span>
+              <ToggleLeft className="w-4 h-4 text-muted-foreground" />
+              <span className="uppercase text-muted-foreground">FORCE NO-DATA FOUND TEST</span>
             </>
           )}
         </button>
@@ -76,13 +76,13 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
 
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
         {/* Attack Categories Donut Chart Card */}
-        <div className="xl:col-span-2 bg-slate-950/50 border border-slate-900 rounded-xl p-5 flex flex-col justify-between shadow-lg h-[430px] relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-20 h-[1px] bg-cyan-400/20" />
+        <div className="xl:col-span-2 bg-card border border-border rounded-xl p-5 flex flex-col justify-between shadow-lg h-107.5px relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-20 h-px bg-cyan-400/20" />
           <div>
-            <span className="text-[9px] font-mono font-bold text-slate-400 tracking-[0.2em] uppercase block mb-1">
+            <span className="text-[9px] font-mono font-bold text-muted-foreground tracking-[0.2em] uppercase block mb-1">
               THREAT DIVERSITY MIX
             </span>
-            <h3 className="text-sm font-black text-white uppercase tracking-wider">
+            <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
               Category Distribution Percentage
             </h3>
           </div>
@@ -97,10 +97,10 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
                   exit={{ opacity: 0 }}
                   className="absolute inset-0 flex flex-col items-center justify-center"
                 >
-                  <div className="relative w-40 h-40 border-4 border-slate-900/60 rounded-full animate-spin flex items-center justify-center border-t-cyan-500">
-                    <div className="w-28 h-28 border-4 border-slate-900 rounded-full" />
+                  <div className="relative w-40 h-40 border-4 border-muted rounded-full animate-spin flex items-center justify-center border-t-cyan-500">
+                    <div className="w-28 h-28 border-4 border-muted rounded-full" />
                   </div>
-                  <span className="text-[8px] text-slate-500 uppercase mt-4 block">Loading Feeds...</span>
+                  <span className="text-[8px] text-muted-foreground uppercase mt-4 block">Loading Feeds...</span>
                 </motion.div>
               ) : isEmptyStateTriggered ? (
                 // Pie empty selection
@@ -110,17 +110,17 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
                   exit={{ opacity: 0 }}
                   className="absolute inset-0 flex flex-col items-center justify-center text-center p-4"
                 >
-                  <div className="w-28 h-28 border border-dashed border-slate-900 rounded-full flex items-center justify-center text-slate-700 font-mono text-[9px] uppercase">
+                  <div className="w-28 h-28 border border-dashed border-border rounded-full flex items-center justify-center text-muted-foreground font-mono text-[9px] uppercase">
                     Zero Vectors
                   </div>
-                  <span className="text-[8px] font-mono text-slate-500 uppercase mt-2.5">Feeds Empty</span>
+                  <span className="text-[8px] font-mono text-muted-foreground uppercase mt-2.5">Feeds Empty</span>
                 </motion.div>
               ) : (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
-                  className="w-full h-[220px] relative"
+                  className="w-full h-55px relative"
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -146,11 +146,11 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
                     <motion.span 
                       initial={{ scale: 0.8 }}
                       animate={{ scale: 1 }}
-                      className="text-2xl font-black text-white font-mono leading-none tracking-tighter"
+                      className="text-2xl font-black text-foreground font-mono leading-none tracking-tighter"
                     >
                       {totalAttacksSum.toLocaleString()}
                     </motion.span>
-                    <span className="text-[7.5px] font-mono font-bold text-slate-500 uppercase tracking-widest mt-1">
+                    <span className="text-[7.5px] font-mono font-bold text-muted-foreground uppercase tracking-widest mt-1">
                       THREAT COUNTS
                     </span>
                   </div>
@@ -160,13 +160,13 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
           </div>
 
           {/* Inline structured custom legend matching standard split */}
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-slate-900 pt-4 text-[9px] font-mono">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-border pt-4 text-[9px] font-mono">
             {activeAttackData.map((item, idx) => (
               <div key={idx} className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
                 <div className="flex-1 flex justify-between items-center pr-1 min-w-0">
-                  <span className="text-slate-400 truncate max-w-[90px]">{item.name}</span>
-                  <span className="text-white font-bold ml-1">{item.value}</span>
+                  <span className="text-muted-foreground truncate max-w-22.5px">{item.name}</span>
+                  <span className="text-foreground font-bold ml-1">{item.value}</span>
                 </div>
               </div>
             ))}
@@ -174,19 +174,19 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
         </div>
 
         {/* IP Sources log telemetry table (Full Enterprise specifications) */}
-        <div className="xl:col-span-3 bg-slate-950/50 border border-slate-900 rounded-xl p-5 flex flex-col justify-between shadow-lg h-[430px] relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-20 h-[1px] bg-red-400/20" />
+        <div className="xl:col-span-3 bg-card border border-border rounded-xl p-5 flex flex-col justify-between shadow-lg h-107.5px relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-20 h-px bg-red-500/20" />
           <div>
-            <span className="text-[9px] font-mono font-bold text-slate-400 tracking-[0.2em] uppercase block mb-1">
+            <span className="text-[9px] font-mono font-bold text-muted-foreground tracking-[0.2em] uppercase block mb-1">
               THREAT INTELLIGENCE FEED
             </span>
-            <h3 className="text-sm font-black text-white uppercase tracking-wider">
+            <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
               Critical Offending IP Log Sources
             </h3>
           </div>
 
           {/* Premium Enterprise table frame */}
-          <div className="flex-1 overflow-auto custom-scrollbar mt-4 pr-1 relative scrollbar-thin scrollbar-thumb-slate-850 scrollbar-track-transparent">
+          <div className="flex-1 overflow-auto custom-scrollbar mt-4 pr-1 relative scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
             <AnimatePresence mode="wait">
               {isLoading ? (
                 // Log table skeleton rows
@@ -197,10 +197,10 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
                   className="space-y-3 pt-2"
                 >
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <div key={n} className="h-10 bg-slate-900/40 rounded-lg border border-slate-900/60 animate-pulse flex items-center justify-between px-4">
-                      <div className="h-3 w-28 bg-slate-800 rounded" />
-                      <div className="h-3 w-16 bg-slate-800 rounded" />
-                      <div className="h-3 w-12 bg-slate-800 rounded" />
+                    <div key={n} className="h-10 bg-muted/30 rounded-lg border border-border animate-pulse flex items-center justify-between px-4">
+                      <div className="h-3 w-28 bg-muted rounded" />
+                      <div className="h-3 w-16 bg-muted rounded" />
+                      <div className="h-3 w-12 bg-muted rounded" />
                     </div>
                   ))}
                 </motion.div>
@@ -212,11 +212,11 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
                   exit={{ opacity: 0 }}
                   className="h-full flex flex-col items-center justify-center text-center p-6"
                 >
-                  <ShieldAlert className="w-10 h-10 text-slate-700 mb-2.5 animate-pulse" />
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest block">
+                  <ShieldAlert className="w-10 h-10 text-muted-foreground mb-2.5 animate-pulse" />
+                  <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest block">
                     NO ACTORS SIGNAL FLAG ATTEMPT RECORDED
                   </span>
-                  <span className="text-[8px] text-slate-500 uppercase block mt-1">
+                  <span className="text-[8px] text-muted-foreground uppercase block mt-1">
                     Threat stream is exceptionally quiet. Filters are operating smoothly.
                   </span>
                 </motion.div>
@@ -227,8 +227,8 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
                   className="w-full text-left font-mono border-collapse"
                 >
                   {/* Sticky Header to meet requirement G */}
-                  <thead className="sticky top-0 bg-slate-950 z-20 shadow-md">
-                    <tr className="border-b border-slate-900 text-[8.5px] font-black text-slate-500 tracking-wider uppercase bg-slate-950">
+                  <thead className="sticky top-0 bg-card z-20 shadow-md">
+                    <tr className="border-b border-border text-[8.5px] font-black text-muted-foreground tracking-wider uppercase bg-card">
                       <th className="py-2.5 pr-2">HOST IP</th>
                       <th className="py-2.5">COUNTRY</th>
                       <th className="py-2.5 text-right font-bold pr-3">ALERTS</th>
@@ -236,24 +236,24 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
                       <th className="py-2.5 text-right">LAST CAPTURE</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-900 text-[10px]">
+                  <tbody className="divide-y divide-border text-[10px]">
                     {activeIpsData.map((actor, idx) => {
                       // Apply Zebra row logic and hover highlighting
                       const isEven = idx % 2 === 0;
                       return (
                         <tr 
                           key={idx} 
-                          className={`group/tr transition-colors hover:bg-cyan-950/20 ${isEven ? 'bg-slate-950/20' : 'bg-slate-900/10'}`}
+                          className={`group/tr transition-colors hover:bg-muted ${isEven ? 'bg-muted/10' : 'bg-transparent'}`}
                         >
-                          <td className="py-3 font-bold text-cyan-400 group-hover/tr:text-white transition-colors">{actor.ip}</td>
-                          <td className="py-3 text-slate-400 font-sans text-[11px] font-medium">{actor.country}</td>
-                          <td className="py-3 text-right font-bold text-red-400 pr-3 font-mono">{actor.count}</td>
+                          <td className="py-3 font-bold text-cyan-655 dark:text-cyan-400 group-hover/tr:text-foreground transition-colors">{actor.ip}</td>
+                          <td className="py-3 text-muted-foreground font-sans text-[11px] font-medium">{actor.country}</td>
+                          <td className="py-3 text-right font-bold text-red-555 dark:text-red-400 pr-3 font-mono">{actor.count}</td>
                           <td className="py-3 pl-4">
-                            <span className="inline-block px-2 py-0.5 rounded text-[8.5px] font-bold uppercase tracking-wider bg-slate-900 text-slate-400 border border-slate-800/80 group-hover/tr:border-slate-700 transition">
+                            <span className="inline-block px-2 py-0.5 rounded text-[8.5px] font-bold uppercase tracking-wider bg-background text-muted-foreground border border-border group-hover/tr:border-border transition">
                               {actor.mainAttack}
                             </span>
                           </td>
-                          <td className="py-3 text-right text-slate-500 text-[9.5px]">{actor.lastActive}</td>
+                          <td className="py-3 text-right text-muted-foreground text-[9.5px]">{actor.lastActive}</td>
                         </tr>
                       );
                     })}
@@ -263,11 +263,11 @@ export function ThreatIntelTab({ timeframe }: ThreatIntelTabProps) {
             </AnimatePresence>
           </div>
 
-          <div className="border-t border-slate-900 pt-4 mt-2 flex items-center justify-between text-[10px] font-mono leading-none">
-            <span className="text-slate-500 font-bold tracking-wider uppercase sm:block hidden">
+          <div className="border-t border-border pt-4 mt-2 flex items-center justify-between text-[10px] font-mono leading-none">
+            <span className="text-muted-foreground font-bold tracking-wider uppercase sm:block hidden">
               IOC INTEGRITY FEED STATUS: OK
             </span>
-            <button className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-900 hover:border-slate-705 transition duration-200 cursor-pointer">
+            <button className="flex items-center gap-1.5 px-3 py-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg border border-border transition duration-200 cursor-pointer">
               <span>QUERY INTELLIGENCE SEED</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </button>

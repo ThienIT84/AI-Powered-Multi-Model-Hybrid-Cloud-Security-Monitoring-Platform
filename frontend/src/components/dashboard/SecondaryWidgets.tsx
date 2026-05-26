@@ -40,7 +40,7 @@ export function SecondaryWidgets() {
            <ShieldCheck className="w-4 h-4 text-purple-400" />
            <h3 className="text-[10px] font-black text-gray-100 uppercase tracking-widest">BỀ MẶT TẤN CÔNG</h3>
         </div>
-        <div className="h-[180px] w-full">
+        <div className="h-45 w-full">
            <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                 <PolarGrid stroke="#ffffff10" />
@@ -63,7 +63,7 @@ export function SecondaryWidgets() {
            <AlertTriangle className="w-4 h-4 text-yellow-500" />
            <h3 className="text-[10px] font-black text-gray-100 uppercase tracking-widest">SỰ CỐ TUẦN NÀY</h3>
         </div>
-        <div className="h-[180px] w-full">
+        <div className="h-45 w-full">
            <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyData}>
                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />

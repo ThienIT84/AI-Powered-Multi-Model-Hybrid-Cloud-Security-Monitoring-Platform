@@ -5,6 +5,8 @@ export interface PlaybookAction {
   description: string;
   type: "slack" | "jira" | "firewall" | "aws_iam" | "isolate" | "webhook" | "email";
   status: "idle" | "running" | "completed" | "failed";
+  target?: string;
+  severity?: "critical" | "high" | "medium" | "low";
 }
 
 export interface Playbook {
@@ -18,4 +20,9 @@ export interface Playbook {
   updatedAt: string;
   severity: "critical" | "high" | "medium" | "low";
   actions: PlaybookAction[];
+  avgDurationMs?: number;
+  confidenceThreshold?: number;
+  riskScoreThreshold?: number;
+  lastExecutedTime?: string;
+  lastExecutionStatus?: "success" | "failed" | "running" | "warning";
 }

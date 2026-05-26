@@ -119,7 +119,7 @@ export function AlertDropdownPanel({ isOpen, onClose, alerts, onSelectAlert }: A
         </div>
 
         {/* Alerts List */}
-        <div className="flex-1 overflow-y-auto max-h-[500px]">
+        <div className="flex-1 overflow-y-auto max-h-125">
           {filteredAlerts.length > 0 ? (
             <div className="divide-y divide-border/50">
               {filteredAlerts.map((alert, i) => (

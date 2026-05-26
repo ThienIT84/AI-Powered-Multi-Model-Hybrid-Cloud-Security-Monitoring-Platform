@@ -76,7 +76,7 @@ function StatCard({
   title, value, change, subtitle, icon: Icon, iconColor, sparklineColor, isRed 
 }: StatCardProps) {
   return (
-    <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-between min-h-[120px] relative group overflow-hidden shadow-sm transition-all duration-300 hover:border-cyan-500/30 hover:shadow-md">
+    <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-between min-h-30 relative group overflow-hidden shadow-sm transition-all duration-300 hover:border-cyan-500/30 hover:shadow-md">
       <div className="flex justify-between items-start mb-2">
         <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">{title}</h3>
         <div className={cn("p-1.5 rounded bg-secondary/50", iconColor)}>

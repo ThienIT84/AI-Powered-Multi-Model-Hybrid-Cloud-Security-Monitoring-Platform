@@ -48,7 +48,7 @@ export function AlertDetailDrawer({ alert, onClose }: AlertDetailDrawerProps) {
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed top-0 right-0 h-full w-full max-w-[500px] bg-card border-l border-border shadow-2xl z-[100] flex flex-col"
+      className="fixed top-0 right-0 h-full w-full max-w-125 bg-card border-l border-border shadow-2xl z-100 flex flex-col"
     >
       {/* Header */}
       <div className="p-6 border-b border-border space-y-4">
@@ -58,7 +58,7 @@ export function AlertDetailDrawer({ alert, onClose }: AlertDetailDrawerProps) {
                 <Shield className="w-5 h-5 text-red-500" />
              </div>
              <div>
-                <h2 className="text-sm font-black text-foreground uppercase tracking-[0.1em]">{alert.attackType}</h2>
+                <h2 className="text-sm font-black text-foreground uppercase tracking-widest">{alert.attackType}</h2>
                 <div className="flex items-center gap-2 mt-1">
                    <span className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest">ID: {alert.id}</span>
                    <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none">•</span>
@@ -177,7 +177,7 @@ export function AlertDetailDrawer({ alert, onClose }: AlertDetailDrawerProps) {
                    <Brain className="w-4 h-4 text-purple-500" />
                    AI Behavioral Signature
                 </h3>
-                <div className="h-[250px] w-full bg-muted/20 rounded-2xl flex items-center justify-center border border-border p-4">
+                <div className="h-62.5 w-full bg-muted/20 rounded-2xl flex items-center justify-center border border-border p-4">
                    <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                          <PolarGrid stroke="var(--border)" />
@@ -246,11 +246,11 @@ export function AlertDetailDrawer({ alert, onClose }: AlertDetailDrawerProps) {
                 Alert Lifecycle
              </h3>
              <div className="relative pl-6 space-y-8">
-                <div className="absolute left-[7px] top-2 bottom-2 w-px bg-border border-l border-dashed border-border" />
+                <div className="absolute left-1.75 top-2 bottom-2 w-px bg-border border-l border-dashed border-border" />
                 
                 {alert.timeline.map((event, i) => (
                   <div key={event.id} className="relative">
-                    <div className="absolute -left-[23px] top-1 w-2.5 h-2.5 rounded-full bg-cyan-500 border-2 border-card ring-2 ring-cyan-500/20" />
+                    <div className="absolute -left-5.75 top-1 w-2.5 h-2.5 rounded-full bg-cyan-500 border-2 border-card ring-2 ring-cyan-500/20" />
                     <div className="flex flex-col">
                        <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] font-black text-foreground uppercase tracking-widest">{event.type}</span>

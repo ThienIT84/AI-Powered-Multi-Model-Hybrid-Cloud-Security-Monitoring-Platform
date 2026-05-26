@@ -39,7 +39,7 @@ export function FloatingPanel({
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
-              "fixed right-6 top-16 z-50 w-full max-w-[420px] bg-card/90 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-100px)]",
+              "fixed right-6 top-16 z-50 w-full max-w-105 bg-card/90 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-100px)]",
               className
             )}
           >

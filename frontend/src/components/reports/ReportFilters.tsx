@@ -85,9 +85,9 @@ export function ReportFilters({
   return (
     <div className="space-y-4">
       {/* Tab Navigation wrapper with horizontal scroll support and premium scroll mask */}
-      <div className="relative border border-slate-900 bg-slate-950/80 backdrop-blur-md rounded-xl p-2.5 overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
+      <div className="relative border border-border bg-card/85 backdrop-blur-md rounded-xl p-2.5 overflow-hidden shadow-xl">
         {/* Glow accent band */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-cyan-500/20 to-transparent" />
         
         {/* Scrollable Container */}
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth snap-x">
@@ -98,24 +98,24 @@ export function ReportFilters({
                 key={type.value}
                 id={`tab-${type.value}`}
                 onClick={() => onReportTypeChange(type.value as ReportType)}
-                className={`relative px-5 py-3 rounded-lg text-left transition-all duration-300 min-w-[170px] lg:min-w-[190px] cursor-pointer snap-start overflow-hidden flex-1 ${
+                className={`relative px-5 py-3 rounded-lg text-left transition-all duration-300 min-w-42.5px lg:min-w-47.5px cursor-pointer snap-start overflow-hidden flex-1 ${
                   isActive 
-                    ? "bg-slate-900/80 border border-slate-700/60" 
-                    : "bg-slate-900/20 border border-transparent hover:bg-slate-900/50 hover:border-slate-800"
+                    ? "bg-background border border-border" 
+                    : "bg-muted/30 border border-transparent hover:bg-muted hover:border-border"
                 }`}
               >
                 {/* Active Underline/Neon Border glow via framer-motion */}
                 {isActive && (
                   <motion.div 
                     layoutId="activeTabUnderglow"
-                    className="absolute inset-0 bg-gradient-to-b from-cyan-950/20 to-transparent pointer-events-none"
+                    className="absolute inset-0 bg-linear-to-b from-cyan-950/20 to-transparent pointer-events-none"
                     transition={{ type: "spring", stiffness: 350, damping: 30 }}
                   />
                 )}
                 {isActive && (
                   <motion.div 
                     layoutId="activeTabBorderGlow"
-                    className="absolute left-0 top-0 bottom-0 w-[3px]"
+                    className="absolute left-0 top-0 bottom-0 w-0.75px"
                     style={{ 
                       backgroundColor: currentType === "executive" ? CYBER_COLORS.low 
                                       : currentType === "threat" ? CYBER_COLORS.critical 
@@ -127,16 +127,16 @@ export function ReportFilters({
                 )}
 
                 <div className="relative z-10 space-y-0.5">
-                  <span className={`text-[10px] sm:text-xs font-black tracking-wider uppercase block transition-colors duration-300 ${isActive ? "text-white" : "text-slate-400"}`}>
+                  <span className={`text-[10px] sm:text-xs font-black tracking-wider uppercase block transition-colors duration-300 ${isActive ? "text-foreground" : "text-muted-foreground"}`}>
                     {type.label}
                   </span>
-                  <span className="text-[8px] sm:text-[9px] font-mono font-medium text-slate-500 tracking-normal block whitespace-nowrap">
+                  <span className="text-[8px] sm:text-[9px] font-mono font-medium text-muted-foreground tracking-normal block whitespace-nowrap">
                     {type.desc}
                   </span>
                 </div>
 
                 {/* Cyber angle decorative detail */}
-                <span className="absolute bottom-1 right-1 font-mono text-[7px] text-slate-700 tracking-normal select-none">
+                <span className="absolute bottom-1 right-1 font-mono text-[7px] text-muted-foreground/35 tracking-normal select-none">
                   {type.value.substring(0, 3).toUpperCase()}//
                 </span>
               </button>
@@ -146,15 +146,15 @@ export function ReportFilters({
       </div>
 
       {/* Advanced Filters & Dynamic Sizing Hub */}
-      <div className="bg-slate-950/60 backdrop-blur-md rounded-xl border border-slate-900 p-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-[inset_0_1px_2px_rgba(255,255,255,0.02)]">
+      <div className="bg-card rounded-xl border border-border p-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shadow-xl">
         {/* Left indicators: Threat assessment level and configuration details */}
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-[9px] font-mono text-slate-400">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-lg text-[9px] font-mono text-muted-foreground">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="uppercase">INGEST: STABLE (9.8k/s)</span>
           </div>
-          <div className="text-[10px] font-mono text-slate-500">
-            TIME_FILTER: <span className="text-slate-300 font-bold uppercase">{selectedTimeframeObj.label}</span>
+          <div className="text-[10px] font-mono text-muted-foreground">
+            TIME_FILTER: <span className="text-foreground font-bold uppercase">{selectedTimeframeObj.label}</span>
           </div>
         </div>
 
@@ -168,15 +168,15 @@ export function ReportFilters({
                 setIsTimeDropdownOpen(!isTimeDropdownOpen);
                 setIsFormatDropdownOpen(false);
               }}
-              className={`flex items-center justify-between min-w-[170px] bg-slate-900 border rounded-lg px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-300 hover:border-slate-700 hover:text-white transition duration-200 cursor-pointer ${
-                isTimeDropdownOpen ? "border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.1)]" : "border-slate-800"
+              className={`flex items-center justify-between min-w-42.5px bg-background border rounded-lg px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:border-foreground/15 hover:text-foreground transition duration-200 cursor-pointer ${
+                isTimeDropdownOpen ? "border-cyan-555 dark:border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.1)]" : "border-border"
               }`}
             >
               <div className="flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5 text-cyan-500" />
+                <Calendar className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                 <span>{selectedTimeframeObj.label}</span>
               </div>
-              <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform ${isTimeDropdownOpen ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${isTimeDropdownOpen ? "rotate-180" : ""}`} />
             </button>
 
             <AnimatePresence>
@@ -187,7 +187,7 @@ export function ReportFilters({
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 mt-1 w-[220px] bg-slate-950 border border-slate-800 rounded-lg shadow-xl z-50 p-1 divide-y divide-slate-900"
+                    className="absolute right-0 mt-1 w-55px bg-card border border-border rounded-lg shadow-xl z-50 p-1 divide-y divide-border"
                   >
                     {timeframes.map((tf) => (
                       <button
@@ -198,12 +198,12 @@ export function ReportFilters({
                         }}
                         className={`w-full text-left px-3 py-2 text-[10px] font-mono font-bold tracking-wider rounded-md transition-colors flex items-center justify-between cursor-pointer ${
                           timeframe === tf.value
-                            ? "bg-cyan-950/40 text-cyan-400 border border-cyan-800/30"
-                            : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                            ? "bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 border border-cyan-800/30"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         }`}
                       >
                         <span className="uppercase">{tf.label}</span>
-                        <span className="text-[8px] font-normal text-slate-500 uppercase font-sans pr-1">
+                        <span className="text-[8px] font-normal text-muted-foreground uppercase font-sans pr-1">
                           {tf.info}
                         </span>
                       </button>
@@ -222,15 +222,15 @@ export function ReportFilters({
                 setIsFormatDropdownOpen(!isFormatDropdownOpen);
                 setIsTimeDropdownOpen(false);
               }}
-              className={`flex items-center justify-between min-w-[120px] bg-slate-900 border rounded-lg px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-300 hover:border-slate-700 transition duration-200 cursor-pointer ${
-                isFormatDropdownOpen ? "border-cyan-500/50" : "border-slate-800"
+              className={`flex items-center justify-between min-w-30px bg-background border rounded-lg px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:border-foreground/15 hover:text-foreground transition duration-200 cursor-pointer ${
+                isFormatDropdownOpen ? "border-cyan-500/50" : "border-border"
               }`}
             >
               <div className="flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5 text-slate-400" />
+                <FileText className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>{format.toUpperCase()} FORMAT</span>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
 
             <AnimatePresence>
@@ -241,7 +241,7 @@ export function ReportFilters({
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 mt-1 w-[130px] bg-slate-950 border border-slate-800 rounded-lg shadow-xl z-50 p-1"
+                    className="absolute right-0 mt-1 w-32.5px bg-card border border-border rounded-lg shadow-xl z-50 p-1"
                   >
                     {["pdf", "csv", "json"].map((f) => (
                       <button
@@ -253,7 +253,7 @@ export function ReportFilters({
                         className={`w-full text-left px-3 py-2 text-[10px] font-mono font-bold tracking-wider rounded-md transition ${
                           format === f
                             ? "bg-cyan-950/40 text-cyan-400"
-                            : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         }`}
                       >
                         {f.toUpperCase()} FILE
@@ -269,12 +269,12 @@ export function ReportFilters({
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className={`cursor-pointer flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest border transition-all duration-300 min-w-[150px] relative overflow-hidden ${
+            className={`cursor-pointer flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest border transition-all duration-300 min-w-37.5px relative overflow-hidden ${
               exportSuccess
                 ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
                 : isExporting
-                ? "bg-slate-900 border-slate-800 text-slate-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border-cyan-500/30 text-white shadow-[0_0_15px_rgba(6,182,212,0.1)] active:scale-95"
+                ? "bg-muted border-border text-muted-foreground cursor-not-allowed"
+                : "bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border-cyan-500/30 text-white shadow-[0_0_15px_rgba(6,182,212,0.1)] active:scale-95"
             }`}
           >
             {isExporting && (
@@ -287,12 +287,12 @@ export function ReportFilters({
             <span className="relative z-10 flex items-center gap-2">
               {isExporting ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-405 dark:text-cyan-400" />
                   <span>COMPILING... {exportProgress}%</span>
                 </>
               ) : exportSuccess ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                   <span>EXPORTED SUCCESS</span>
                 </>
               ) : (
