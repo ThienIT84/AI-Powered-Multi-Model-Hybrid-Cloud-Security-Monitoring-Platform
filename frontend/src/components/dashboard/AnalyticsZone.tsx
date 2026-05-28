@@ -10,38 +10,114 @@ import {
   PieChart,
   Pie,
   Cell,
-  ReferenceDot,
-  ReferenceLine
+  ReferenceDot
 } from "recharts";
-import { TrafficData, Alert } from "../../types";
+import { TrafficData, Alert, Severity } from "../../types";
 import { cn } from "../../lib/utils";
-import { Brain, ShieldAlert, Activity, ChevronUp, Maximize2, AlertTriangle, Zap, Search, Eye, Lock, Terminal, Globe, UserX, Cpu, TrendingUp } from "lucide-react";
+import { 
+  Brain, 
+  ChevronDown, 
+  TrendingUp, 
+  ShieldAlert, 
+  Terminal, 
+  Globe, 
+  Search, 
+  Lock, 
+  UserX, 
+  Cpu, 
+  Eye, 
+  Zap,
+  Activity
+} from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-
 import { getCachedAttackTheme } from "../../utils/attackColors";
+import { IncidentDetail } from "../alerts/IncidentDetail";
 
 interface AnalyticsZoneProps {
   traffic: TrafficData[];
   alerts: Alert[];
-  onSelectAlert?: (alert: Alert) => void;
+  selectedAlert?: Alert | null;
+  onSelectAlert?: (alert: Alert | null) => void;
   isDarkMode?: boolean;
+  disabledAttackTypes: string[];
+  onToggleAttackType: (typeName: string) => void;
 }
 
-export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = true }: AnalyticsZoneProps) {
-  const [disabledTypes, setDisabledTypes] = React.useState<string[]>([]);
+export function AnalyticsZone({ 
+  traffic = [], 
+  alerts = [], 
+  selectedAlert, 
+  onSelectAlert, 
+  isDarkMode = true,
+  disabledAttackTypes = [],
+  onToggleAttackType
+}: AnalyticsZoneProps) {
+  const [selectedChartAttackFilter, setSelectedChartAttackFilter] = React.useState<string>("ALL");
+  const [timeRange, setTimeRange] = React.useState<string>("24h");
 
-  const toggleType = (typeName: string) => {
-    setDisabledTypes(prev => 
-      prev.includes(typeName) 
-        ? prev.filter(t => t !== typeName) 
-        : [...prev, typeName]
-    );
-  };
+  // Attack categories
+  const knownAttackTypes = [
+    "DDoS", "SQL Injection", "XSS", "Brute Force", "Port Scan", 
+    "LFI", "Command Injection", "Beaconing", "Botnet Activity", "Credential Stuffing"
+  ];
 
+  // Helper matching alert to chart datapoint for contextual intelligence
+  const matchAlertForPoint = React.useCallback((timestamp: string) => {
+    const ptTime = new Date(timestamp).getTime();
+    return alerts.find(a => {
+      const alertTime = new Date(a.timestamp).getTime();
+      return Math.abs(alertTime - ptTime) < 5000;
+    });
+  }, [alerts]);
+
+  // Determine active dynamic time window boundaries based on latest traffic timestamp
+  const latestTime = React.useMemo(() => {
+    if (traffic && traffic.length > 0) {
+      return Math.max(...traffic.map(t => new Date(t.timestamp).getTime()));
+    }
+    return Date.now();
+  }, [traffic]);
+
+  const durationMs = React.useMemo(() => {
+    switch (timeRange) {
+      case "5m": return 5 * 60 * 1000;
+      case "15m": return 15 * 60 * 1000;
+      case "1h": return 1 * 60 * 60 * 1000;
+      case "6h": return 6 * 60 * 60 * 1000;
+      case "24h":
+      default: return 24 * 60 * 60 * 1000;
+    }
+  }, [timeRange]);
+
+  // Dynamically filter alerts according to chosen time windows
+  const filteredAlertsByTime = React.useMemo(() => {
+    if (timeRange === "24h") return alerts;
+    return alerts.filter(alert => {
+      const timeDiff = latestTime - new Date(alert.timestamp).getTime();
+      return timeDiff <= durationMs;
+    });
+  }, [alerts, timeRange, latestTime, durationMs]);
+
+  // Dynamically filter traffic bandwidth records according to chosen time windows
+  const filteredTrafficByTime = React.useMemo(() => {
+    if (timeRange === "24h") return traffic;
+    const filtered = traffic.filter(item => {
+      const timeDiff = latestTime - new Date(item.timestamp).getTime();
+      return timeDiff <= durationMs;
+    });
+    // Fallback if data just started populating
+    return filtered.length > 3 ? filtered : traffic.slice(-15);
+  }, [traffic, timeRange, latestTime, durationMs]);
+
+  // Calculated attack statistics for Donut chart
   const threatData = React.useMemo(() => {
     const counts: Record<string, number> = {};
 
-    alerts.forEach(alert => {
+    knownAttackTypes.forEach(t => {
+      counts[t] = 0;
+    });
+
+    filteredAlertsByTime.forEach(alert => {
       counts[alert.attackType] = (counts[alert.attackType] || 0) + 1;
     });
 
@@ -49,149 +125,273 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
 
     return Object.entries(counts).map(([name, value]) => {
       const theme = getCachedAttackTheme(name, isDarkMode);
+      
+      // Calculate average confidence score dynamically based on matching alerts
+      const matchingAlerts = filteredAlertsByTime.filter(a => a.attackType === name);
+      const avgConfidence = matchingAlerts.length > 0 
+        ? matchingAlerts.reduce((sum, a) => sum + (a.confidenceScore || 0), 0) / matchingAlerts.length 
+        : (0.7 + (name.charCodeAt(0) % 25) / 100);
+
       return {
         name,
         value,
         color: theme.primary,
         theme,
-        percentage: total > 0 ? `${((value / total) * 100).toFixed(1)}%` : "0%",
-        disabled: disabledTypes.includes(name)
+        percentage: total > 0 ? `${((value / total) * 100).toFixed(0)}%` : "0%",
+        avgConfidence,
+        disabled: disabledAttackTypes.includes(name)
       };
     }).sort((a, b) => b.value - a.value);
-  }, [alerts, disabledTypes, isDarkMode]);
+  }, [alerts, disabledAttackTypes, isDarkMode]);
 
   const filteredThreatData = React.useMemo(() => {
-    return threatData.filter(d => !d.disabled);
+    const filtered = threatData.filter(d => !d.disabled);
+    const activeSum = filtered.reduce((sum, item) => sum + item.value, 0);
+    if (activeSum === 0) {
+      return threatData.map(item => ({ ...item, value: 1 }));
+    }
+    return filtered;
   }, [threatData]);
 
-  const totalVisible = filteredThreatData.reduce((acc, curr) => acc + curr.value, 0);
+  const totalVisible = React.useMemo(() => {
+    return threatData.filter(d => !d.disabled).reduce((acc, curr) => acc + curr.value, 0);
+  }, [threatData]);
 
-  // Map real-time traffic data or use mock if empty
+  // Map real-time traffic data or fallback
   const chartData = React.useMemo(() => {
-    if (traffic && traffic.length > 0) {
-      return traffic.map(d => ({
-        ...d,
-        formattedTime: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-      }));
-    }
+    const rawData = filteredTrafficByTime;
     
-    // Initial mock data
-    const data: TrafficData[] = [];
-    const now = new Date();
-    for (let i = 0; i <= 60; i++) {
-      const time = new Date(now.getTime() - (60 - i) * 2000);
-      data.push({
-        timestamp: time.toISOString(),
-        formattedTime: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-        inbound: 150 + Math.random() * 100,
-        outbound: 50 + Math.random() * 50,
-        flows: 1000 + Math.random() * 500,
-        anomalies: 0,
-        isAnomaly: false,
-        isPeak: false
-      });
-    }
-    return data;
-  }, [traffic]);
+    // Convert date string/object to standardized display format
+    return rawData.map(d => {
+      const matchedAlert = matchAlertForPoint(d.timestamp);
+      const isFilteredOut = matchedAlert && disabledAttackTypes.includes(matchedAlert.attackType);
+      
+      return {
+        ...d,
+        isAnomaly: isFilteredOut ? false : d.isAnomaly,
+        isPeak: isFilteredOut ? false : d.isPeak,
+        formattedTime: new Date(d.timestamp).toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit', 
+          hour12: false 
+        })
+      };
+    });
+  }, [traffic, matchAlertForPoint, disabledAttackTypes]);
 
-  const peaks = chartData.filter(d => d.isPeak);
+  // Tooltip content component referencing dynamic variables
+  const CustomTooltipContent = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const dataPoint = payload[0].payload;
+      const matchedAlert = matchAlertForPoint(dataPoint.timestamp);
+      
+      const timeStr = new Date(dataPoint.timestamp).toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit', 
+        hour12: false 
+      });
+
+      const trafficVal = payload[0].value.toFixed(1);
+      const isAnomaly = dataPoint.isAnomaly;
+      const confidence = matchedAlert ? matchedAlert.confidenceScore : 0.05;
+      const anomalyScore = isAnomaly ? (confidence * 100).toFixed(0) + "%" : "0.5%";
+      const attackType = isAnomaly ? (matchedAlert?.attackType || "Anomaly detected") : null;
+
+      return (
+        <div className="bg-card/95 border border-border p-3.5 rounded-xl shadow-xl backdrop-blur-xl max-w-52.5 select-none text-[10px]">
+          <div className="flex items-center gap-2 mb-2 border-b border-border/40 pb-1.5">
+             <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+             <p className="font-mono font-bold text-foreground">{timeStr}</p>
+          </div>
+          <div className="space-y-1.5 font-bold">
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground uppercase tracking-wider text-[8px]">Traffic:</span>
+              <span className="text-cyan-500 font-mono">{trafficVal} Gbps</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground uppercase tracking-wider text-[8px]">Anomaly Score:</span>
+              <span className={cn("font-mono", isAnomaly ? "text-red-500 animate-pulse" : "text-emerald-500")}>{anomalyScore}</span>
+            </div>
+            {attackType && (
+              <div className="pt-1.5 border-t border-border/20 mt-1 flex flex-col gap-0.5">
+                <span className="text-red-500 uppercase tracking-widest text-[7px]">ATTACK HEURISTIC:</span>
+                <span className="text-foreground text-[10px] bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded mt-0.5 w-fit uppercase font-mono tracking-tight">{attackType}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-4 h-105">
-      {/* Main Traffic Chart */}
-      <motion.div 
-        layout
-        className="xl:col-span-8 bg-card border border-border rounded-xl p-4 relative shadow-sm overflow-hidden transition-all duration-300"
-      >
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-             <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(34,211,238,0.2)]">REAL-TIME AI SECURITY EVENTS</h3>
-          </div>
-          <div className="flex items-center gap-2">
-             <div className="flex items-center bg-secondary/50 rounded px-2 py-1 border border-border gap-2 cursor-pointer hover:bg-secondary transition-colors">
-                <span className="text-[8px] font-black text-foreground uppercase tracking-widest leading-none">Last 1 Hour</span>
-                <ChevronUp className="w-2.5 h-2.5 text-muted-foreground rotate-180" />
-             </div>
-          </div>
-        </div>
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-4 select-none">
+      
+      {/* REAL-TIME AI SECURITY EVENTS CHART (Left Column - 8 cols) */}
+      <div className="xl:col-span-8 bg-card border border-border rounded-xl p-4 flex flex-col justify-between shadow-sm min-h-110 max-h-110">
         
-        <div className="flex items-center gap-6 mb-6">
-           <div className="flex items-center gap-1.5">
-              <div className="w-3 h-1 bg-cyan-500 rounded-sm shadow-[0_0_8px_rgba(34,211,238,0.3)]" />
-              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none">Normal Traffic</span>
-           </div>
-           <div className="flex items-center gap-1.5">
-              <div className="w-3 h-1 bg-red-500 rounded-sm shadow-[0_0_8px_rgba(239,68,68,0.3)]" />
-              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest leading-none">Anomalies / Threats</span>
-           </div>
+        {/* Chart Header Toolbar */}
+        <div className="flex items-center justify-between mb-2 shrink-0">
+          <div className="flex flex-col">
+            <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.15em] flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-cyan-500" />
+              REAL-TIME SECURITY TRAFFIC BANDWIDTH
+            </h3>
+            <span className="text-[8px] text-muted-foreground font-black uppercase tracking-widest leading-none mt-1 opacity-60">Anomaly Spikes Highlighted</span>
+          </div>
+        
+        <div className="flex items-center gap-4">
+            {/* TIME DROPDOWN - Compact & responsive */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8.5px] font-black text-muted-foreground uppercase tracking-widest hidden sm:inline">TIME WINDOW:</span>
+              <div className="relative">
+                <select 
+                  value={timeRange} 
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="appearance-none bg-secondary/60 border border-border px-2.5 py-1.5 pr-7 rounded font-black text-[9px] uppercase tracking-wider text-foreground cursor-pointer focus:outline-none focus:border-cyan-500 hover:bg-secondary transition-colors"
+                >
+                  <option value="5m">Last 5 Minutes</option>
+                  <option value="15m">Last 15 Minutes</option>
+                  <option value="1h">Last 1 Hour</option>
+                  <option value="6h">Last 6 Hours</option>
+                  <option value="24h">Last 24 Hours</option>
+                </select>
+                <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2.5 top-2.5 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Attack Type Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8.5px] font-black text-muted-foreground uppercase tracking-widest hidden sm:inline">FILTER ATTACK:</span>
+              <div className="relative">
+                <select 
+                  value={selectedChartAttackFilter} 
+                  onChange={(e) => setSelectedChartAttackFilter(e.target.value)}
+                  className="appearance-none bg-secondary/60 border border-border px-2.5 py-1.5 pr-7 rounded font-black text-[9px] uppercase tracking-wider text-foreground cursor-pointer focus:outline-none focus:border-cyan-500 hover:bg-secondary transition-colors"
+                >
+                  <option value="ALL">ALL EVENTS</option>
+                  {knownAttackTypes.map(typ => (
+                    <option key={typ} value={typ}>{typ.toUpperCase()}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3 h-3 text-muted-foreground absolute right-2.5 top-2.5 pointer-events-none" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="h-70 w-full">
+        {/* Legend status indicators */}
+        <div className="flex items-center gap-4 mb-3 text-[8.5px] font-black uppercase tracking-wider shrink-0">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-1 bg-cyan-500 rounded animate-pulse" />
+            <span className="text-muted-foreground">Normal traffic flow</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-1 bg-red-500 rounded" />
+            <span className="text-red-500">Heuristic threat spikes</span>
+          </div>
+        </div>
+
+        {/* Real-time Area Chart render container */}
+        <div className="flex-1 min-h-0 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 20, right: 10, left: -25, bottom: 0 }}>
+            <AreaChart 
+              data={chartData} 
+              margin={{ top: 10, right: 5, left: -25, bottom: 0 }}
+            >
               <defs>
-                <linearGradient id="colorIn" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.2}/>
+                <linearGradient id="colorNormal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.12}/>
                   <stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/>
                 </linearGradient>
-                <linearGradient id="colorThreat" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4}/>
+                <linearGradient id="colorAnom" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.22}/>
                   <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border" vertical={false} />
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke="currentColor" 
+                className="text-border/20" 
+                vertical={false} 
+              />
               <XAxis 
                 dataKey="formattedTime" 
                 stroke="currentColor"
-                className="text-muted-foreground"
-                fontSize={8} 
+                className="text-muted-foreground/60 font-mono text-[8px]"
                 tickLine={false} 
                 axisLine={true}
-                minTickGap={30}
-                padding={{ left: 10, right: 10 }}
-                tick={{ fill: 'currentColor', fontWeight: 800 }}
+                minTickGap={25}
+                padding={{ left: 5, right: 5 }}
+                tick={{ fill: 'currentColor' }}
               />
               <YAxis 
                 stroke="currentColor"
-                className="text-muted-foreground"
-                fontSize={8} 
+                className="text-muted-foreground/60 font-mono text-[8px]"
                 tickLine={false} 
                 axisLine={false}
                 domain={[0, 1200]}
-                ticks={[0, 200, 400, 600, 800, 1000, 1200]}
-                tick={{ fill: 'currentColor', fontWeight: 800 }}
+                ticks={[0, 300, 600, 900, 1200]}
+                tick={{ fill: 'currentColor' }}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(59,130,246,0.1)' }} />
+              <Tooltip 
+                content={<CustomTooltipContent />} 
+                cursor={{ stroke: 'currentColor', strokeWidth: 0.5, className: 'text-border' }} 
+              />
               
-              {/* Blue base line */}
+              {/* Normal Traffic Layer */}
               <Area 
                 type="monotone" 
                 dataKey="inbound" 
                 stroke="#22d3ee" 
-                fill="url(#colorIn)" 
+                fill="url(#colorNormal)" 
                 isAnimationActive={false}
-                strokeWidth={1} 
+                strokeWidth={1.5} 
                 dot={false}
-                activeDot={{ r: 4, fill: '#22d3ee', stroke: '#fff', strokeWidth: 1 }}
+                activeDot={{ r: 3.5, fill: '#22d3ee', stroke: '#fff', strokeWidth: 1 }}
               />
               
-              {/* Red spikes line layer */}
+              {/* Event Spikes Layer */}
               <Area 
                 type="monotone" 
-                dataKey={(v: any) => v.isAnomaly ? v.inbound : null} 
+                dataKey={(v: any) => {
+                  if (!v.isAnomaly) return null;
+                  
+                  if (selectedChartAttackFilter !== "ALL") {
+                    const matchedAlert = matchAlertForPoint(v.timestamp);
+                    if (!matchedAlert || matchedAlert.attackType !== selectedChartAttackFilter) {
+                      return null;
+                    }
+                  }
+                  
+                  return v.inbound;
+                }} 
                 stroke="#ef4444" 
                 strokeWidth={1.5} 
                 isAnimationActive={false}
-                fill="url(#colorThreat)"
+                fill="url(#colorAnom)"
                 dot={false}
                 connectNulls={false}
-                style={{ filter: "drop-shadow(0 0 4px rgba(239, 68, 68, 0.4))" }}
               />
 
-              {/* Peak Dots */}
+              {/* Peak Anomaly Dots */}
               <Area
                 type="monotone"
-                dataKey={(v: any) => v.isPeak ? v.inbound : null}
+                dataKey={(v: any) => {
+                  if (!v.isPeak) return null;
+                  
+                  if (selectedChartAttackFilter !== "ALL") {
+                    const matchedAlert = matchAlertForPoint(v.timestamp);
+                    if (!matchedAlert || matchedAlert.attackType !== selectedChartAttackFilter) {
+                      return null;
+                    }
+                  }
+                  
+                  return v.inbound;
+                }}
                 stroke="none"
                 fill="none"
                 isAnimationActive={false}
@@ -199,241 +399,160 @@ export function AnalyticsZone({ traffic, alerts, onSelectAlert, isDarkMode = tru
                   const { cx, cy } = props;
                   if (isNaN(cx) || isNaN(cy)) return <></>;
                   return (
-                    <g key={`peak-dot-${cx}-${cy}`}>
-                      <circle cx={cx} cy={cy} r={3} fill="#ef4444" filter="url(#marker-glow)" />
-                      <circle cx={cx} cy={cy} r={1.5} fill="white" />
+                    <g key={`spike-peak-${cx}-${cy}`}>
+                      <circle cx={cx} cy={cy} r={4} fill="#ef4444" opacity={0.6} />
+                      <circle cx={cx} cy={cy} r={1.5} fill="#ffffff" />
                     </g>
                   );
                 }}
               />
-
-              {peaks.map((spike, idx) => (
-                <ReferenceDot 
-                  key={`ad-${spike.timestamp}-${idx}`} 
-                  x={spike.formattedTime} 
-                  y={spike.inbound} 
-                  r={8} 
-                  fill="transparent"
-                  stroke="none"
-                  className="cursor-pointer"
-                  onClick={() => {
-                    const latestAlert = [...alerts].reverse().find(a => 
-                      new Date(a.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) === spike.formattedTime
-                    );
-                    if (latestAlert && onSelectAlert) onSelectAlert(latestAlert);
-                  }}
-                  label={<CustomMarker />} 
-                />
-              ))}
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Attacks By Type */}
-      <motion.div 
-        layout
-        className="xl:col-span-4 bg-card border border-border rounded-xl p-6 flex flex-col shadow-sm relative overflow-hidden transition-all duration-300 group min-h-105"
-      >
-        {/* Decorative corner accent */}
-        <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 blur-3xl pointer-events-none" />
-        
-        <div className="flex items-center justify-between mb-6 relative z-10">
-           <div className="flex flex-col">
-              <h3 className="text-[11px] font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                <Brain className="w-3 h-3 text-cyan-500" />
-                ATTACKS BY TYPE
-              </h3>
-              <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-widest mt-1 opacity-70">Heuristic Threat Distribution</span>
-           </div>
-           <div className="flex items-center gap-1.5 bg-muted/30 px-2 py-1 rounded border border-border/50">
-              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-              <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Live Engine</span>
-           </div>
-        </div>
-        
-        <div className="flex-1 flex flex-col lg:flex-row items-center gap-8 relative z-10 overflow-hidden">
-            {/* Left Column: Chart */}
-            <div className="w-full lg:w-[45%] flex flex-col items-center justify-center relative">
-                <div className="w-full aspect-square max-w-50 lg:max-w-none lg:h-60 relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={filteredThreatData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius="65%"
-                          outerRadius="90%"
-                          paddingAngle={6}
-                          dataKey="value"
-                          stroke="none"
-                          animationDuration={1500}
-                          animationBegin={0}
-                          isAnimationActive={true}
-                        >
-                           {filteredThreatData.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={entry.theme.primary} 
-                              stroke={isDarkMode ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"}
-                              strokeWidth={1}
-                              fillOpacity={0.85}
-                              className="hover:fill-opacity-100 transition-all cursor-pointer outline-none"
-                              style={{ 
-                                filter: `drop-shadow(0 0 15px ${entry.theme.glow})`,
-                                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                              }}
-                            />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
-                    
-                    {/* Centered Total Count */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                       <AnimatePresence mode="wait">
-                         <motion.div
-                           key={totalVisible}
-                           initial={{ opacity: 0, scale: 0.5, filter: "blur(4px)" }}
-                           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                           exit={{ opacity: 0, scale: 1.5, filter: "blur(10px)" }}
-                           className="flex flex-col items-center"
-                         >
-                            <span className="text-4xl font-black text-foreground leading-none tracking-tighter drop-shadow-sm">
-                              {totalVisible}
-                            </span>
-                            <span className="text-[8px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-2 opacity-60">Signals</span>
-                         </motion.div>
-                       </AnimatePresence>
-                    </div>
+      {/* THREAT CLASSIFICATION PANEL (Always visible in Right Column - 4 cols, vertically stacked) */}
+      <div className="xl:col-span-4 min-h-110 max-h-110">
+        <div className="bg-card border border-border rounded-xl p-3.5 flex flex-col justify-between shadow-sm h-full w-full overflow-hidden select-none">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between mb-1.5 shrink-0">
+             <div className="flex flex-col">
+                <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.15em] flex items-center gap-1.5">
+                  <Brain className="w-3.5 h-3.5 text-cyan-500" />
+                  THREAT CLASSIFICATION DISTRIBUTION
+                </h3>
+                <span className="text-[8px] text-muted-foreground font-black uppercase tracking-widest leading-none mt-1 opacity-60">Interactive Category Filters</span>
+             </div>
+             <div className="flex items-center gap-1.5 bg-muted/30 px-2 py-0.5 rounded border border-border/50 text-[7px] font-black text-muted-foreground uppercase opacity-85">
+                <span>HEURISTICS DETECTED</span>
+             </div>
+          </div>
+
+          {/* Core Content: Vertically Stacked Donut Chart & Scrollable List */}
+          <div className="flex-1 flex flex-col items-center gap-3 py-1 min-h-0 overflow-hidden">
+              
+              {/* 1. Donut Chart at the top */}
+              <div className="w-27.5 h-27.5 shrink-0 relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={filteredThreatData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="65%"
+                      outerRadius="95%"
+                      paddingAngle={4}
+                      dataKey="value"
+                      stroke="none"
+                      isAnimationActive={false}
+                    >
+                       {filteredThreatData.map((entry, index) => (
+                        <Cell 
+                          key={`donut-slice-${index}`} 
+                          fill={entry.theme.primary} 
+                          className="outline-none active:outline-none transition-all cursor-pointer fill-opacity-80 hover:fill-opacity-100"
+                          onClick={() => onToggleAttackType(entry.name)}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Total sum counter in the middle */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-xl font-black text-foreground leading-none tracking-tighter">
+                    {totalVisible}
+                  </span>
+                  <span className="text-[6.5px] text-muted-foreground font-black uppercase tracking-[0.13em] mt-0.5 opacity-60">alerts</span>
+                </div>
+              </div>
+
+              {/* 2. Scrollable Attack List at the bottom with separate scroll */}
+              <div className="flex-1 w-full min-h-0 flex flex-col overflow-y-auto custom-scrollbar pr-1 border border-border/10 rounded-lg bg-secondary/10 p-1.5">
+                <div className="flex items-center justify-between px-1 bg-card/60 rounded py-1 pb-1 text-[7px] font-black text-muted-foreground uppercase border-b border-border/20 mb-1.5 sticky top-0 z-10">
+                   <span>INCIDENTS FEED (TOGGLE)</span>
+                   <span>CONF LIMIT (AVG)</span>
                 </div>
                 
-                {/* Mini Stats Legend underneath on small screens, integrated into list on large */}
-                <div className="flex lg:hidden flex-wrap justify-center gap-3 mt-4">
-                   {filteredThreatData.slice(0, 3).map((item, i) => (
-                     <div key={i} className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.theme.primary }} />
-                        <span className="text-[8px] font-black text-muted-foreground uppercase">{item.name}</span>
-                     </div>
-                   ))}
-                </div>
-            </div>
-
-            {/* Right Column: Detailed List */}
-            <div className="w-full lg:w-[55%] h-full flex flex-col">
-                <div className="flex items-center justify-between px-2 mb-3">
-                   <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em]">Threat Classification</span>
-                   <span className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em]">Freq / Vol</span>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2.5 max-h-70">
-                   {threatData.map((item, idx) => {
+                <div className="space-y-1.5 flex-1 w-full">
+                   {threatData.map((item) => {
                      const AttackIcon = getAttackIcon(item.name);
+                     const severityLabel = getSeverityLabel(item.name);
                      return (
-                       <motion.div 
+                       <div 
                           key={item.name} 
-                          layout
-                          onClick={() => toggleType(item.name)}
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          whileHover={{ x: 4 }}
+                          onClick={() => onToggleAttackType(item.name)}
                           className={cn(
-                            "flex flex-col p-3 rounded-xl border transition-all cursor-pointer relative overflow-hidden group/item",
+                            "flex flex-col p-1.5 px-2 rounded-lg border transition-all cursor-pointer relative overflow-hidden select-none",
                             item.disabled 
-                              ? "opacity-30 grayscale border-transparent bg-muted/10" 
-                              : "bg-muted/10 border-border/50 hover:bg-muted/20 hover:border-border hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]"
+                              ? "opacity-20 grayscale border-transparent bg-muted/5" 
+                              : "bg-background border-border/40 hover:bg-muted/30"
                           )}
                           style={{ 
                             borderLeftColor: !item.disabled ? item.theme.primary : undefined,
-                            borderLeftWidth: !item.disabled ? '4px' : '1px'
+                            borderLeftWidth: !item.disabled ? '3px' : '1px'
                           }}
                         >
-                           {!item.disabled && (
-                             <div 
-                               className="absolute inset-0 opacity-0 group-hover/item:opacity-100 transition-opacity pointer-events-none" 
-                               style={{ background: item.theme.gradient }} 
-                             />
-                           )}
-                           
-                           {/* Row 1: Header & Counts */}
-                           <div className="flex items-center justify-between relative z-10 mb-2">
-                              <div className="flex items-center gap-3">
-                                 <div className="p-1.5 rounded-lg bg-background border border-border/50 text-muted-foreground group-hover/item:text-foreground transition-all shadow-sm" 
-                                      style={{ 
-                                        color: !item.disabled ? item.theme.primary : undefined,
-                                        boxShadow: !item.disabled ? `0 0 10px ${item.theme.glow}` : 'none'
-                                      }}>
-                                    <AttackIcon size={12} />
+                           <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                 <div className="p-1 rounded bg-secondary border border-border/30" style={{ color: !item.disabled ? item.theme.primary : "#64748b" }}>
+                                    <AttackIcon className="w-2.5 h-2.5 stroke-[2.5]" />
                                  </div>
                                  <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-muted-foreground group-hover/item:text-foreground uppercase tracking-widest transition-colors leading-none">
+                                    <span className="text-[8.5px] font-black uppercase text-foreground leading-none">
                                       {item.name}
                                     </span>
-                                    <span className="text-[8px] font-bold text-muted-foreground/60 uppercase tracking-tighter mt-1 leading-none">
-                                      {getSeverityLabel(item.name)}
+                                    <span className={cn(
+                                      "text-[6.5px] font-black uppercase tracking-widest leading-none mt-1",
+                                      severityLabel === "Critical" ? "text-red-500" : severityLabel === "High" ? "text-orange-500" : severityLabel === "Medium" ? "text-yellow-600 dark:text-yellow-500" : "text-blue-500"
+                                    )}>
+                                      {severityLabel} ({item.value})
                                     </span>
                                  </div>
                               </div>
-                              <div className="flex flex-col items-end">
-                                 <span className="text-[11px] font-mono font-black text-foreground drop-shadow-sm">
-                                   {item.value}
-                                 </span>
-                                 <div className="flex items-center gap-1">
-                                    <TrendingUp size={8} className="text-emerald-500" />
-                                    <span className="text-[7px] text-emerald-500 font-black uppercase">+{(item.value * 0.2).toFixed(0)}</span>
-                                 </div>
-                              </div>
+                              <span className="text-[8.5px] font-mono font-bold text-foreground">
+                                {(item.avgConfidence * 100).toFixed(0)}%
+                              </span>
                            </div>
 
-                           {/* Row 2: Progress & Percentage */}
                            {!item.disabled && (
-                             <div className="flex items-center gap-3 relative z-10">
-                                <div className="h-1 flex-1 bg-muted/40 rounded-full overflow-hidden border border-border/10">
-                                   <motion.div 
-                                     initial={{ width: 0 }}
-                                     animate={{ width: item.percentage }}
-                                     transition={{ duration: 1.5, ease: "anticipate" }}
-                                     className="h-full rounded-full" 
-                                     style={{ 
-                                       backgroundColor: item.theme.primary, 
-                                       boxShadow: `0 0 8px ${item.theme.glow}` 
-                                     }} 
-                                   />
-                                </div>
-                                <span className="text-[10px] font-mono font-black min-w-8 text-right" style={{ color: item.theme.primary }}>
-                                  {item.percentage}
-                                </span>
+                             <div className="h-0.5 bg-muted/65 rounded-full overflow-hidden mt-1 w-full">
+                               <div className="h-full rounded-full" style={{ backgroundColor: item.theme.primary, width: item.percentage }} />
                              </div>
                            )}
-                        </motion.div>
+                       </div>
                      );
                    })}
                 </div>
-            </div>
-        </div>
-        
-        {/* Bottom Legend / Footer */}
-        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between relative z-10">
-           <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                 <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                 <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest">Critical</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                 <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                 <span className="text-[7px] font-black text-muted-foreground uppercase tracking-widest">High</span>
-              </div>
-           </div>
-           <button className="text-[8px] font-black text-cyan-500 uppercase tracking-widest hover:underline transition-all">
-             Full Analysis report
-           </button>
+          </div>
+
+          {/* Footer status markers */}
+          <div className="mt-1.5 pt-2 border-t border-border/30 flex items-center justify-between text-[7px] font-black text-muted-foreground uppercase tracking-widest shrink-0">
+             <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                   <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                   <span>CRITICAL</span>
+                </div>
+                <div className="flex items-center gap-1">
+                   <div className="w-1.5 h-1.5 rounded bg-orange-500" />
+                   <span>HIGH</span>
+                </div>
+                <div className="flex items-center gap-1">
+                   <div className="w-1.5 h-1.5 rounded bg-yellow-500" />
+                   <span>MEDIUM</span>
+                </div>
+             </div>
+             <span className="opacity-55">Click list to toggle data</span>
+          </div>
+
         </div>
-      </motion.div>
+      </div>
+
     </div>
   );
 }
-
 
 function getAttackIcon(name: string) {
   switch (name) {
@@ -441,12 +560,11 @@ function getAttackIcon(name: string) {
     case "SQL Injection": return Terminal;
     case "XSS": return Globe;
     case "Port Scan": return Search;
-    case "Brute Force": return Lock;
-    case "Unauthorized Access": return UserX;
-    case "Malware": return Cpu;
-    case "Phishing": return Eye;
-    case "Ransomware": return ShieldAlert;
-    case "Insider Threat": return UserX;
+    case "LFI": return Eye;
+    case "Command Injection": return Terminal;
+    case "Beaconing": return TrendingUp;
+    case "Botnet Activity": return Cpu;
+    case "Credential Stuffing": return Lock;
     default: return ShieldAlert;
   }
 }
@@ -455,106 +573,14 @@ function getSeverityLabel(name: string) {
   switch (name) {
     case "DDoS":
     case "SQL Injection":
-    case "Ransomware":
-    case "Privilege Escalation":
+    case "Ransomware Attempt":
       return "Critical";
     case "Brute Force":
-    case "Malware":
-    case "Unauthorized Access":
-    case "Insider Threat":
+    case "Command Injection":
+    case "Botnet Activity":
+    case "Credential Stuffing":
       return "High";
     default:
       return "Medium";
   }
-}
-
-function getSeverityColor(name: string) {
-  const label = getSeverityLabel(name);
-  switch (label) {
-    case "Critical": return "bg-red-500/10 text-red-500 border border-red-500/20";
-    case "High": return "bg-orange-500/10 text-orange-500 border border-orange-500/20";
-    default: return "bg-cyan-500/10 text-cyan-500 border border-cyan-500/20";
-  }
-}
-
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-card/95 border border-border p-4 rounded-xl shadow-xl backdrop-blur-xl">
-        <div className="flex items-center gap-2 mb-3 border-b border-border pb-2">
-           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-           <p className="text-[11px] font-black text-foreground uppercase tracking-[0.15em]">{label}</p>
-        </div>
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between gap-8">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_5px_#3b82f6]" />
-              <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Traffic:</span>
-            </div>
-            <span className="text-xs font-black text-blue-500 font-mono tracking-tighter">{payload[0].value.toFixed(1)} Gbps</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
-
-const CustomMarker = (props: any) => {
-  const { cx, cy } = props;
-  if (isNaN(cx) || isNaN(cy)) return null;
-  // Offset the marker upward so it sits above the spike peak
-  const offsetY = cy - 8;
-  return (
-    <g>
-      <defs>
-        <filter id="marker-glow" x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
-        </filter>
-      </defs>
-      
-      {/* Glow effect triangle */}
-      <path 
-        d={`M${cx} ${offsetY - 12} L${cx + 8} ${offsetY} L${cx - 8} ${offsetY} Z`} 
-        fill="#ef4444" 
-        filter="url(#marker-glow)"
-        opacity="0.8"
-      />
-      
-      {/* Main Red Triangle */}
-      <path 
-        d={`M${cx} ${offsetY - 12} L${cx + 7} ${offsetY} L${cx - 7} ${offsetY} Z`} 
-        fill="#ef4444" 
-        stroke="#ffffff"
-        strokeWidth={0.5}
-        strokeOpacity={0.2}
-      />
-      
-      {/* Warning symbol '!' */}
-      <path 
-        d={`M${cx - 0.75} ${offsetY - 8.5} L${cx + 0.75} ${offsetY - 8.5} L${cx + 0.5} ${offsetY - 5} L${cx - 0.5} ${offsetY - 5} Z`} 
-        fill="white" 
-      />
-      <circle cx={cx} cy={offsetY - 3} r={0.8} fill="white" />
-    </g>
-  );
-};
-
-function AIProgressItem({ label, value, desc, color }: { label: string, value: number, desc: string, color: string }) {
-  return (
-    <div className="space-y-1.5">
-       <div className="flex justify-between items-end">
-          <div className="flex items-center gap-1.5">
-             <span className="text-[8.5px] font-black bg-muted border border-border text-foreground px-1 py-0.5 rounded tracking-tighter uppercase leading-none">{label}</span>
-             <span className="text-[8.5px] text-muted-foreground truncate max-w-37.5 leading-none tracking-tight">{desc}</span>
-          </div>
-          <span className={cn("text-[9px] font-black font-mono", value > 94 ? "text-red-500" : "text-yellow-500")}>{value}%</span>
-       </div>
-       <div className="h-1 bg-muted rounded-full overflow-hidden">
-          <div className={cn("h-full transition-all duration-1000", color, "shadow-sm")} style={{ width: `${value}%` }} />
-       </div>
-    </div>
-  );
 }

@@ -1,7 +1,33 @@
 import { useState, useEffect, useRef } from "react";
 import { appConfig } from "./config";
-import { mapBackendAlertToAlert } from "./lib/alertMapper";
 import { Alert, BackendAlertDTO, TrafficData } from "./types";
+
+function mapBackendAlertToAlert(raw: any): Alert {
+  return {
+    ...raw,
+    destinationIp: raw.destIp || raw.destinationIp || "",
+    destIp: raw.destIp || raw.destinationIp || "",
+    destinationPort: raw.destPort || raw.destinationPort || 0,
+    destPort: raw.destPort || raw.destinationPort || 0,
+    confidenceScore: raw.confidence !== undefined ? raw.confidence : (raw.confidenceScore || 0),
+    confidence: raw.confidence !== undefined ? raw.confidence : (raw.confidenceScore || 0),
+    rawPayload: raw.payload || raw.rawPayload || "",
+    payload: raw.payload || raw.rawPayload || "",
+    direction: raw.direction || "INGRESS",
+    detectedBy: raw.detectedBy || ["AI Engine"],
+    mitre: {
+      techniqueId: raw.mitre?.techniqueId || raw.mitreAttack?.id || "T1000",
+      techniqueName: raw.mitre?.techniqueName || raw.mitreAttack?.technique || "Unknown Technique",
+      tactic: raw.mitre?.tactic || raw.mitreAttack?.tactic || "Unknown Tactic",
+      url: raw.mitre?.url || ""
+    },
+    zeekData: raw.zeekData || {},
+    suricataData: raw.suricataData || {},
+    aiDecision: raw.aiDecision || {},
+    decisionFlow: raw.decisionFlow || [],
+    status: raw.status || "new"
+  };
+}
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
