@@ -31,6 +31,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentView, setCurrentView] = useState<"dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings">("dashboard");
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [disabledAttackTypes, setDisabledAttackTypes] = useState<string[]>([]);
   
   const { 
     isAlertsOpen, 
@@ -48,13 +49,29 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  // No auto-selection to keep detail panel hidden by default per user request
-  React.useEffect(() => {
-    // Empty per user instructions to hide detail panel by default
-  }, []);
+  const toggleAttackType = (typeName: string) => {
+    setDisabledAttackTypes(prev => 
+      prev.includes(typeName) 
+        ? prev.filter(t => t !== typeName) 
+        : [...prev, typeName]
+    );
+  };
+
+  // Restricts selected alert from displaying if its type gets disabled/toggled off
+  useEffect(() => {
+    if (selectedAlert && disabledAttackTypes.includes(selectedAlert.attackType)) {
+      setSelectedAlert(null);
+    }
+  }, [disabledAttackTypes, selectedAlert]);
 
   const filteredAlerts = alerts.filter(alert => {
     const q = searchQuery.toLowerCase();
+    
+    // Toggle attack type filtering from Donut Chart Legend
+    if (disabledAttackTypes.includes(alert.attackType)) {
+      return false;
+    }
+    
     return (
       alert.sourceIp.toLowerCase().includes(q) ||
       alert.destinationIp.toLowerCase().includes(q) ||
@@ -98,40 +115,38 @@ export default function App() {
                 exit={{ opacity: 0, x: 10 }}
                 className="space-y-4"
               >
-                <KPIOverview summary={mockSummary} />
+                <KPIOverview alerts={alerts} traffic={traffic} />
                 
-                    <AnalyticsZone 
-                      traffic={traffic} 
-                      alerts={alerts} 
-                      onSelectAlert={setSelectedAlert}
-                      isDarkMode={isDarkMode}
-                    />
+                <AnalyticsZone 
+                  traffic={traffic} 
+                  alerts={alerts} 
+                  selectedAlert={selectedAlert}
+                  onSelectAlert={setSelectedAlert}
+                  isDarkMode={isDarkMode}
+                  disabledAttackTypes={disabledAttackTypes}
+                  onToggleAttackType={toggleAttackType}
+                />
 
-                    <div className="flex flex-col xl:flex-row gap-4 w-full items-start">
-                      <motion.div 
-                        layout="size"
-                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                        className={cn(
-                          "space-y-4 grow min-w-0 w-full transition-all duration-300",
-                          selectedAlert ? "xl:max-w-[75%] xl:w-[75%]" : "xl:max-w-full xl:w-full"
-                        )}
-                      >
-                        
+                <div className="flex flex-col lg:flex-row gap-4 items-stretch w-full overflow-hidden">
+                  <div className={cn(
+                    "transition-all duration-300 ease-in-out min-w-0 flex-1",
+                    selectedAlert ? "lg:w-[62%]" : "w-full"
+                  )}>
                     <AlertTable 
                       alerts={filteredAlerts} 
                       onSelectAlert={setSelectedAlert} 
                       selectedAlertId={selectedAlert?.id}
                     />
-                  </motion.div>
-                  
-                  <AnimatePresence mode="popLayout">
+                  </div>
+
+                  <AnimatePresence>
                     {selectedAlert && (
-                      <motion.div 
-                        initial={{ opacity: 0, x: 24, width: 0 }}
-                        animate={{ opacity: 1, x: 0, width: "25%" }}
-                        exit={{ opacity: 0, x: 24, width: 0 }}
-                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full xl:w-[25%] shrink-0 h-full overflow-hidden"
+                      <motion.div
+                        initial={{ opacity: 0, x: 120, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: "38%", minWidth: "370px" }}
+                        exit={{ opacity: 0, x: 120, width: 0 }}
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        className="select-none flex flex-col h-full shrink-0"
                       >
                         <IncidentDetail 
                           alert={selectedAlert} 
@@ -142,7 +157,7 @@ export default function App() {
                   </AnimatePresence>
                 </div>
                 
-                <BottomWidgets modelStatus={mockModelStatus} dataSourceHealth={mockDataSourceHealth} />
+                <BottomWidgets />
               </motion.div>
             ) : currentView === "alerts" ? (
               <AlertsPage key="alerts" />
