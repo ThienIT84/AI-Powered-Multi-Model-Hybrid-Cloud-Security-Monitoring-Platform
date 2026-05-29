@@ -23,6 +23,14 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   
+  --color-xanh-accent: var(--xanh-accent);
+  --color-critical-accent: var(--critical-accent);
+  --color-high-accent: var(--high-accent);
+  --color-medium-accent: var(--medium-accent);
+  --color-low-accent: var(--low-accent);
+  --color-emerald-accent: var(--emerald-accent);
+  --color-purple-accent: var(--purple-accent);
+  
   --color-border: var(--border);
   --color-input: var(--input);
   
@@ -58,6 +66,14 @@
     
     --primary: #0f172a;
     --primary-foreground: #f8fafc;
+
+    --xanh-accent: #0066ff;
+    --critical-accent: #dc2626;
+    --high-accent: #ea580c;
+    --medium-accent: #ca8a04;
+    --low-accent: #2563eb;
+    --emerald-accent: #059669;
+    --purple-accent: #9333ea;
   }
 
   .dark {
@@ -81,6 +97,14 @@
     
     --primary: #f8fafc;
     --primary-foreground: #0f172a;
+
+    --xanh-accent: #22d3ee;
+    --critical-accent: #ef4444;
+    --high-accent: #f97316;
+    --medium-accent: #eab308;
+    --low-accent: #3b82f6;
+    --emerald-accent: #10b981;
+    --purple-accent: #a855f7;
   }
 
   body {

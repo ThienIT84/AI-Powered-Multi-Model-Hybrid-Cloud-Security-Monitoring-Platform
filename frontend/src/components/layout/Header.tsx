@@ -1,4 +1,5 @@
 import React from "react";
+import { AppView } from "../../types/views";
 import {
   Bell,
   Settings,
@@ -46,8 +47,8 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   isDarkMode: boolean;
   onThemeToggle: () => void;
-  currentView: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings";
-  onViewChange: (view: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings") => void;
+  currentView: AppView;
+  onViewChange: (view: AppView) => void;
   alerts: Alert[];
   onSelectAlert: (alert: Alert) => void;
   isAlertsOpen: boolean;
