@@ -26,26 +26,26 @@ export function PlaybookCard({ playbook, onCardClick, onToggleStatus }: Playbook
     switch (severity) {
       case "critical":
         return {
-          badge: "text-rose-400 border-rose-500/20 bg-rose-500/10",
-          glow: "group-hover:shadow-rose-500/10",
+          badge: "text-rose-450 border-rose-500/20 bg-rose-500/10",
+          glow: "group-hover:shadow-[0_0_20px_rgba(244,63,94,0.12)] group-hover:border-rose-500/30",
           text: "text-rose-400"
         };
       case "high":
         return {
-          badge: "text-orange-400 border-orange-500/20 bg-orange-500/10",
-          glow: "group-hover:shadow-orange-500/10",
+          badge: "text-orange-450 border-orange-500/20 bg-orange-500/10",
+          glow: "group-hover:shadow-[0_0_20px_rgba(245,158,11,0.12)] group-hover:border-orange-500/30",
           text: "text-orange-400"
         };
       case "medium":
         return {
-          badge: "text-amber-400 border-amber-500/20 bg-amber-500/10",
-          glow: "group-hover:shadow-amber-500/10",
+          badge: "text-amber-450 border-amber-500/20 bg-amber-500/10",
+          glow: "group-hover:shadow-[0_0_20px_rgba(217,119,6,0.12)] group-hover:border-amber-500/30",
           text: "text-amber-400"
         };
       default:
         return {
-          badge: "text-cyan-400 border-cyan-500/20 bg-cyan-500/10",
-          glow: "group-hover:shadow-cyan-500/10",
+          badge: "text-cyan-455 border-cyan-500/20 bg-cyan-500/10",
+          glow: "group-hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] group-hover:border-cyan-500/30",
           text: "text-cyan-400"
         };
     }
@@ -165,13 +165,13 @@ export function PlaybookCard({ playbook, onCardClick, onToggleStatus }: Playbook
         {/* Dynamic Condition Chips for Extra Cyber feel */}
         <div className="flex flex-wrap gap-1 mt-2.5">
           <span className={`text-[7px] font-mono uppercase bg-muted border border-border px-1.5 py-0.5 rounded ${isCurrentlyActive ? 'text-cyan-600 dark:text-cyan-400/85 border-cyan-500/15' : 'text-muted-foreground'}`}>
-            COF &gt; {(playbook.confidenceThreshold || 90)}%
+            COP &gt; {(playbook.confidenceThreshold || 90)}%
           </span>
           <span className={`text-[7px] font-mono uppercase bg-muted border border-border px-1.5 py-0.5 rounded ${isCurrentlyActive ? 'text-rose-600 dark:text-rose-400/85 border-rose-500/15' : 'text-muted-foreground'}`}>
             RISK &gt; {(playbook.riskScoreThreshold || 75)}
           </span>
           <span className="text-[7px] font-mono uppercase bg-muted tracking-wide px-1.5 py-0.5 rounded text-muted-foreground/60 select-none">
-            REMEDIATE MODE
+            REMEDIATE NODE
           </span>
         </div>
       </div>

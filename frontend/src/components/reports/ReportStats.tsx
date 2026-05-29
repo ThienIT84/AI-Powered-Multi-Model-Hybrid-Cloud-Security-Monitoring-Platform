@@ -52,12 +52,11 @@ export function ReportStats() {
   const stats = [
     {
       title: "TOTAL ALERTS DETECTED",
-      value: 1248,
-      suffix: "",
-      isFloat: false,
-      change: "+12.4%",
+      valueDisplay: "1,248",
+      suffix: " alerts",
+      change: "+12.4% MoM",
       isPositive: false,
-      detail: "vs previous 30 days",
+      detail: "vs previous 30d",
       icon: ShieldAlert,
       color: "text-cyan-400 border-cyan-500/30",
       glowColor: "shadow-[0_0_20px_rgba(6,182,212,0.12)]",
@@ -67,12 +66,11 @@ export function ReportStats() {
     },
     {
       title: "CRITICAL INCIDENTS",
-      value: 42,
-      suffix: "",
-      isFloat: false,
+      valueDisplay: "42",
+      suffix: " incidents",
       change: "-8.3%",
       isPositive: true,
-      detail: "Mitigated and closed",
+      detail: "Mitigated & Closed",
       icon: AlertTriangle,
       color: "text-red-400 border-red-500/30",
       glowColor: "shadow-[0_0_20px_rgba(244,63,94,0.15)]",
@@ -82,12 +80,11 @@ export function ReportStats() {
     },
     {
       title: "MEAN TIME TO RESOLVE",
-      value: 145, // will scale dynamically
-      suffix: "m",
-      isFloat: true,
+      valueDisplay: "14.5",
+      suffix: " min",
       change: "-2.1m",
       isPositive: true,
-      detail: "SLA Standard: 15m",
+      detail: "SLA target: 15m",
       icon: Hourglass,
       color: "text-amber-400 border-amber-500/30",
       glowColor: "shadow-[0_0_20px_rgba(245,158,11,0.12)]",
@@ -97,12 +94,11 @@ export function ReportStats() {
     },
     {
       title: "FALSE POSITIVE RATE",
-      value: 24, // will scale dynamically
+      valueDisplay: "2.4",
       suffix: "%",
-      isFloat: true,
       change: "-0.6%",
       isPositive: true,
-      detail: "AI Fusion Engine Tuning",
+      detail: "AI Fusion optimized",
       icon: ShieldX,
       color: "text-emerald-400 border-emerald-500/30",
       glowColor: "shadow-[0_0_20px_rgba(16,185,129,0.12)]",
@@ -110,62 +106,74 @@ export function ReportStats() {
       badgeColor: "bg-emerald-500/10 text-emerald-400",
       pulse: false
     },
+    {
+      title: "INGEST RATE",
+      valueDisplay: "9.8K",
+      suffix: " events/sec",
+      change: "Stable",
+      isPositive: true,
+      detail: "Stable pipeline",
+      icon: Activity,
+      color: "text-purple-400 border-purple-500/30",
+      glowColor: "shadow-[0_0_20px_rgba(168,85,247,0.12)]",
+      borderColor: "border-purple-500/20 hover:border-purple-500/50",
+      badgeColor: "bg-purple-500/10 text-purple-400",
+      pulse: false
+    }
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {stats.map((stat, i) => {
         const Icon = stat.icon;
         return (
           <div
             key={i}
-            className={`bg-card rounded-xl p-5 border ${stat.borderColor} ${stat.glowColor} transition-all duration-300 hover:scale-[1.02] hover:bg-card/90 flex flex-col justify-between group relative overflow-hidden`}
+            className={`bg-card rounded-xl p-4 border ${stat.borderColor} ${stat.glowColor} transition-all duration-300 hover:scale-[1.02] hover:bg-card/90 flex flex-col justify-between group relative overflow-hidden`}
           >
             {/* Cyber Corner lines decorations */}
             <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-border group-hover:border-cyan-500/40 transition-colors" />
             <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-border group-hover:border-cyan-500/40 transition-colors" />
 
-            <div className="flex justify-between items-start gap-3 relative z-10">
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-1.5">
+            <div className="flex justify-between items-start gap-2 relative z-10">
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center gap-1">
                   {stat.pulse && (
-                    <span className="relative flex h-2 w-2">
+                    <span className="relative flex h-1.5 w-1.5">
                       <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${i === 1 ? 'bg-red-400' : 'bg-cyan-400'}`}></span>
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${i === 1 ? 'bg-red-500' : 'bg-cyan-500'}`}></span>
+                      <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${i === 1 ? 'bg-red-500' : 'bg-cyan-500'}`}></span>
                     </span>
                   )}
-                  <span className="text-[9px] font-mono font-bold text-muted-foreground tracking-[0.18em] uppercase block leading-none">
+                  <span className="text-[8px] font-mono font-bold text-muted-foreground tracking-[0.15em] uppercase block leading-none">
                     {stat.title}
                   </span>
                 </div>
-                <div className="text-3xl font-black text-foreground tracking-tight block font-mono">
-                  {stat.isFloat ? (
-                    <span>
-                      {(stat.value / 10).toFixed(1)}
-                      <span className="text-lg text-muted-foreground font-sans ml-0.5">{stat.suffix}</span>
-                    </span>
-                  ) : (
-                    <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-                  )}
+                <div className="text-2xl font-black text-foreground tracking-tight block font-mono">
+                  <span>
+                    {stat.valueDisplay}
+                    <span className="text-[10px] text-muted-foreground font-sans ml-0.5">{stat.suffix}</span>
+                  </span>
                 </div>
               </div>
-              <div className={`p-2.5 rounded-lg bg-muted border border-border ${stat.color} transition-all duration-300 group-hover:shadow-[0_0_10px_rgba(6,182,212,0.15)]`}>
-                <Icon className="w-5 h-5" />
+              <div className={`p-2 rounded-lg bg-muted border border-border ${stat.color} transition-all duration-300 group-hover:shadow-[0_0_10px_rgba(6,182,212,0.15)] shrink-0`}>
+                <Icon className="w-4.5 h-4.5" />
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between border-t border-border pt-3 relative z-10">
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-2 relative z-10 gap-1">
               <div className="flex items-center gap-1">
-                {stat.isPositive ? (
-                  <TrendingDown className="w-3.5 h-3.5 text-emerald-500" />
+                {stat.change === "Stable" ? (
+                  <Activity className="w-3 h-3 text-purple-400" />
+                ) : stat.isPositive ? (
+                  <TrendingDown className="w-3 h-3 text-emerald-500" />
                 ) : (
-                  <TrendingUp className="w-3.5 h-3.5 text-red-500" />
+                  <TrendingUp className="w-3 h-3 text-red-500" />
                 )}
-                <span className={`text-[10px] font-mono font-bold tracking-wider ${stat.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                <span className={`text-[9px] font-mono font-bold tracking-wider ${stat.change === "Stable" ? "text-purple-400" : stat.isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
                   {stat.change}
                 </span>
               </div>
-              <span className="text-[9px] font-mono font-bold uppercase text-muted-foreground tracking-wider">
+              <span className="text-[8px] font-mono font-bold uppercase text-muted-foreground tracking-wide truncate max-w-25" title={stat.detail}>
                 {stat.detail}
               </span>
             </div>

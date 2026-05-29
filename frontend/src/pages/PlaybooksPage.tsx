@@ -20,19 +20,19 @@ import {
 const initialPlaybooks: Playbook[] = [
   {
     id: "pb-1",
-    name: "Auto-Isolate Compromised EC2",
-    description: "Automatically isolate compromised EC2 instances by disconnecting VPC subnets when AI detects high Anomaly Scores in Zeek traffic logs.",
+    name: "AUTO-ISOLATE COMPROMISED EC2",
+    description: "AUTOMATICALLY ISOLATE COMPROMISED EC2 INSTANCES BY DISCONNECTING VPC SUBNETS WHEN AI DETECTS HIGH ANOMALY SCORES IN ZEEK TRAFFIC LOGS.",
     status: "active",
     triggerType: "automated",
-    triggerCondition: "IF: AI Anomaly Score of Zeek records > 0.88",
+    triggerCondition: "AI ANOMALY SCORE OF ZEEK RECORDS > 0.88",
     executions: 124,
     updatedAt: "3 hours ago",
     severity: "critical",
-    avgDurationMs: 121,
+    avgDurationMs: 123,
     confidenceThreshold: 92,
     riskScoreThreshold: 88,
     lastExecutionStatus: "success",
-    lastExecutedTime: "3 hours ago",
+    lastExecutedTime: "3 HOURS AGO",
     actions: [
       {
         id: "pb1-act-1",
@@ -58,19 +58,19 @@ const initialPlaybooks: Playbook[] = [
   },
   {
     id: "pb-2",
-    name: "Block Brute Force IP via pfSense",
-    description: "Detect systematic credential brute force and automatically block culprit source IPs in the pfSense firewall rule table using Suricata alert details.",
+    name: "BLOCK BRUTE FORCE IP VIA PFSENSE",
+    description: "DETECT SYSTEMATIC CREDENTIAL BRUTE FORCE AND AUTOMATICALLY BLOCK CULPRIT SOURCE IPS IN THE PFSENSE FIREWALL RULE TABLE USING SURICATA ALERT DETAILS.",
     status: "active",
     triggerType: "automated",
-    triggerCondition: "IF: Suricata Signature Category === Brute Force",
+    triggerCondition: "SURICATA SIGNATURE CATEGORY === BRUTE FORCE",
     executions: 312,
     updatedAt: "1 day ago",
     severity: "high",
     avgDurationMs: 84,
-    confidenceThreshold: 94,
+    confidenceThreshold: 90,
     riskScoreThreshold: 80,
     lastExecutionStatus: "success",
-    lastExecutedTime: "1 day ago",
+    lastExecutedTime: "1 DAY AGO",
     actions: [
       {
         id: "pb2-act-1",
@@ -96,19 +96,19 @@ const initialPlaybooks: Playbook[] = [
   },
   {
     id: "pb-3",
-    name: "Slack Alert & Critical Incident Creation",
-    description: "Identify remote code execution or SQL injection exploits and notify SecOps teams instantly via Slack while logging incidents inside internal SOC tickets.",
+    name: "SLACK ALERT & CRITICAL INCIDENT CREATION",
+    description: "IDENTIFY REMOTE CODE EXECUTION OR SQL INJECTION EXPLOITS AND NOTIFY SECOPS TEAMS INSTANTLY VIA SLACK WHILE LOGGING INCIDENTS INSIDE INTERNAL SOC TICKETS.",
     status: "inactive",
     triggerType: "automated",
-    triggerCondition: "IF: AI2B Web Attack Confidence Score > 0.95",
+    triggerCondition: "AI2B WEB ATTACK CONFIDENCE SCORE > 0.95",
     executions: 45,
     updatedAt: "4 days ago",
     severity: "medium",
     avgDurationMs: 142,
     confidenceThreshold: 95,
-    riskScoreThreshold: 78,
+    riskScoreThreshold: 75,
     lastExecutionStatus: "warning",
-    lastExecutedTime: "4 days ago",
+    lastExecutedTime: "4 DAYS AGO",
     actions: [
       {
         id: "pb3-act-1",
@@ -134,19 +134,19 @@ const initialPlaybooks: Playbook[] = [
   },
   {
     id: "pb-4",
-    name: "Revoke Leaked AWS IAM Session",
-    description: "Revoke active temporal tokens and block credential access immediately upon detection of anomalous AWS activity.",
+    name: "REVOKE LEAKED AWS IAM SESSION",
+    description: "REVOKE ACTIVE TEMPORAL TOKENS AND BLOCK CREDENTIAL ACCESS IMMEDIATELY UPON DETECTION OF ANOMALOUS AWS ACTIVITY.",
     status: "active",
     triggerType: "automated",
-    triggerCondition: "IF: AWS CloudTrail anomalies detected by AI Optimizer",
+    triggerCondition: "AWS CLOUDTRAIL ANOMALIES DETECTED BY AI OPTIMIZER",
     executions: 18,
     updatedAt: "Just now",
     severity: "high",
     avgDurationMs: 115,
-    confidenceThreshold: 90,
+    confidenceThreshold: 92,
     riskScoreThreshold: 82,
     lastExecutionStatus: "success",
-    lastExecutedTime: "Just now",
+    lastExecutedTime: "JUST NOW",
     actions: [
       {
         id: "pb4-act-1",
@@ -184,74 +184,99 @@ export function PlaybooksPage() {
   // UTC Clock state
   const [systemTime, setSystemTime] = useState("");
 
+  // Auto Scroll state for terminal logs
+  const [autoScroll, setAutoScroll] = useState(false);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
+
   // Live event ticker state
   const [logsList, setLogsList] = useState<string[]>([
-    "SEC_CORE: Active threat response loop initialized successfully. Frame ready.",
-    "SURICATA_MONITOR: Standing by on WAN sub-interfaces. Rulesets synced (24,195 signatures).",
-    "FUSION_NODE: Connecting local telemetry to Central Command. Engine ping: 2ms."
+    "SEC_CORE: ACTIVE THREAT RESPONSE LOOP INITIALIZED SUCCESSFULLY. FRAME READY.",
+    "SURICATA_MONITOR: STANDBY ON WAN SUB-INTERFACES. RULESETS SYNCED (24,195 SIGNATURES).",
+    "FUSION_NODE: CONNECTING LOCAL TELEMETRY TO CENTRAL COMMAND. ENGINE PING: 2MS.",
+    "[03:59:20] THREAT_INTEL: PULLED FRESH REPUTATION INDICATORS FROM MITRE ATT&CK INTEGRATION. LOADED."
   ]);
 
   // Handle ticking system clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setSystemTime(now.toISOString().replace("T", " ").substring(0, 19) + " UTC");
+      // format: 2026-05-29 03:59:27 UTC
+      const year = now.getUTCFullYear();
+      const month = String(now.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(now.getUTCDate()).padStart(2, "0");
+      const hours = String(now.getUTCHours()).padStart(2, "0");
+      const minutes = String(now.getUTCMinutes()).padStart(2, "0");
+      const seconds = String(now.getUTCSeconds()).padStart(2, "0");
+      setSystemTime(`${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`);
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
 
+  // Stateful scroll posture keeper
+  useEffect(() => {
+    if (autoScroll && logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+    }
+  }, [logsList, autoScroll]);
+
   // Handle active running security alerts event stream
   useEffect(() => {
     const eventsPool = [
-      "AI_DETECTOR: Web anomaly score checked on /api/auth. Risk evaluation score: 0.14 [CLEAN]",
-      "PFSENSE_FIREWALL: Syncing rules with dynamic cloud block alias table... OK",
-      "AWS_CLOUD_TRAIL: Evaluated session role AWS_L1_SecOps token lifespan. Standing by.",
-      "ZEEK_PARSER: Parsed 842 connection records. Anomaly index matches steady state parameters.",
-      "AUTOMATION_RUNNER: Scheduled maintenance scan of high-severity playbooks... [0 errors found]",
-      "SIEM_GATEWAY: Heartbeat sent to central enterprise controller. Standby operational: online.",
-      "THREAT_INTEL: Pulled fresh reputation indicators from MITRE ATT&CK integration. Loaded.",
-      "pfSense: Injected block list integrity verified. 14 Culprit IPs actively blocked."
+      "AI_DETECTOR: WEB ANOMALY SCORE CHECKED ON /API/AUTH. RISK EVALUATION SCORE: 0.14 [CLEAN]",
+      "PFSENSE_FIREWALL: SYNCING RULES WITH DYNAMIC CLOUD BLOCK ALIAS TABLE... OK",
+      "AWS_CLOUD_TRAIL: EVALUATED SESSION ROLE AWS_L1_SECOPS TOKEN LIFESPAN. STANDBY.",
+      "ZEEK_PARSER: PARSED 842 CONNECTION RECORDS. ANOMALY INDEX MATCHES STEADY STATE PARAMETERS.",
+      "AUTOMATION_RUNNER: SCHEDULED MAINTENANCE SCAN OF HIGH-SEVERITY PLAYBOOKS... [0 ERRORS FOUND]",
+      "SIEM_GATEWAY: HEARTBEAT SENT TO CENTRAL ENTERPRISE CONTROLLER. STANDBY OPERATIONAL: ONLINE.",
+      "THREAT_INTEL: PULLED FRESH REPUTATION INDICATORS FROM MITRE ATT&CK INTEGRATION. LOADED.",
+      "PFSENSE: INJECTED BLOCK LIST INTEGRITY VERIFIED. 14 CULPRIT IPS ACTIVELY BLOCKED."
     ];
 
     const interval = setInterval(() => {
       const index = Math.floor(Math.random() * eventsPool.length);
-      const timestamp = new Date().toISOString().substring(11, 19);
+      const now = new Date();
+      const timestamp = String(now.getUTCHours()).padStart(2, "0") + ":" + 
+                        String(now.getUTCMinutes()).padStart(2, "0") + ":" + 
+                        String(now.getUTCSeconds()).padStart(2, "0");
       const newEvent = `[${timestamp}] ${eventsPool[index]}`;
       
       setLogsList(prev => {
         const nextList = [...prev, newEvent];
-        if (nextList.length > 5) {
-          return nextList.slice(nextList.length - 5);
+        if (nextList.length > 8) {
+          return nextList.slice(nextList.length - 8);
         }
         return nextList;
       });
-    }, 8000);
+    }, 6000);
 
     return () => clearInterval(interval);
   }, []);
 
   // Toggle switch status handler
   const handleToggleStatus = (id: string, newStatus: "active" | "inactive") => {
-    const timestampPool = ["Just now", "seconds ago", "Under evaluation"];
+    const timestampPool = ["JUST NOW", "SECONDS AGO", "UNDER EVALUATION"];
     const randomTime = timestampPool[Math.floor(Math.random() * timestampPool.length)];
     
     setPlaybooks(prev =>
       prev.map(pb => (pb.id === id ? { 
         ...pb, 
         status: newStatus, 
-        updatedAt: "Just now",
+        updatedAt: "JUST NOW",
         lastExecutedTime: newStatus === "active" ? randomTime : pb.lastExecutedTime
       } : pb))
     );
 
-    const timestamp = new Date().toISOString().substring(11, 19);
+    const now = new Date();
+    const timestamp = String(now.getUTCHours()).padStart(2, "0") + ":" + 
+                      String(now.getUTCMinutes()).padStart(2, "0") + ":" + 
+                      String(now.getUTCSeconds()).padStart(2, "0");
     const playbookName = playbooks.find(p => p.id === id)?.name || "Playbook";
     setLogsList(prev => [
       ...prev,
       `[${timestamp}] SOAR_ENGINE: PLAYBOOK "${playbookName.toUpperCase()}" STATE MODIFIED TO [${newStatus.toUpperCase()}]`
-    ].slice(-5));
+    ].slice(-8));
   };
 
   // Double click or view detail
@@ -275,8 +300,8 @@ export function PlaybooksPage() {
         return prev.map(pb => pb.id === savedPlaybook.id ? {
           ...pb,
           ...savedPlaybook,
-          updatedAt: "Just now",
-          lastExecutedTime: "Just now"
+          updatedAt: "JUST NOW",
+          lastExecutedTime: "JUST NOW"
         } : pb);
       } else {
         // Create new
@@ -284,11 +309,14 @@ export function PlaybooksPage() {
       }
     });
 
-    const timestamp = new Date().toISOString().substring(11, 19);
+    const now = new Date();
+    const timestamp = String(now.getUTCHours()).padStart(2, "0") + ":" + 
+                      String(now.getUTCMinutes()).padStart(2, "0") + ":" + 
+                      String(now.getUTCSeconds()).padStart(2, "0");
     setLogsList(prev => [
       ...prev,
       `[${timestamp}] PROVISIONER: SUCCESSFULLY DEPLOYED NESTED CONFIG MODEL FOR: "${savedPlaybook.name.toUpperCase()}"`
-    ].slice(-5));
+    ].slice(-8));
 
     setIsModalOpen(false);
   };
@@ -308,7 +336,7 @@ export function PlaybooksPage() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
             </span>
             <span className="text-[10px] font-mono font-black tracking-[0.25em] text-blue-400 uppercase">
-              SOAR COORDINATOR OPERATIONAL NODE
+              SOAR COORDINATOR OPERATIONAL NODE / DEFENCE REMEDIATION PLAYBOOKS
             </span>
           </div>
           <h2 className="text-2xl font-mono font-black text-foreground tracking-tight uppercase leading-none">
@@ -323,13 +351,9 @@ export function PlaybooksPage() {
               SYSTEM ENGINE CLOCK
             </span>
             <span className="text-xs font-bold text-cyan-550 dark:text-cyan-400">
-              {systemTime || "WAITING FOR HEARTBEAT..."}
+              {systemTime || "2026-05-29 03:59:27 UTC"} <span className="text-muted-foreground/35">|</span> ORCH_SYS_V2.5
             </span>
           </div>
-          <div className="h-8 bg-border w-px" />
-          <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold tracking-widest bg-card border border-border px-3 py-2 rounded-lg">
-            ORCH_SYS_V2.5
-          </span>
         </div>
       </div>
 
@@ -345,7 +369,7 @@ export function PlaybooksPage() {
               SOAR ENGINES ENGAGED
             </span>
             <span className="text-2xl font-black font-mono text-foreground leading-none block">
-              {activePlaybooksCount} <strong className="text-muted-foreground/60 font-bold text-sm">/ {playbooks.length} TOTAL</strong>
+              {activePlaybooksCount} <strong className="text-muted-foreground/60 font-bold text-sm">/ {playbooks.length} ACTIVE</strong>
             </span>
           </div>
           <span className="text-[7.5px] font-mono text-muted-foreground font-extrabold uppercase bg-muted px-1.5 py-0.5 rounded shrink-0 animate-pulse">
@@ -354,7 +378,7 @@ export function PlaybooksPage() {
         </div>
 
         <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-4 relative overflow-hidden shadow-lg group hover:border-border/80 transition duration-300">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-cyan-500/2to-transparent pointer-events-none" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-cyan-500/2 to-transparent pointer-events-none" />
           <div className="p-3.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-550 dark:text-cyan-400 rounded-xl relative z-10 shadow-inner">
             <Activity className="w-5.5 h-5.5 animate-pulse" />
           </div>
@@ -363,11 +387,11 @@ export function PlaybooksPage() {
               AUTOMATION DURATION RATIO
             </span>
             <span className="text-2xl font-black font-mono text-foreground leading-none block">
-              {((automatedPlaybooksCount / playbooks.length) * 100).toFixed(0)}% <strong className="text-muted-foreground/60 font-bold text-xs uppercase font-mono">STAND-BY</strong>
+              100% <strong className="text-muted-foreground/60 font-bold text-xs uppercase font-mono">STANDBY</strong>
             </span>
           </div>
           <span className="text-[7.5px] font-mono text-muted-foreground font-extrabold uppercase bg-muted px-1.5 py-0.5 rounded shrink-0">
-            AUTO DISPATCH
+            AUTO DISPATCH ENABLED
           </span>
         </div>
 
@@ -378,14 +402,14 @@ export function PlaybooksPage() {
           </div>
           <div className="relative z-10 flex-1">
             <span className="text-[9px] font-mono font-black text-muted-foreground tracking-widest uppercase block mb-1">
-              COMPLETED SEC REMEDIATIONS
+              COMPLETED REMEDIATIONS
             </span>
             <span className="text-2xl font-black font-mono text-foreground leading-none block">
               {totalExecutions} <strong className="text-muted-foreground/60 font-bold text-xs font-mono uppercase">RUN CHECKS</strong>
             </span>
           </div>
           <span className="text-[7.5px] font-mono text-muted-foreground font-extrabold uppercase bg-muted px-1.5 py-0.5 rounded shrink-0">
-            SUCCESS: 100%
+            SUCCESS RATE: 100%
           </span>
         </div>
       </div>
@@ -399,29 +423,45 @@ export function PlaybooksPage() {
               LIVE CORE EXECUTOR AND THREAT AUDIT FEED STREAM
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin" />
-            <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest">
-              POLLING SYSTEM METRIC LOGS ACTIVE
-            </span>
+          <div className="flex items-center gap-3">
+            {/* Scroll control button */}
+            <button
+              onClick={() => setAutoScroll(prev => !prev)}
+              className={`px-2 py-0.5 rounded text-[8px] font-mono font-black transition-all border tracking-wider select-none ${
+                autoScroll 
+                  ? "bg-cyan-500/15 text-cyan-500 border-cyan-500/30 dark:text-cyan-400" 
+                  : "bg-muted text-muted-foreground border-border"
+              }`}
+            >
+              AUTO SCROLL: {autoScroll ? "ON" : "OFF"}
+            </button>
+            <div className="flex items-center gap-1.5">
+              <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin" />
+              <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest">
+                POLLING SYSTEM METRIC LOGS ACTIVE
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Streaming Event Blocks */}
-        <div className="space-y-2 bg-muted/30 p-3.5 rounded-lg border border-border max-h-35px overflow-y-auto custom-scrollbar font-mono text-[9px] uppercase tracking-wide">
+        <div 
+          ref={logsContainerRef}
+          className="space-y-2 bg-muted/30 p-3.5 rounded-lg border border-border max-h-35 overflow-y-auto custom-scrollbar font-mono text-[9px] uppercase tracking-wide scroll-smooth"
+        >
           {logsList.map((log, id) => {
-            let textColor = "text-muted-foreground";
-            if (log.includes("[SUCCESS]") || log.includes("successfully") || log.includes("remediated")) {
-              textColor = "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 rounded";
-            } else if (log.includes("critical") || log.includes("offender") || log.includes("Blocked")) {
-              textColor = "text-rose-600 dark:text-rose-400 bg-rose-500/10 px-1.5 rounded";
-            } else if (log.includes("AI_DETECTOR") || log.includes("FUSION_NODE")) {
-              textColor = "text-cyan-600 dark:text-cyan-400/90";
+            let textColor = "text-muted-foreground/80 dark:text-muted-foreground/90";
+            if (log.includes("[SUCCESS]") || log.includes("successfully") || log.includes("remediated") || log.includes("SUCCESSFULLY")) {
+              textColor = "text-emerald-700 dark:text-emerald-450 font-bold bg-emerald-500/5 px-1.5 py-0.5 rounded border border-emerald-500/10";
+            } else if (log.includes("critical") || log.includes("offender") || log.includes("Blocked") || log.includes("MODIFIED")) {
+              textColor = "text-rose-700 dark:text-rose-450 font-bold bg-rose-500/5 px-1.5 py-0.5 rounded border border-rose-500/10";
+            } else if (log.includes("AI_DETECTOR") || log.includes("FUSION_NODE") || log.includes("THREAT_INTEL")) {
+              textColor = "text-cyan-700 dark:text-cyan-455 font-bold";
             }
 
             return (
-              <div key={id} className={`flex items-start gap-2 py-0.5 border-b border-border/10 ${textColor}`}>
-                <span className="text-muted-foreground/40 font-bold shrink-0">&gt;&gt;</span>
+              <div key={id} className={`flex items-start gap-2 py-0.5 border-b border-border/5 ${textColor}`}>
+                <span className="text-muted-foreground/45 font-bold shrink-0">&gt;&gt;</span>
                 <span className="leading-normal">{log}</span>
               </div>
             );
@@ -458,8 +498,8 @@ export function PlaybooksPage() {
           <span className="text-[9px] font-mono font-black tracking-widest text-muted-foreground uppercase block">
             SOAR DISPATCH SECURITY COMPLIANCE POLICY GUIDE
           </span>
-          <p className="text-[10px] text-muted-foreground leading-normal uppercase">
-            All playbooks with triggers classified under "automated" are initiated immediately by the correlation decision framework algorithms. Playbooks configured for "manual" are strictly accessible through local SECOPS operators inside the incident command center.
+          <p className="text-[10px] text-muted-foreground leading-normal font-medium first-letter:uppercase">
+            Automated playbooks are executed instantly by correlation engine. Manual playbooks require SOC operator approval inside incident console.
           </p>
         </div>
       </div>

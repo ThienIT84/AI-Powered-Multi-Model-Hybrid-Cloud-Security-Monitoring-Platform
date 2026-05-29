@@ -36,7 +36,7 @@ interface PlaybookModalProps {
 
 export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookModalProps) {
   // Tabs
-  const [activeTab, setActiveTab] = useState<"visualizer" | "edit">("visualizer");
+  const [activeTab, setActiveTab] = useState<"visualizer" | "edit">("edit");
 
   // Form States
   const [name, setName] = useState("");
@@ -234,7 +234,7 @@ export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookMod
         className="bg-card border border-border rounded-2xl w-full max-w-5xl overflow-hidden max-h-[90vh] flex flex-col shadow-[0_0_50px_rgba(37,99,235,0.08)] relative"
       >
         {/* Decorative subtle header line glow */}
-        <div className="absolute top-0 left-0 right-0 h-0.5px bg-linear-to-r from-transparent via-cyan-500 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-cyan-500 to-transparent" />
 
         {/* Header Console Section */}
         <div className="p-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/40 relative">
@@ -260,18 +260,6 @@ export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookMod
             <div className="bg-muted p-1 rounded-lg border border-border flex">
               <button
                 type="button"
-                onClick={() => setActiveTab("visualizer")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-mono font-black uppercase tracking-widest transition duration-200 ${
-                  activeTab === "visualizer" 
-                    ? "bg-cyan-500/10 text-cyan-550 dark:text-cyan-400 border border-cyan-500/20 shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Workflow Pipeline</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => setActiveTab("edit")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-mono font-black uppercase tracking-widest transition duration-200 ${
                   activeTab === "edit" 
@@ -281,6 +269,18 @@ export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookMod
               >
                 <Sliders className="w-3.5 h-3.5" />
                 <span>Blueprint Variables</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("visualizer")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-mono font-black uppercase tracking-widest transition duration-200 ${
+                  activeTab === "visualizer" 
+                    ? "bg-cyan-500/10 text-cyan-550 dark:text-cyan-400 border border-cyan-500/20 shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Workflow Pipeline</span>
               </button>
             </div>
 
@@ -345,7 +345,7 @@ export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookMod
                   {/* Actions Timeline Flow */}
                   <div className="relative pl-8 space-y-6 mt-4">
                     {/* Glowing vertical connector line */}
-                    <div className="absolute left-3.25px top-4 bottom-5 w-0.5 bg-linear-to-b from-cyan-500 via-blue-500/80 to-indigo-500/50" />
+                    <div className="absolute left-3.25 top-4 bottom-5 w-0.5 bg-linear-to-b from-cyan-500 via-blue-500/80 to-indigo-500/50" />
 
                     {actions.map((act, idy) => {
                       const isSimActiveNow = simulationActive && simStep === (idy + 1);
@@ -422,7 +422,7 @@ export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookMod
                     </p>
                   </div>
 
-                         <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col h-100px shadow-2xl relative">
+                         <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col h-100 shadow-2xl relative">
                     {/* Header bar of terminal */}
                     <div className="bg-muted p-3 border-b border-border flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
@@ -534,7 +534,7 @@ export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookMod
                         <select
                           value={triggerType}
                           onChange={(e) => setTriggerType(e.target.value as any)}
-                          className="w-full bg-background border border-border rounded-lg px-3 py-1.75px text-xs text-foreground font-mono font-bold focus:outline-none focus:border-cyan-500"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-1.75 text-xs text-foreground font-mono font-bold focus:outline-none focus:border-cyan-500"
                         >
                           <option value="automated" className="bg-card text-foreground">AUTOMATED</option>
                           <option value="manual" className="bg-card text-foreground">MANUAL ONLY</option>
@@ -548,7 +548,7 @@ export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookMod
                         <select
                           value={severity}
                           onChange={(e) => setSeverity(e.target.value as any)}
-                          className="w-full bg-background border border-border rounded-lg px-3 py-1.75px text-xs text-foreground font-mono font-bold focus:outline-none focus:border-cyan-500"
+                          className="w-full bg-background border border-border rounded-lg px-3 py-1.75 text-xs text-foreground font-mono font-bold focus:outline-none focus:border-cyan-500"
                         >
                           <option value="critical" className="text-red-500 font-bold bg-card">CRITICAL</option>
                           <option value="high" className="text-orange-500 font-bold bg-card">HIGH</option>
@@ -664,7 +664,7 @@ export function PlaybookModal({ playbook, isOpen, onClose, onSave }: PlaybookMod
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[8px] font-mono text-muted-foreground uppercase font-black">Step Mitigation Description</span>
+                              <span className="text-[8px] font-mono text-muted-foreground uppercase font-semibold">Step Mitigation Description</span>
                               <input
                                 type="text"
                                 value={act.description}

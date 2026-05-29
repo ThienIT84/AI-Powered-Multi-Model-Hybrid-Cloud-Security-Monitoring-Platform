@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -11,20 +11,40 @@ import {
   ReferenceDot
 } from "recharts";
 import { ChartDataPoint } from "../network/NetworkConfig";
+import { cn } from "../../lib/utils";
 
 interface NetworkChartProps {
   data: ChartDataPoint[];
 }
 
 export const NetworkChart: React.FC<NetworkChartProps> = React.memo(({ data }) => {
-  // Find all anomaly points to draw custom alert vectors safely
+  // Chart local interactive state
+  const [timeRange, setTimeRange] = useState<"5m" | "15m" | "1h" | "6h" | "24h">("5m");
+  const [showActiveFleet, setShowActiveFleet] = useState(true);
+  const [showBandwidth, setShowBandwidth] = useState(true);
+  const [showAnomalies, setShowAnomalies] = useState(true);
+
+  // Filter or slice the data depending on time range to simulate real data retrieval
+  const processedData = useMemo(() => {
+    switch (timeRange) {
+      case "5m":
+        return data.slice(-12); // Last 12 ticks
+      case "15m":
+        return data.slice(-18); // Last 18 ticks
+      case "1h":
+        return data.slice(-24); // Last 24 ticks
+      default:
+        return data; // All standard simulated points
+    }
+  }, [data, timeRange]);
+
+  // Find anomaly points for markers
   const anomalyPoints = useMemo(() => {
-    return data
+    return processedData
       .map((d, index) => ({ ...d, index }))
       .filter((d) => d.isAnomaly);
-  }, [data]);
+  }, [processedData]);
 
-  // Formats bytes count cleanly for display inside tooltip chart legends
   const formatBandwidthMetric = (val: number) => {
     if (val >= 1024) return `${(val / 1024).toFixed(1)} MB/s`;
     return `${val} KB/s`;
@@ -32,35 +52,75 @@ export const NetworkChart: React.FC<NetworkChartProps> = React.memo(({ data }) =
 
   return (
     <div 
-      className="w-full h-85 bg-card border border-border rounded-lg p-4 flex flex-col justify-between shadow-sm relative overflow-hidden" 
+      className="w-full h-85 bg-card border border-border rounded-lg p-3.5 flex flex-col justify-between shadow-xs relative overflow-hidden" 
       id="network-chart-container"
     >
       {/* Visual background scanning overlays */}
-      <div className="absolute inset-0 bg-linear-to-b from-transparent via-cyan-500/[0.012] to-transparent pointer-events-none animate-pulse" />
+      <div className="absolute inset-0 bg-linear-to-b from-transparent via-emerald-500/0.5 to-transparent pointer-events-none" />
       
       {/* Chart Headers */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 z-10 relative">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-cyan-500 animate-ping" />
-          <h2 className="text-xs font-black text-foreground dark:text-cyan-400 tracking-widest uppercase font-mono">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+          </span>
+          <h2 className="text-[10px] font-black text-foreground dark:text-emerald-400 tracking-widest uppercase font-mono">
             COGNITIVE REAL-TIME TELEMETRY STREAM
           </h2>
         </div>
 
-        {/* Legend block */}
-        <div className="flex items-center gap-4 text-[10px] font-mono whitespace-nowrap">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-xs bg-cyan-500/30 border border-cyan-500" />
-            <span className="text-muted-foreground font-bold">Active Flows (Ch)</span>
+        {/* Dropdowns & Active Toggles */}
+        <div className="flex items-center gap-2.5">
+          {/* Controls indicators acting as filters */}
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[8px] tracking-wider uppercase font-black">
+            <button
+              onClick={() => setShowActiveFleet(!showActiveFleet)}
+              className={cn(
+                "px-2 py-0.5 border rounded-sm transition-all cursor-pointer",
+                showActiveFleet 
+                  ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-500" 
+                  : "bg-muted border-border text-muted-foreground/60"
+              )}
+            >
+              Active Fleet
+            </button>
+            <button
+              onClick={() => setShowBandwidth(!showBandwidth)}
+              className={cn(
+                "px-2 py-0.5 border rounded-sm transition-all cursor-pointer",
+                showBandwidth 
+                  ? "bg-emerald-505/10 border-emerald-500/40 text-emerald-505" 
+                  : "bg-muted border-border text-muted-foreground/60"
+              )}
+            >
+              Bandwidth
+            </button>
+            <button
+              onClick={() => setShowAnomalies(!showAnomalies)}
+              className={cn(
+                "px-2 py-0.5 border rounded-sm transition-all cursor-pointer",
+                showAnomalies 
+                  ? "bg-red-500/10 border-red-500/40 text-red-500" 
+                  : "bg-muted border-border text-muted-foreground/60"
+              )}
+            >
+              Anomaly Point
+            </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-0.5 bg-emerald-500 block" />
-            <span className="text-muted-foreground font-bold">Bandwidth (KB/s)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping block" />
-            <span className="text-red-500 dark:text-red-400 font-black">Anomaly Critical Point</span>
-          </div>
+
+          {/* Time range controller dropdown */}
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value as any)}
+            className="bg-background border border-border text-[9px] font-bold py-0.5 px-1.5 rounded focus:outline-none focus:border-cyan-500 text-foreground font-mono cursor-pointer"
+          >
+            <option value="5m">5m GRID</option>
+            <option value="15m">15m GRID</option>
+            <option value="1h">1h TELEMETRY</option>
+            <option value="6h">6h TELEMETRY</option>
+            <option value="24h">24h BATCH</option>
+          </select>
         </div>
       </div>
 
@@ -68,76 +128,80 @@ export const NetworkChart: React.FC<NetworkChartProps> = React.memo(({ data }) =
       <div className="flex-1 w-full min-h-55 relative z-10">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            data={data}
-            margin={{ top: 10, right: 5, left: -25, bottom: 0 }}
+            data={processedData}
+            margin={{ top: 10, right: 5, left: -32, bottom: 0 }}
           >
             <defs>
               <linearGradient id="cyberAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.01} />
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.12} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0.01} />
               </linearGradient>
             </defs>
 
+            {/* Incredibly light grid for pure visual clean dashboard */}
             <CartesianGrid
               strokeDasharray="2 3"
-              stroke="rgba(148, 163, 184, 0.12)"
+              stroke="rgba(148, 163, 184, 0.05)"
               vertical={false}
             />
 
             <XAxis
               dataKey="timeLabel"
-              stroke="#94a3b8"
+              stroke="#64748b"
               fontSize={9}
               fontFamily="monospace"
               tickLine={false}
-              axisLine={{ stroke: "rgba(148, 163, 184, 0.2)" }}
-              dy={8}
+              axisLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
+              dy={5}
             />
 
             <YAxis
-              stroke="#94a3b8"
-              fontSize={9}
+              stroke="#64748b"
+              fontSize={11}
               fontFamily="monospace"
               tickLine={false}
-              axisLine={{ stroke: "rgba(148, 163, 184, 0.2)" }}
-              dx={-5}
+              axisLine={{ stroke: "rgba(148, 163, 184, 0.1)" }}
+              dx={-2}
               domain={[0, "auto"]}
             />
 
             {/* Custom Cyberpunk Tooltip */}
             <Tooltip
-              cursor={{ stroke: "rgba(6, 182, 212, 0.3)", strokeWidth: 1.5, strokeDasharray: "4 4" }}
+              cursor={{ stroke: "rgba(16, 185, 129, 0.2)", strokeWidth: 1, strokeDasharray: "3 3" }}
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const dp = payload[0].payload as ChartDataPoint;
                   return (
-                    <div className="bg-card border border-border p-3 rounded-lg shadow-xl font-mono text-[10px] text-foreground min-w-50">
-                      <div className="text-muted-foreground pb-1.5 border-b border-border flex justify-between items-center">
-                        <span>TIMESTAMP:</span>
-                        <span className="text-cyan-600 dark:text-cyan-400 font-bold">{dp.timeLabel}</span>
+                    <div className="bg-card border border-border p-2.5 rounded shadow-lg font-mono text-[9px] text-foreground min-w-45">
+                      <div className="text-muted-foreground pb-1 flex justify-between items-center border-b border-border/40">
+                        <span>SYS_TIME:</span>
+                        <span className="text-emerald-500 font-bold">{dp.timeLabel}</span>
                       </div>
                       
-                      <div className="space-y-1.5 mt-2">
+                      <div className="space-y-1 mt-1.5 uppercase font-black text-muted-foreground/95">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground font-medium">Active Flows:</span>
-                          <span className="text-cyan-600 dark:text-cyan-455 font-black">{dp.flows} channels</span>
+                          <span>Active Flows:</span>
+                          <span className="text-foreground">{dp.flows} CH</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground font-medium">Bandwidth Speed:</span>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatBandwidthMetric(dp.bandwidth)}</span>
+                          <span>Bandwidth Speed:</span>
+                          <span className="text-emerald-500">{formatBandwidthMetric(dp.bandwidth)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground font-medium">Anomaly Probability:</span>
-                          <span className={`font-bold ${dp.anomalyScore > 50 ? "text-red-500" : "text-amber-500"}`}>
+                          <span>Anomaly Metric:</span>
+                          <span className={cn(
+                            "font-black",
+                            dp.anomalyScore > 50 ? "text-red-500" : "text-amber-500"
+                          )}>
                             {dp.anomalyScore}%
                           </span>
                         </div>
                       </div>
 
                       {dp.isAnomaly && (
-                        <div className="mt-2.5 pt-2 border-t border-red-500/20 text-red-500 font-black flex items-center gap-1.5 uppercase tracking-wide text-[9px] animate-pulse">
-                          <span className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                          SIEM FLAGGED: {dp.eventAnnotation || "SUSPICIOUS ACTIVITY"}
+                        <div className="mt-1.5 pt-1.5 border-t border-red-500/10 text-red-500 font-black flex items-center gap-1 uppercase tracking-wide text-[8px]">
+                          <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                          SIEM THREAT: {dp.eventAnnotation || "SUSPICIOUS STREAM"}
                         </div>
                       )}
                     </div>
@@ -147,38 +211,41 @@ export const NetworkChart: React.FC<NetworkChartProps> = React.memo(({ data }) =
               }}
             />
 
-            {/* Flow representation metric Area */}
-            <Area
-              type="monotone"
-              dataKey="flows"
-              stroke="#06b6d4"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#cyberAreaGradient)"
-              activeDot={{ r: 4, strokeWidth: 0, fill: "#06b6d4" }}
-            />
+            {/* Custom Telemetry Green Area Stream */}
+            {showActiveFleet && (
+              <Area
+                type="monotone"
+                dataKey="flows"
+                stroke="#10b981"
+                strokeWidth={1.5}
+                fillOpacity={1}
+                fill="url(#cyberAreaGradient)"
+                activeDot={{ r: 3, strokeWidth: 0, fill: "#10b981" }}
+              />
+            )}
 
-            {/* Micro bandwidth line */}
-            <Line
-              type="monotone"
-              dataKey="bandwidth"
-              stroke="#10b981"
-              strokeWidth={1.5}
-              dot={false}
-              activeDot={{ r: 3, stroke: "#10b981" }}
-            />
+            {/* Micro bandwidth line with subtle glow */}
+            {showBandwidth && (
+              <Line
+                type="monotone"
+                dataKey="bandwidth"
+                stroke="#10b981"
+                strokeWidth={1.2}
+                dot={false}
+                activeDot={{ r: 2.5, stroke: "#10b981" }}
+              />
+            )}
 
-            {/* Draw red circles on all Anomaly coordinate points indices */}
-            {anomalyPoints.map((point) => (
+            {/* Draw red reference dot markers on Anomaly coordinates if showAnomalies is active */}
+            {showAnomalies && anomalyPoints.map((point) => (
               <ReferenceDot
                 key={`anomaly-dot-${point.timeLabel}-${point.index}`}
                 x={point.timeLabel}
                 y={point.flows}
-                r={6}
-                fill="#ef4444"
+                r={4}
+                fill="#f43f5e"
                 stroke="#ffffff"
-                strokeWidth={1.5}
-                className="animate-ping"
+                strokeWidth={1}
                 style={{ transformOrigin: 'center' }}
               />
             ))}

@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { 
   Play, 
   Pause, 
-  RefreshCw, 
-  Search, 
   ShieldAlert, 
   Database, 
   Terminal, 
@@ -14,10 +12,9 @@ import {
   Flame, 
   Binary, 
   AlertTriangle,
-  Radio,
   Server,
   Activity,
-  UserCheck
+  ArrowRight
 } from "lucide-react";
 
 // modular components imports
@@ -46,7 +43,21 @@ export const NetworkMonitoringPage: React.FC = () => {
   // Selected Log for inspection
   const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
 
-  // Sync selected log if it gets updated inside current logs list or keep it stable
+  // States to represent interactive attack simulation state timers
+  const [isInjectingPortScan, setIsInjectingPortScan] = useState(false);
+  const [isInjectingExfil, setIsInjectingExfil] = useState(false);
+  const [isInjectingTor, setIsInjectingTor] = useState(false);
+
+  // Inline destructive confirmation toggle instead of window.confirm
+  const [showWipeConfirm, setShowWipeConfirm] = useState(false);
+
+  // Inspector Action feedback messages
+  const [actionFeedback, setActionFeedback] = useState<{
+    type: "success" | "warning";
+    message: string;
+  } | null>(null);
+
+  // Sync selected log if it gets updated inside current logs list
   useEffect(() => {
     if (selectedLog) {
       const match = logs.find(l => l.id === selectedLog.id);
@@ -71,6 +82,7 @@ export const NetworkMonitoringPage: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelectedLog(null);
+        setActionFeedback(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -83,38 +95,78 @@ export const NetworkMonitoringPage: React.FC = () => {
     return Math.round(Math.min(185, logs.length * 0.45 + Math.random() * 8));
   }, [logs, isRunning]);
 
+  // Handler wrapper to trigger simulation state flows
+  const handleInjectPortScan = useCallback(() => {
+    setIsInjectingPortScan(true);
+    injectPortScan();
+    setTimeout(() => setIsInjectingPortScan(false), 900);
+  }, [injectPortScan]);
+
+  const handleInjectExfil = useCallback(() => {
+    setIsInjectingExfil(true);
+    injectMassiveExfiltration();
+    setTimeout(() => setIsInjectingExfil(false), 900);
+  }, [injectMassiveExfiltration]);
+
+  const handleInjectTor = useCallback(() => {
+    setIsInjectingTor(true);
+    injectTorDnsTunnel();
+    setTimeout(() => setIsInjectingTor(false), 900);
+  }, [injectTorDnsTunnel]);
+
+  // Safe handler for Wipe Logs click
+  const handleWipeLogs = useCallback(() => {
+    clearLogs();
+    setSelectedLog(null);
+    setShowWipeConfirm(false);
+    setActionFeedback(null);
+  }, [clearLogs]);
+
+  // Format dynamic mocked MAC Addresses for endpoints forensic depth
+  const computedMacs = useMemo(() => {
+    if (!selectedLog) return { srcMac: "", descMac: "" };
+    // Determinate stable MACs using source and destination IPs string length seeds
+    const srcSeed = (selectedLog.srcIp.split(".").pop() || "8").padStart(2, "a");
+    const destSeed = (selectedLog.destIp.split(".").pop() || "2").padStart(2, "d");
+    return {
+      srcMac: `00:50:56:C0:00:${srcSeed.toUpperCase()}`,
+      destMac: `00:0C:29:FF:3E:${destSeed.toUpperCase()}`
+    };
+  }, [selectedLog]);
+
   return (
     <div className="space-y-6 pt-2 select-none font-sans pb-12" id="network-monitoring-layout">
+      
       {/* GLOBAL ENTERPRISE SOC STATUS HEADER */}
       <div 
         id="soc-global-status-bar" 
-        className="w-full bg-card border border-border rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 shadow-sm font-mono text-[11px]"
+        className="w-full bg-card border border-border rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 shadow-xs font-mono text-[11px]"
       >
         <div className="flex flex-wrap items-center gap-4">
           {/* Status 1: Connection */}
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRunning ? "bg-emerald-400" : "bg-muted-foreground"}`}></span>
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${isRunning ? "bg-emerald-500" : "bg-muted-foreground"}`}></span>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRunning ? "bg-emerald-400" : "bg-neutral-400"}`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${isRunning ? "bg-emerald-500" : "bg-neutral-500"}`}></span>
             </span>
             <span className="text-muted-foreground font-bold">ZEEK_SENSOR:</span>
-            <span className={`font-black ${isRunning ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
+            <span className={`font-black ${isRunning ? "text-emerald-500" : "text-muted-foreground/60"}`}>
               {isRunning ? "STREAMING" : "OFFLINE"}
             </span>
           </div>
 
           {/* Status 2: AI Engine */}
           <div className="flex items-center gap-2 border-l border-border pl-4">
-            <Cpu className={`w-3.5 h-3.5 ${isRunning ? "text-cyan-600 dark:text-cyan-400 animate-spin" : "text-muted-foreground"}`} style={{ animationDuration: '40s' }} />
+            <Cpu className={`w-3.5 h-3.5 ${isRunning ? "text-cyan-500 animate-spin" : "text-muted-foreground/60"}`} style={{ animationDuration: '30s' }} />
             <span className="text-muted-foreground font-bold">AI_COGNITIVE_ENGINE:</span>
-            <span className="font-black text-cyan-600 dark:text-cyan-400">HEURISTIC_ACTIVE</span>
+            <span className="font-black text-cyan-500">HEURISTIC_ACTIVE</span>
           </div>
 
           {/* Status 3: Database health */}
           <div className="flex items-center gap-2 border-l border-border pl-4">
-            <Database className="w-3.5 h-3.5 text-indigo-505" />
+            <Database className="w-3.5 h-3.5 text-indigo-400" />
             <span className="text-muted-foreground font-bold">SIEM_POSTGRES:</span>
-            <span className="font-black text-indigo-550 dark:text-indigo-400">HEALTHY (99ms)</span>
+            <span className="font-black text-indigo-400">HEALTHY (99ms)</span>
           </div>
         </div>
 
@@ -123,7 +175,7 @@ export const NetworkMonitoringPage: React.FC = () => {
           <div className="flex items-center gap-1.5">
             <Server className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-muted-foreground font-medium">THROUGHPUT:</span>
-            <span className="font-bold text-foreground">
+            <span className="font-extrabold text-foreground">
               {isRunning ? `${livePacketRate} pkts/s` : "0 pkts/s"}
             </span>
           </div>
@@ -133,7 +185,7 @@ export const NetworkMonitoringPage: React.FC = () => {
       {/* 8 TELEMETRY INTERACTIVE TILE STATS */}
       <NetworkStats
         liveBandwidth={chartHistory[chartHistory.length - 1]?.bandwidth || 1450}
-        totalActiveConnections={chartHistory[chartHistory.length - 1]?.flows * 12 + 1540}
+        totalActiveConnections={(chartHistory[chartHistory.length - 1]?.flows || 14) * 12 + 1540}
         threatLevel={calculatedThreatLevel}
         activeEndpointsCount={uniqueIPCount}
         suspiciousSessions={suspiciousSessionsCount}
@@ -153,100 +205,146 @@ export const NetworkMonitoringPage: React.FC = () => {
         {/* Advanced attack simulation lab */}
         <div 
           id="simulation-lab-card" 
-          className="xl:col-span-4 bg-card border border-border rounded-lg p-5 flex flex-col justify-between shadow-sm relative overflow-hidden"
+          className="xl:col-span-4 bg-card border border-border rounded-lg p-4 flex flex-col justify-between shadow-xs relative overflow-hidden"
         >
           {/* Subtle grid patterns overlay */}
-          <div className="absolute inset-0 bg-linear-to-b from-transparent via-red-500/0.5 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-b from-transparent via-red-500/[0.003] to-transparent pointer-events-none" />
           
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Flame className="w-4 h-4 text-red-500 animate-pulse" />
-              <h2 className="text-xs font-black text-foreground dark:text-cyan-400 tracking-widest uppercase font-mono">
+            <div className="flex items-center gap-2 mb-2">
+              <Flame className="w-4 h-4 text-red-500" />
+              <h2 className="text-[10px] font-black text-foreground dark:text-cyan-400 tracking-widest uppercase font-mono">
                 SIEM SECURITY INJECTOR WIDGET
               </h2>
             </div>
             
-            <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed font-sans font-medium">
-              Enterprise security testing suite to queue multi-port packets, exfiltration routines, and Onion routing sequences directly into active memory arrays.
+            <p className="text-[10px] text-muted-foreground mb-3 leading-normal font-medium">
+              Enterprise testing controls to simulate anomalous packet sequences, exfiltrations, and TOR proxy handshakes directly into active stream arrays.
             </p>
 
-            <div className="space-y-2.5 font-sans">
+            <div className="space-y-2 font-mono">
               {/* Button 1: Probe Recon Scan */}
               <button
-                onClick={injectPortScan}
-                className="w-full text-left bg-secondary/30 hover:bg-red-500/5 border border-border hover:border-red-500/40 p-3 rounded flex items-center justify-between group transition-all duration-300 cursor-pointer"
+                onClick={handleInjectPortScan}
+                disabled={isInjectingPortScan}
+                className="w-full text-left bg-muted/20 hover:bg-red-500/3 border border-border hover:border-red-500/30 p-2.5 rounded flex items-center justify-between group transition-all duration-300 cursor-pointer text-xs"
               >
                 <div>
-                  <div className="text-xs font-black text-foreground group-hover:text-red-650 dark:group-hover:text-red-400">Inject Port Scan Recon</div>
-                  <div className="text-[10px] text-muted-foreground font-mono mt-0.5">Rapid TCP multi-port system diagnostics scanning</div>
+                  <div className="font-extrabold text-foreground group-hover:text-red-400 flex items-center gap-1.5 leading-snug">
+                    Port Scan Recon
+                    {isInjectingPortScan && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                    )}
+                  </div>
+                  <div className="text-[9px] text-muted-foreground font-medium mt-0.5 font-sans leading-snug">Simulates TCP reconnaissance port probes</div>
                 </div>
-                <Layers className="w-4 h-4 text-muted-foreground group-hover:text-red-500 dark:group-hover:text-red-400 group-hover:rotate-12 transition-all" />
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 px-1 py-0.2 rounded">MEDIUM RISK</span>
+                  <Layers className="w-3.5 h-3.5 text-muted-foreground group-hover:text-red-400 group-hover:rotate-6 transition-all" />
+                </div>
               </button>
 
               {/* Button 2: Exfiltration Dump */}
               <button
-                onClick={injectMassiveExfiltration}
-                className="w-full text-left bg-secondary/30 hover:bg-red-500/5 border border-border hover:border-red-500/40 p-3 rounded flex items-center justify-between group transition-all duration-300 cursor-pointer"
+                onClick={handleInjectExfil}
+                disabled={isInjectingExfil}
+                className="w-full text-left bg-muted/20 hover:bg-red-500/3 border border-border hover:border-red-500/30 p-2.5 rounded flex items-center justify-between group transition-all duration-300 cursor-pointer text-xs"
               >
                 <div>
-                  <div className="text-xs font-black text-foreground group-hover:text-red-650 dark:group-hover:text-red-400">Inject Massive Exfiltration</div>
-                  <div className="text-[10px] text-muted-foreground font-mono mt-0.5">DB file leakage sequence outbound to malicious host</div>
+                  <div className="font-extrabold text-foreground group-hover:text-red-400 flex items-center gap-1.5 leading-snug">
+                    Massive Exfiltration
+                    {isInjectingExfil && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping" />
+                    )}
+                  </div>
+                  <div className="text-[9px] text-muted-foreground font-medium mt-0.5 font-sans leading-snug">Abnormal outbound bulk transfer</div>
                 </div>
-                <Download className="w-4 h-4 text-muted-foreground group-hover:text-red-500 dark:group-hover:text-red-400 group-hover:translate-x-1 transition-all" />
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] font-bold text-red-500 bg-red-500/10 px-1 py-0.2 rounded">CRITICAL</span>
+                  <Download className="w-3.5 h-3.5 text-muted-foreground group-hover:text-red-400 group-hover:translate-y-0.5 transition-all" />
+                </div>
               </button>
 
               {/* Button 3: DNS Tor tunnel */}
               <button
-                onClick={injectTorDnsTunnel}
-                className="w-full text-left bg-secondary/30 hover:bg-red-500/5 border border-border hover:border-red-500/40 p-3 rounded flex items-center justify-between group transition-all duration-300 cursor-pointer"
+                onClick={handleInjectTor}
+                disabled={isInjectingTor}
+                className="w-full text-left bg-muted/20 hover:bg-red-500/3 border border-border hover:border-red-500/30 p-2.5 rounded flex items-center justify-between group transition-all duration-300 cursor-pointer text-xs"
               >
                 <div>
-                  <div className="text-xs font-black text-foreground group-hover:text-red-650 dark:group-hover:text-red-400">Inbound Tor DNS Tunnel</div>
-                  <div className="text-[10px] text-muted-foreground font-mono mt-0.5">Suspicious Onion routed UDP proxy exchange relay</div>
+                  <div className="font-extrabold text-foreground group-hover:text-red-400 flex items-center gap-1.5 leading-snug">
+                    Tor DNS Tunnel
+                    {isInjectingTor && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                    )}
+                  </div>
+                  <div className="text-[9px] text-muted-foreground font-medium mt-0.5 font-sans leading-snug">Onion-routed UDP payload loop</div>
                 </div>
-                <Globe className="w-4 h-4 text-muted-foreground group-hover:text-red-500 dark:group-hover:text-red-400 transition-all" />
+                <div className="flex items-center gap-2">
+                  <span className="text-[8px] font-bold text-red-400 bg-red-400/10 px-1 py-0.2 rounded">HIGH</span>
+                  <Globe className="w-3.5 h-3.5 text-muted-foreground group-hover:text-red-400 transition-all" />
+                </div>
               </button>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-border flex justify-between items-center font-mono">
-            {/* Play Pause Controls */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsRunning(!isRunning)}
-                className={`px-3 py-1.5 rounded text-[10px] font-black tracking-widest uppercase flex items-center gap-1.5 cursor-pointer transition-all border shadow-xs ${
-                  isRunning 
-                    ? "bg-slate-200 dark:bg-secondary text-cyan-700 dark:text-cyan-400 border-slate-300 dark:border-slate-850 hover:bg-slate-300 dark:hover:bg-slate-900" 
-                    : "bg-cyan-500 text-white dark:text-slate-950 hover:bg-cyan-400 font-black border-cyan-600"
-                }`}
-              >
-                {isRunning ? (
-                  <>
-                    <Pause className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
-                    PAUSE SENSOR
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3 h-3 fill-current text-white dark:text-slate-950" />
-                    START SENSOR
-                  </>
-                )}
-              </button>
+          <div className="mt-3.5 pt-3 border-t border-border flex flex-col gap-2 font-mono">
+            {/* Play Pause Controls and dynamic confirmations */}
+            {showWipeConfirm ? (
+              <div className="bg-red-500/10 border border-red-500/20 p-2 rounded flex items-center justify-between text-[10px] animate-fade-in">
+                <span className="text-red-400 font-extrabold">CONFIRM LOG FLUSH?</span>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleWipeLogs}
+                    className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white font-extrabold rounded text-[9px] cursor-pointer"
+                  >
+                    WIPE ALL
+                  </button>
+                  <button 
+                    onClick={() => setShowWipeConfirm(false)}
+                    className="px-2 py-0.5 bg-muted hover:bg-muted/80 text-foreground font-extrabold rounded text-[9px] cursor-pointer"
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center">
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setIsRunning(!isRunning)}
+                    className={`px-2.5 py-1.5 rounded text-[9px] font-black tracking-widest uppercase flex items-center gap-1 transition-all border shadow-xs cursor-pointer ${
+                      isRunning 
+                        ? "bg-muted text-cyan-600 dark:text-cyan-400 border-border hover:bg-muted/80" 
+                        : "bg-cyan-505 hover:bg-cyan-500 text-white font-black"
+                    }`}
+                  >
+                    {isRunning ? (
+                      <>
+                        <Pause className="w-3 h-3 text-cyan-500" />
+                        PAUSE SENSOR
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3 fill-current text-white" />
+                        START SENSOR
+                      </>
+                    )}
+                  </button>
 
-              <button
-                onClick={() => {
-                  clearLogs();
-                  setSelectedLog(null);
-                }}
-                className="px-2.5 py-1.5 rounded text-[10px] font-black tracking-widest uppercase flex items-center gap-1.5 cursor-pointer border border-slate-250 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/20 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
-              >
-                WIPE LOGS
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
-              <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
-              {isRunning ? "Active" : "Locked"}
-            </div>
+                  <button
+                    onClick={() => setShowWipeConfirm(true)}
+                    className="px-2.5 py-1.5 rounded text-[9px] font-black tracking-widest uppercase flex items-center gap-1 cursor-pointer border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    WIPE LOGS
+                  </button>
+                </div>
+                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? "bg-emerald-505 animate-pulse" : "bg-neutral-500"}`} />
+                  {isRunning ? "Active" : "Locked"}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -256,11 +354,15 @@ export const NetworkMonitoringPage: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5" id="bottom-network-zone">
         
         {/* Left Side: Syslog stream workspace list */}
-        <div className="xl:col-span-8 flex flex-col h-full">
+        <div className="xl:col-span-8 flex flex-col h-full md:min-h-165">
           <NetworkStreamTable
             logs={logs}
             selectedLogId={selectedLog?.id}
-            onSelectLog={setSelectedLog}
+            onSelectLog={(log) => {
+              setSelectedLog(log);
+              setActionFeedback(null); // Clear feedback when switching logs
+            }}
+            isRunning={isRunning}
           />
         </div>
 
@@ -268,121 +370,192 @@ export const NetworkMonitoringPage: React.FC = () => {
         <div id="packet-inspector-block" className="xl:col-span-4 h-full">
           {selectedLog ? (
             <div 
-              className="bg-card border border-border rounded-lg p-5 h-full flex flex-col justify-between shadow-sm relative overflow-hidden" 
+              className="bg-card border border-border rounded-lg p-4 h-full flex flex-col justify-between shadow-xs relative overflow-hidden font-mono" 
               id="inspector-card-active"
             >
               {/* Scanline pattern mask effect */}
-              <div className="absolute inset-x-0 top-0 h-px bg-cyan-400/20 pointer-events-none animate-scanline" />
+              <div className="absolute inset-x-0 top-0 h-px bg-cyan-500/10 pointer-events-none animate-pulse" />
               
               <div>
-                <div className="flex items-center justify-between pb-3 border-b border-border mb-4 font-mono">
-                  <div className="flex items-center gap-2">
-                    <Binary className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                <div className="flex items-center justify-between pb-2 border-b border-border mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <Binary className="w-4 h-4 text-emerald-500" />
                     <div>
-                      <h2 className="text-xs font-black text-foreground dark:text-slate-250 tracking-widest uppercase">
+                      <h2 className="text-[10px] font-black text-foreground tracking-widest uppercase">
                         REAL-TIME INSPECTOR
                       </h2>
-                      <p className="text-[9px] text-muted-foreground font-semibold tracking-wider">PACKET HEX INTEGRATION</p>
+                      <p className="text-[8px] text-muted-foreground font-black tracking-wider uppercase">Forensic Decryption Node</p>
                     </div>
                   </div>
                   <button
-                    onClick={() => setSelectedLog(null)}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer font-bold font-mono"
+                    onClick={() => {
+                      setSelectedLog(null);
+                      setActionFeedback(null);
+                    }}
+                    className="text-[9px] text-muted-foreground hover:text-foreground cursor-pointer font-extrabold pr-0.5"
                   >
-                    Clear [ESC]
+                    ESC_CLEAR
                   </button>
                 </div>
- 
+
                 {/* Packet identities list */}
-                <div className="space-y-2 text-xs mb-4 font-mono">
-                  <div className="flex justify-between items-center py-1 border-b border-border">
-                    <span className="text-muted-foreground font-medium font-mono text-[10px]">FLOW_ID:</span>
-                    <span className="text-cyan-600 dark:text-cyan-400 font-bold">{selectedLog.id}</span>
+                <div className="space-y-1.5 text-[10px] mb-3">
+                  <div className="flex justify-between items-center py-0.5 border-b border-border/40">
+                    <span className="text-muted-foreground font-extrabold text-[8.5px]">FLOW IDENTIFICATION:</span>
+                    <span className="text-emerald-550 font-bold">{selectedLog.id}</span>
                   </div>
-                  <div className="flex justify-between items-center py-1 border-b border-border">
-                    <span className="text-muted-foreground font-medium font-mono text-[10px]">TIMESTAMP:</span>
-                    <span className="text-foreground font-medium">{selectedLog.timestamp}</span>
+                  <div className="flex justify-between items-center py-0.5 border-b border-border/40">
+                    <span className="text-muted-foreground font-extrabold text-[8.5px]">TIMESTAMP_UTC:</span>
+                    <span className="text-foreground">{selectedLog.timestamp}</span>
                   </div>
-                  <div className="flex justify-between items-center py-1 border-b border-border">
-                    <span className="text-muted-foreground font-medium font-mono text-[10px]">SRC_ADDRESS:</span>
-                    <span className="text-emerald-600 dark:text-emerald-450 font-bold">{selectedLog.srcIp}:{selectedLog.srcPort}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b border-border">
-                    <span className="text-muted-foreground font-medium font-mono text-[10px]">DEST_ADDRESS:</span>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-bold">{selectedLog.destIp}:{selectedLog.destPort}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b border-border">
-                    <span className="text-muted-foreground font-medium font-mono text-[10px]">ORIGIN_BYTES:</span>
-                    <span className="text-foreground font-extrabold font-mono">{(selectedLog.origBytes).toLocaleString()} Bytes</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b border-border">
-                    <span className="text-muted-foreground font-medium font-mono text-[10px]">RESPONSE_FLOWS:</span>
-                    <span className="text-foreground font-mono">{selectedLog.respPkts} Packets</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b border-border">
-                    <span className="text-muted-foreground font-medium font-mono text-[10px]">COMM_PROTOCOL:</span>
-                    <span className="text-sky-600 dark:text-sky-400 font-bold">{selectedLog.protocol}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b border-border">
-                    <span className="text-muted-foreground font-medium font-mono text-[10px]">AI DETECT RATIO:</span>
-                    <span className={`font-black tracking-wide ${selectedLog.verdict === "ANOMALY" ? "text-red-505 animate-pulse" : "text-emerald-600 dark:text-emerald-400"}`}>
-                      {selectedLog.verdict} ({selectedLog.confidence.toFixed(0)}% Conf)
+                  <div className="flex justify-between items-center py-0.5 border-b border-border/40">
+                    <span className="text-muted-foreground font-extrabold text-[8.5px]">SRC_IP_ENDPOINT:</span>
+                    <span className="text-emerald-505 font-bold flex items-center gap-0.5">
+                      {selectedLog.srcIp}
+                      <span className="text-muted-foreground/60">:{selectedLog.srcPort}</span>
                     </span>
                   </div>
+                  
+                  {/* Forensic Add-On: Source MAC endpoint */}
+                  <div className="flex justify-between items-center py-0.5 border-b border-border/40 text-[9px] text-muted-foreground/75">
+                    <span className="font-extrabold text-[8px] uppercase">SRC_MAC_HARDWARE:</span>
+                    <span className="font-semibold">{computedMacs.srcMac}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5 border-b border-border/40">
+                    <span className="text-muted-foreground font-extrabold text-[8.5px]">DEST_IP_ENDPOINT:</span>
+                    <span className="text-indigo-400 font-bold flex items-center gap-0.5">
+                      {selectedLog.destIp}
+                      <span className="text-muted-foreground/60">:{selectedLog.destPort}</span>
+                    </span>
+                  </div>
+
+                  {/* Forensic Add-On: Dest MAC endpoint */}
+                  <div className="flex justify-between items-center py-0.5 border-b border-border/40 text-[9px] text-muted-foreground/75">
+                    <span className="font-extrabold text-[8px] uppercase">DEST_MAC_HARDWARE:</span>
+                    <span className="font-semibold">{computedMacs.destMac}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-0.5 border-b border-border/40">
+                    <span className="text-muted-foreground font-extrabold text-[8.5px]">RAW_ORIGIN_VOLUME:</span>
+                    <span className="text-foreground font-bold">{(selectedLog.origBytes).toLocaleString()} Bytes</span>
+                  </div>
+                  <div className="flex justify-between items-center py-0.5 border-b border-border/40">
+                    <span className="text-muted-foreground font-extrabold text-[8.5px]">TRANSMITTED_PACKETS:</span>
+                    <span className="text-foreground font-semibold">{selectedLog.respPkts} frames</span>
+                  </div>
                 </div>
- 
-                {/* Threat warning analysis block if ANOMALY */}
+
+                {/* AI INTACT MATRIX: Classification outputs */}
+                <div className="mb-3 bg-muted/20 border border-border/35 p-2 rounded">
+                  <div className="text-[8px] font-black text-muted-foreground tracking-widest uppercase border-b border-border/15 pb-0.5 mb-1.5 flex justify-between">
+                    <span>AI INTACT MATRIX</span>
+                    <span className="text-emerald-505">SYNCHRONIZED</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[9px]">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground/80">VERDICT:</span>
+                      <strong className={selectedLog.verdict === "ANOMALY" ? "text-red-500 animate-pulse" : "text-emerald-500"}>
+                        {selectedLog.verdict}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground/80">CONFIDENCE:</span>
+                      <strong className="text-foreground">{selectedLog.confidence.toFixed(1)}%</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground/80">SEVERITY:</span>
+                      <strong className={selectedLog.severity === "CRITICAL" || selectedLog.severity === "HIGH" ? "text-red-400" : "text-muted-foreground"}>
+                        {selectedLog.severity}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground/80">RISK INDEX:</span>
+                      <strong className={selectedLog.threatScore > 50 ? "text-amber-500" : "text-emerald-500"}>
+                        {selectedLog.threatScore}/100
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Threat alerts visual banner block if anomaly */}
                 {selectedLog.verdict === "ANOMALY" && (
-                  <div className="mb-4 p-3 bg-red-500/10 dark:bg-red-950/20 border border-red-500/20 rounded-lg flex items-start gap-2.5">
-                    <AlertTriangle className="w-4 h-4 text-red-550 dark:text-red-550 shrink-0 mt-0.5 animate-bounce" />
+                  <div className="mb-3 p-2 bg-red-500/10 border border-red-500/20 rounded flex items-start gap-2">
+                    <ShieldAlert className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5 animate-pulse" />
                     <div>
-                      <div className="text-[10px] font-black text-red-650 dark:text-red-500 uppercase tracking-widest font-mono">SIEM Attack Signature Lock</div>
-                      <div className="text-[11px] text-red-650 dark:text-red-400 font-sans mt-0.5 leading-relaxed font-medium">
-                        Heuristic alert signature matched blacklist patterns. This source IP represents a flagged threat actor. Firewall intervention is recommended first.
+                      <div className="text-[8.5px] font-black text-red-500 uppercase tracking-widest leading-none">SIGNATURE DETECTED</div>
+                      <div className="text-[9.5px] text-red-450 font-sans mt-0.5 leading-relaxed font-medium">
+                        Packet sequences indicate behaviors matching target threat signatures. Outward connections monitored.
                       </div>
                     </div>
                   </div>
                 )}
- 
-                {/* Cognitive Descriptive Summary */}
-                <div className="p-3 bg-background border border-border rounded-lg mb-4">
-                  <div className="text-[9px] text-muted-foreground uppercase font-black tracking-widest mb-1.5 font-mono">Cognitive Threat Analyzer</div>
-                  <p className="text-[11px] font-sans text-foreground dark:text-cyan-200/90 leading-relaxed font-medium">
+
+                {/* Cognitive интерпретатор */}
+                <div className="p-2.5 bg-background border border-border rounded mb-3">
+                  <div className="text-[8px] text-muted-foreground uppercase font-black tracking-widest mb-1">Cognitive Interpretation</div>
+                  <p className="text-[10px] font-sans text-foreground/90 leading-relaxed font-medium">
                     {selectedLog.reason}
                   </p>
                 </div>
- 
+
                 {/* HEX DUMP PRESENTATION */}
                 <div>
-                  <div className="text-[9px] text-muted-foreground uppercase font-extrabold tracking-widest mb-1.5 font-mono">FLOW PACKET HEX MEMORY DUMP</div>
-                  <pre className="p-2 sm:p-2.5 bg-black/90 dark:bg-black/95 text-cyan-600 dark:text-cyan-400 text-[10px] font-mono rounded border border-border overflow-x-auto select-all leading-tight">
+                  <div className="text-[8px] text-muted-foreground uppercase font-black tracking-widest mb-1">FLOW PACKET HEX MEMORY DUMP</div>
+                  <pre className="p-2 bg-zinc/100 dark:text-emerald-400 text-[9px] font-mono rounded border border-border/80 overflow-x-auto select-all leading-tight max-h-35 custom-scrollbar">
                     {selectedLog.hexDump}
                   </pre>
                 </div>
               </div>
- 
-              {/* Action utilities */}
-              <div className="mt-5 pt-3 border-t border-border flex justify-end gap-2 text-[10px] font-black tracking-widest font-mono">
-                <button 
-                  onClick={() => alert(`Packet logs relayed to standard SIEM audit database. Token: ${btoa(selectedLog.id).substring(0, 12)}`)}
-                  className="px-3 py-1.5 bg-background hover:bg-secondary dark:bg-secondary dark:hover:bg-muted border border-border rounded text-foreground transition-colors uppercase cursor-pointer"
-                >
-                  Forward Alert
-                </button>
-                <button 
-                  onClick={() => alert(`Source IP address ${selectedLog.srcIp} has been temporarily dropped from routing rules via cloud egress firewall.`)}
-                  className="px-3 py-1.5 bg-red-550/10 dark:bg-red-950/40 hover:bg-red-500/20 dark:hover:bg-red-900/30 text-red-650 dark:text-red-400 border border-red-500/20 rounded transition-colors uppercase cursor-pointer"
-                >
-                  Blocklist Source
-                </button>
+
+              {/* Inspector Action Feedbacks with non-blocking styled indicators */}
+              <div className="mt-4 pt-2.5 border-t border-border flex flex-col gap-2">
+                {actionFeedback && (
+                  <div className={`p-1.5 rounded text-[8px] font-extrabold uppercase transition-all flex items-center gap-1.5 ${
+                    actionFeedback.type === "success" 
+                      ? "bg-emerald-500/10 text-emerald-505 border border-emerald-500/15" 
+                      : "bg-red-500/10 text-red-400 border border-red-500/15"
+                  }`}>
+                    <span className="w-1 h-2 bg-current block" />
+                    {actionFeedback.message}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 text-[9px] font-black tracking-widest font-mono">
+                  <button 
+                    onClick={() => {
+                      setActionFeedback({
+                        type: "success",
+                        message: `RELAY COMPLETED: Flow packet logged in SIEM ledger (${btoa(selectedLog.id).substring(0, 10)})`
+                      });
+                    }}
+                    className="px-2.5 py-1.5 bg-background hover:bg-muted border border-border rounded text-foreground transition-all uppercase cursor-pointer"
+                  >
+                    Forward Alert
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setActionFeedback({
+                        type: "warning",
+                        message: `BLOCKED ENTRY: IP ${selectedLog.srcIp} added to active edge firewall rule table.`
+                      });
+                    }}
+                    className="px-2.5 py-1.5 bg-red-950/30 hover:bg-red-900/40 text-red-400 border border-red-500/25 rounded transition-all uppercase cursor-pointer"
+                  >
+                    Blocklist Source
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-secondary/20 rounded-lg border border-dashed border-border min-h-87.5" id="inspector-card-empty">
-              <Terminal className="w-10 h-10 text-muted-foreground/30 dark:text-cyan-500/20 mb-3 animate-pulse" />
-              <p className="text-xs font-black text-muted-foreground tracking-widest uppercase font-mono">INSPECTION WORKSTATION IDLE</p>
-              <p className="text-[11px] text-muted-foreground mt-2.5 max-w-65 leading-relaxed font-mono">
-                [ZEEK_READY] Select any execution row from the SIEM log grid above to execute high-precision hex analysis and decrypt cryptographic signatures.
+            <div 
+              className="h-full flex flex-col items-center justify-center p-8 text-center bg-muted/5 rounded-lg border border-dashed border-border/70 min-h-125" 
+              id="inspector-card-empty"
+            >
+              <Terminal className="w-8 h-8 text-muted-foreground/30 animate-pulse mb-2.5" />
+              <p className="text-[9px] font-black text-muted-foreground tracking-widest uppercase mb-1">INSPECTION WORKSTATION IDLE</p>
+              <p className="text-[10px] text-muted-foreground/80 max-w-60 leading-relaxed">
+                [SYSTEM STATUS: READY] Select any log sequence from the Event Workbench grid to decode hexadecimal frames and evaluate AI intact matrices.
               </p>
             </div>
           )}

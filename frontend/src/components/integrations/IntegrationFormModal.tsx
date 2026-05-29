@@ -50,6 +50,9 @@ export function IntegrationFormModal({
   const [awsRegion, setAwsRegion] = useState("ap-southeast-1");
   const [apiEndpoint, setApiEndpoint] = useState("");
   const [authToken, setAuthToken] = useState("");
+  const [syncInterval, setSyncInterval] = useState("realtime");
+  const [encryptionPolicy, setEncryptionPolicy] = useState("TLS-1.3");
+  const [retryPolicy, setRetryPolicy] = useState("exponential");
 
   // Keep terminal logs in sync
   useEffect(() => {
@@ -74,12 +77,15 @@ export function IntegrationFormModal({
       setAwsRegion(conf?.awsRegion || "ap-southeast-1");
       setApiEndpoint(conf?.apiEndpoint || "");
       setAuthToken(conf?.authToken || "");
+      setSyncInterval(conf?.syncInterval || "realtime");
+      setEncryptionPolicy(conf?.encryptionPolicy || "TLS-1.3");
+      setRetryPolicy(conf?.retryPolicy || "exponential");
     }
   }, [integration, isOpen]);
 
   if (!isOpen || !integration) return null;
 
-  const isConnected = integration.status === "connected";
+  const isConnected = integration.status === "ACTIVE" || integration.status === "DEGRADED";
 
   // Simulation test connectivity
   const handleTestConnection = async () => {
@@ -164,6 +170,10 @@ export function IntegrationFormModal({
       payload.apiEndpoint = apiEndpoint;
       payload.authToken = authToken;
     }
+
+    payload.syncInterval = syncInterval;
+    payload.encryptionPolicy = encryptionPolicy;
+    payload.retryPolicy = retryPolicy;
 
     onSave(integration.id, payload);
   };
@@ -391,6 +401,68 @@ export function IntegrationFormModal({
               <div className="p-1">
                 {renderDynamicForm()}
               </div>
+
+              {/* Policies & Ingestion Control Dropdowns */}
+              <div className="border-t border-border/85 pt-5 mt-5 space-y-4">
+                <div className="flex items-center gap-1.5 border-b border-border/40 pb-2">
+                  <span className="text-[10px] font-black font-mono text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-cyan-500 animate-pulse" />
+                    Ingestion Routing & Compliance Policies
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono">
+                  {/* Sync Interval */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider block">
+                      Sync Interval
+                    </label>
+                    <select
+                      value={syncInterval}
+                      onChange={(e) => setSyncInterval(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg px-2 py-2.5 text-[9.5px] text-foreground focus:outline-none focus:border-cyan-500/50 uppercase tracking-widest cursor-pointer"
+                    >
+                      <option value="realtime">REALTIME (STREAMS)</option>
+                      <option value="1m">EVERY 1 MINUTE</option>
+                      <option value="5m">EVERY 5 MINUTES</option>
+                      <option value="15m">EVERY 15 MINUTES</option>
+                    </select>
+                  </div>
+
+                  {/* Encryption Policy */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider block">
+                      Encryption Shield
+                    </label>
+                    <select
+                      value={encryptionPolicy}
+                      onChange={(e) => setEncryptionPolicy(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg px-2 py-2.5 text-[7.5px] text-foreground focus:outline-none focus:border-cyan-500/50 uppercase tracking-widest cursor-pointer"
+                    >
+                      <option value="TLS-1.3">TLS 1.3 (STRICT SHA512)</option>
+                      <option value="TLS-1.2">TLS 1.2 (STANDARD)</option>
+                      <option value="HTTPS">HTTPS (SSL ENVELOPE)</option>
+                      <option value="NONE">NONE (LOCAL PASS-THRU)</option>
+                    </select>
+                  </div>
+
+                  {/* Retry Policy */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-black text-muted-foreground uppercase tracking-wider block">
+                      Retry Handshake
+                    </label>
+                    <select
+                      value={retryPolicy}
+                      onChange={(e) => setRetryPolicy(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg px-2 py-2.5 text-[8px] text-foreground focus:outline-none focus:border-cyan-500/50 uppercase tracking-widest cursor-pointer"
+                    >
+                      <option value="exponential">EXPONENTIALLY BACKOFF</option>
+                      <option value="linear">LINEAR (MAX 3 TIMES)</option>
+                      <option value="fail">FAIL STREAM IMMEDIATELY</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -474,7 +546,7 @@ export function IntegrationFormModal({
               <button
                 type="button"
                 onClick={handleRemove}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-505 hover:text-red-300 rounded text-[9.5px] font-mono font-black uppercase tracking-widest transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-rose-600 dark:text-rose-400 hover:text-rose-500 rounded text-[9.5px] font-mono font-black uppercase tracking-widest transition-all cursor-pointer"
               >
                 <Unlink className="w-3.5 h-3.5" />
                 <span>UNPLUG GATEWAY CONNECTOR</span>
