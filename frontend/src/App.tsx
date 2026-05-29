@@ -14,6 +14,7 @@ import { BottomWidgets } from "./components/dashboard/BottomWidgets";
 import { IncidentDetail } from "./components/alerts/IncidentDetail";
 import { AlertsPage } from "./pages/AlertsPage";
 import { NetworkMonitoringPage } from "./pages/NetworkMonitoringPage";
+import { EndpointPage } from "./pages/EndpointPage";
 import {IntegrationsPage} from "./pages/IntegrationsPage";
 import { PlaybooksPage } from "./pages/PlaybooksPage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -29,7 +30,7 @@ export default function App() {
   const { isConnected, alerts, traffic, error, dataMode } = useSocket();
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState<"dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings">("dashboard");
+  const [currentView, setCurrentView] = useState<"dashboard" | "alerts" | "network" | "endpoints" | "integrations" | "playbooks" | "reports" | "settings">("dashboard");
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [disabledAttackTypes, setDisabledAttackTypes] = useState<string[]>([]);
   
@@ -163,6 +164,8 @@ export default function App() {
               <AlertsPage key="alerts" />
             ) : currentView === "network" ? (
               <NetworkMonitoringPage key="network" />
+            ) : currentView === "endpoints" ? (
+              <EndpointPage key="endpoints" />
             ) : currentView === "integrations" ? (
               <IntegrationsPage key="integrations" />
             ) : currentView === "playbooks" ? (

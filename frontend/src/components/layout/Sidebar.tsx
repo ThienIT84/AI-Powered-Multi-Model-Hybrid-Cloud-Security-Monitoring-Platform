@@ -68,8 +68,8 @@ export function Sidebar({
   currentView, 
   onViewChange 
 }: { 
-  currentView: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings"; 
-  onViewChange: (view: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings") => void;
+  currentView: "dashboard" | "alerts" | "network" | "endpoints" | "integrations" | "playbooks" | "reports" | "settings"; 
+  onViewChange: (view: "dashboard" | "alerts" | "network" | "endpoints" | "integrations" | "playbooks" | "reports" | "settings") => void;
 }) {
   return (
     <aside className="w-55 h-full bg-card border-r border-border flex flex-col overflow-y-auto custom-scrollbar select-none transition-colors duration-300">
@@ -130,12 +130,14 @@ export function Sidebar({
             {group.items.map((item, idy) => {
               const isAlerts = item.label === "Alerts";
               const isNetwork = item.label === "Network";
+              const isEndpoints = item.label === "Endpoints";
               const isIntegrations = item.label === "Integrations";
               const isPlaybooks = item.label === "Playbooks";
               const isReports = item.label === "Reports";
               const isSettings = item.label === "Settings";
               const isActive = (isAlerts && currentView === 'alerts') ||
                                (isNetwork && currentView === 'network') ||
+                               (isEndpoints && currentView === 'endpoints') ||
                                (isIntegrations && currentView === 'integrations') ||
                                (isPlaybooks && currentView === 'playbooks') ||
                                (isReports && currentView === 'reports') ||
@@ -147,6 +149,7 @@ export function Sidebar({
                   onClick={() => {
                     if (isAlerts) onViewChange('alerts');
                     else if (isNetwork) onViewChange('network');
+                    else if (isEndpoints) onViewChange('endpoints');
                     else if (isIntegrations) onViewChange('integrations');
                     else if (isPlaybooks) onViewChange('playbooks');
                     else if (isReports) onViewChange('reports');

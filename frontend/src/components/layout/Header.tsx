@@ -46,8 +46,8 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   isDarkMode: boolean;
   onThemeToggle: () => void;
-  currentView: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings";
-  onViewChange: (view: "dashboard" | "alerts" | "network" | "integrations" | "playbooks" | "reports" | "settings") => void;
+  currentView: "dashboard" | "alerts" | "network" | "endpoints" | "integrations" | "playbooks" | "reports" | "settings";
+  onViewChange: (view: "dashboard" | "alerts" | "network" | "endpoints" | "integrations" | "playbooks" | "reports" | "settings") => void;
   alerts: Alert[];
   onSelectAlert: (alert: Alert) => void;
   isAlertsOpen: boolean;
