@@ -131,6 +131,7 @@ export function Sidebar({
             {group.items.map((item, idy) => {
               const isAlerts = item.label === "Alerts";
               const isNetwork = item.label === "Network";
+              const isCloud = item.label === "Cloud";
               const isIntegrations = item.label === "Integrations";
               const isPlaybooks = item.label === "Playbooks";
               const isReports = item.label === "Reports";
@@ -139,8 +140,10 @@ export function Sidebar({
               const isAttackSurface = item.label === "Attack Surface";
               const isMitreAttack = item.label === "MITRE ATT&CK";
               const isCaseManagement = item.label === "Case Management";
+              const isThreatIntel = item.label === "Threat Intel";
               const isActive = (isAlerts && currentView === 'alerts') ||
                                (isNetwork && currentView === 'network') ||
+                               (isCloud && currentView === 'cloud') ||
                                (isIntegrations && currentView === 'integrations') ||
                                (isPlaybooks && currentView === 'playbooks') ||
                                (isReports && currentView === 'reports') ||
@@ -148,7 +151,8 @@ export function Sidebar({
                                (isAIThreatDetection && currentView === 'ai-threat-detection') ||
                                (isAttackSurface && currentView === 'attack-surface') ||
                                (isMitreAttack && currentView === 'mitre-attack') ||
-                               (isCaseManagement && currentView === 'case-management');
+                               (isCaseManagement && currentView === 'case-management') ||
+                               (isThreatIntel && currentView === 'threat-intel');
               
               return (
                 <button
@@ -156,6 +160,7 @@ export function Sidebar({
                   onClick={() => {
                     if (isAlerts) onViewChange('alerts');
                     else if (isNetwork) onViewChange('network');
+                    else if (isCloud) onViewChange('cloud');
                     else if (isIntegrations) onViewChange('integrations');
                     else if (isPlaybooks) onViewChange('playbooks');
                     else if (isReports) onViewChange('reports');
@@ -164,6 +169,7 @@ export function Sidebar({
                     else if (isAttackSurface) onViewChange('attack-surface');
                     else if (isMitreAttack) onViewChange('mitre-attack');
                     else if (isCaseManagement) onViewChange('case-management');
+                    else if (isThreatIntel) onViewChange('threat-intel');
                   }}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-200 group",
