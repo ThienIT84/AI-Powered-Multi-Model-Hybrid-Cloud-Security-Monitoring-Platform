@@ -116,7 +116,7 @@ export function MultiColorDonut({
                   {total}
                 </span>
                 <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-[0.2em] mt-2">
-                  {centerLabel}
+                  TOTAL
                 </span>
               </motion.div>
             )}

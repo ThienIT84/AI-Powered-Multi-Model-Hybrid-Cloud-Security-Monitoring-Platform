@@ -171,31 +171,42 @@ export function AIThreatDetectionPage() {
         {KPI_DATA.map((kpi, i) => {
           const Icon = ICON_MAP[kpi.icon];
           const val = kpi.label === "Avg Accuracy" ? `${accuracyData[accuracyData.length-1].accuracy}%` : kpi.value;
+          
+          // Map border classes for neon effect
+          const neonClass = 
+            kpi.accentHex.includes('0011bb') ? 'neon-border-blue' :
+            kpi.accentHex.includes('9f1239') ? 'neon-border-red' :
+            kpi.accentHex.includes('9a3412') ? 'neon-border-orange' :
+            kpi.accentHex.includes('854d0e') ? 'neon-border-yellow' :
+            kpi.accentHex.includes('6b21a8') ? 'neon-border-purple' : '';
+
           return (
             <motion.div
               key={kpi.label}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              className={cn("relative overflow-hidden border rounded-xl p-4 flex flex-col gap-3 shadow-sm", kpi.border)}
+              className={cn(
+                "neon-card group relative bg-card border rounded-xl p-4 flex flex-col gap-3 transition-all duration-300", 
+                kpi.border,
+                neonClass
+              )}
               style={{
-                background: `linear-gradient(135deg, ${kpi.gradFrom}, ${kpi.gradTo})`,
-                boxShadow: `0 4px 24px ${kpi.glowColor}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                background: `linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, ${kpi.accentHex}, transparent 95%) 100%)`,
+                boxShadow: `0 6px 20px ${kpi.glowColor}, inset 0 1px 0 rgba(255,255,255,0.2)`,
               }}
             >
-              {/* Corner glow accent */}
-              <div
-                className="absolute -top-6 -right-6 w-16 h-16 rounded-full opacity-20 blur-xl pointer-events-none"
-                style={{ backgroundColor: kpi.accentHex }}
-              />
-              <div className="flex items-center justify-between relative z-10">
+              {/* Subtle corner accent */}
+              <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-[0.03] blur-xl", kpi.bg)} />
+              
+              <div className="flex items-center justify-between relative z-10 mt-1">
                 <div
-                  className={cn("p-2 rounded-lg border transition-colors", kpi.bg, kpi.border)}
+                  className={cn("p-2 rounded-lg border transition-colors bg-background", kpi.border)}
                 >
                   <Icon className={cn("w-4 h-4 transition-colors", kpi.color)} />
                 </div>
                 <span
-                  className={cn("text-[9px] font-mono font-black px-1.5 py-0.5 rounded border transition-colors", kpi.color, kpi.bg, kpi.border)}
+                  className={cn("text-[9px] font-mono font-black px-1.5 py-0.5 rounded border transition-colors bg-background", kpi.color, kpi.border)}
                 >
                   {kpi.delta}
                 </span>

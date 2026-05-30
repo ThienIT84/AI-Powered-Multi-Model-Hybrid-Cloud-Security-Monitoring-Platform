@@ -154,6 +154,13 @@ export function MitreAttackPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {MITRE_KPI.map((kpi, i) => {
           const Icon = ICON_MAP[kpi.icon];
+          const neonClass = 
+            kpi.accentHex.includes('0011bb') ? 'neon-border-blue' :
+            kpi.accentHex.includes('9f1239') ? 'neon-border-red' :
+            kpi.accentHex.includes('9a3412') ? 'neon-border-orange' :
+            kpi.accentHex.includes('854d0e') ? 'neon-border-yellow' :
+            kpi.accentHex.includes('6b21a8') ? 'neon-border-purple' : '';
+
           return (
             <motion.div
               key={kpi.label}
@@ -161,14 +168,18 @@ export function MitreAttackPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }}
               className={cn(
-                "relative overflow-hidden bg-gradient-to-br border rounded-xl p-4 flex flex-col gap-3 shadow-sm",
-                kpi.gradFrom, kpi.gradTo, kpi.border
+                "neon-card group border rounded-xl p-4 flex flex-col gap-3 transition-all duration-300", 
+                kpi.border,
+                neonClass
               )}
-              style={{ boxShadow: `0 4px 24px ${kpi.glowColor}` }}
+              style={{
+                background: `linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, ${kpi.accentHex}, transparent 95%) 100%)`,
+                boxShadow: `0 6px 20px ${kpi.glowColor}, inset 0 1px 0 rgba(255,255,255,0.2)`,
+              }}
             >
               {/* Subtle corner accent */}
-              <div className={cn("absolute top-0 right-0 w-16 h-16 rounded-bl-full opacity-10", kpi.bg)} />
-              <div className="flex items-center justify-between relative z-10">
+              <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-[0.03] blur-xl", kpi.bg)} />
+              <div className="flex items-center justify-between relative z-10 mt-1">
                 <div className={cn("p-2 rounded-lg border transition-colors", kpi.bg, kpi.border)}>
                   <Icon className={cn("w-4 h-4 transition-colors", kpi.color)} />
                 </div>
@@ -475,6 +486,7 @@ export function MitreAttackPage() {
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xanh-accent font-black text-[9px] shrink-0">{row.id}</span>
+                      <span className="text-xanh-accent font-black text-[9px]">·</span>
                       <span className="text-foreground/80 group-hover:text-foreground transition-colors truncate">
                         {row.name}
                       </span>
