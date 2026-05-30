@@ -201,17 +201,24 @@ export function CaseManagementPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
               className={cn(
-                "neon-card group border rounded-xl p-4 flex flex-col gap-3 transition-all duration-300", 
-                kpi.border,
+                "neon-card group border border-border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
+                "hover:border-2 hover:scale-[1.02] cursor-pointer",
+                kpi.border.replace('border-', 'hover:border-'),
                 neonClass
               )}
               style={{
-                background: `linear-gradient(135deg, var(--card) 0%, color-mix(in srgb, ${kpi.accentHex}, transparent 95%) 100%)`,
-                boxShadow: `0 6px 20px ${kpi.glowColor}, inset 0 1px 0 rgba(255,255,255,0.2)`,
+                boxShadow: `0 4px 12px rgba(0,0,0,0.03)`,
+              }}
+              whileHover={{ 
+                boxShadow: `0 0 25px color-mix(in srgb, ${kpi.accentHex}, transparent 70%)`,
+                borderColor: kpi.accentHex
               }}
             >
-              <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-[0.03] blur-xl pointer-events-none"
-                style={{ backgroundColor: kpi.accentHex }} />
+              {/* Network-style subtle background circle */}
+              <div 
+                className="absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-5 group-hover:opacity-10 pointer-events-none transition-opacity" 
+                style={{ backgroundColor: kpi.accentHex }}
+              />
               <div className="flex items-center justify-between relative z-10 mt-1">
                 <div className={cn("p-2 rounded-lg border transition-colors", kpi.bg, kpi.border)}>
                   <Icon className={cn("w-4 h-4 transition-colors", kpi.color)} />
