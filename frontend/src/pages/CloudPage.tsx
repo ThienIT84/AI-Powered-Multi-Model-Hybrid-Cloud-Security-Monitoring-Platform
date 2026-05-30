@@ -144,6 +144,16 @@ const CLOUD_RESOURCES = [
 export function CloudPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDonutIndex, setActiveIndex] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 2000);
+  };
+
+  const handleSettings = () => {
+    // Logic for settings
+  };
 
   return (
     <div className="space-y-6 pb-10">
@@ -168,11 +178,18 @@ export function CloudPage() {
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
             CSPM ĐANG HOẠT ĐỘNG
           </div>
-          <button className="p-1.5 hover:bg-muted rounded border border-border transition-colors cursor-pointer">
-            <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
+          <button 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="p-1.5 hover:bg-muted rounded border border-border transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5 text-muted-foreground", isRefreshing && "animate-spin text-cyan-500")} />
           </button>
-          <button className="p-1.5 hover:bg-muted rounded border border-border transition-colors cursor-pointer">
-            <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+          <button 
+            onClick={handleSettings}
+            className="p-1.5 hover:bg-muted rounded border border-border transition-colors cursor-pointer"
+          >
+            <Settings className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
           </button>
         </div>
       </div>

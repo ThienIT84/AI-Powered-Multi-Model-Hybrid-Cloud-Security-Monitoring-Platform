@@ -40,6 +40,22 @@ import {
 } from "recharts";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
+import { FloatingPanel } from "../components/common/FloatingPanel";
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+interface ThreatActor {
+  name: string;
+  origin: string;
+  motivation: string;
+  techniques: string;
+  sectors: string[];
+  status: string;
+  description?: string;
+  aliases?: string[];
+  targetCountries?: string[];
+  tools?: string[];
+}
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 
@@ -83,11 +99,55 @@ const THREAT_FEEDS = [
   { name: "Spamhaus", type: "IP/Domain", count: "34,567 IOCs", time: "30 min ago", status: "active" }
 ];
 
-const THREAT_ACTORS = [
-  { name: "APT28 (Fancy Bear)", origin: "Russia", motivation: "Espionage", techniques: "45 mapped", sectors: ["Government", "Defense", "Media"], status: "Active" },
-  { name: "Lazarus Group", origin: "North Korea", motivation: "Financial", techniques: "38 mapped", sectors: ["Financial", "Crypto", "Entertainment"], status: "Active" },
-  { name: "APT41", origin: "China", motivation: "Espionage/Financial", techniques: "52 mapped", sectors: ["Healthcare", "Tech", "Telecom"], status: "Active" },
-  { name: "FIN7", origin: "Russia", motivation: "Financial", techniques: "28 mapped", sectors: ["Retail", "Hospitality", "Finance"], status: "Active" }
+const THREAT_ACTORS: ThreatActor[] = [
+  { 
+    name: "APT28 (Fancy Bear)", 
+    origin: "Russia", 
+    motivation: "Espionage", 
+    techniques: "45 mapped", 
+    sectors: ["Government", "Defense", "Media"], 
+    status: "Active",
+    description: "APT28 is a highly sophisticated threat group believed to be associated with the Russian General Staff Main Intelligence Directorate (GRU) 85th Main Special Service Center (GTsSS) military unit 26165. They have been active since at least the mid-2000s.",
+    aliases: ["Fancy Bear", "Pawn Storm", "Sofacy", "Sednit", "STRONTIUM"],
+    targetCountries: ["USA", "Ukraine", "Germany", "France", "Georgia"],
+    tools: ["X-Agent", "X-Tunnel", "Wineloader", "Gamefish", "Chopstick"]
+  },
+  { 
+    name: "Lazarus Group", 
+    origin: "North Korea", 
+    motivation: "Financial", 
+    techniques: "38 mapped", 
+    sectors: ["Financial", "Crypto", "Entertainment"], 
+    status: "Active",
+    description: "Lazarus Group is a North Korean state-sponsored cyber threat group known for high-profile attacks, including the 2014 Sony Pictures hack and the 2017 WannaCry ransomware attack. They are increasingly focused on cryptocurrency theft.",
+    aliases: ["Hidden Cobra", "Guardians of Peace", "Zinc", "Nickel Academy"],
+    targetCountries: ["South Korea", "USA", "Japan", "Vietnam", "Bangladesh"],
+    tools: ["WannaCry", "Destover", "Manuscrypt", "ElectricFish", "PowerRatankba"]
+  },
+  { 
+    name: "APT41", 
+    origin: "China", 
+    motivation: "Espionage/Financial", 
+    techniques: "52 mapped", 
+    sectors: ["Healthcare", "Tech", "Telecom"], 
+    status: "Active",
+    description: "APT41 is a prolific Chinese state-sponsored threat group that also conducts financially motivated activity for personal gain. They are known for targeting software supply chains and using advanced malware.",
+    aliases: ["Barium", "Winnti", "Wicked Panda", "Double Dragon"],
+    targetCountries: ["USA", "Taiwan", "India", "UK", "Australia"],
+    tools: ["Winnti", "ShadowPad", "Cobalt Strike", "PlugX", "Crossbow"]
+  },
+  { 
+    name: "FIN7", 
+    origin: "Russia", 
+    motivation: "Financial", 
+    techniques: "28 mapped", 
+    sectors: ["Retail", "Hospitality", "Finance"], 
+    status: "Active",
+    description: "FIN7 is a financially motivated threat group that has primarily targeted the retail, restaurant, and hospitality sectors since mid-2015. They often use clever social engineering to deliver malware via email.",
+    aliases: ["Carbanak", "Navigator Group", "ELBRUS"],
+    targetCountries: ["USA", "UK", "Canada", "Australia", "Europe"],
+    tools: ["Carbanak", "Lizar", "Griffon", "Tirion", "SQLRat"]
+  }
 ];
 
 const VULNERABILITIES = [
@@ -104,6 +164,35 @@ export function ThreatIntelPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDonutIndex, setActiveIndex] = useState<number | null>(null);
+  const [selectedActor, setSelectedActor] = useState<ThreatActor | null>(null);
+  const [followedActors, setFollowedActors] = useState<string[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isTracing, setIsTracing] = useState(false);
+
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => setIsExporting(false), 2000);
+  };
+
+  const handleSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => setIsSyncing(false), 2500);
+  };
+
+  const handleTrace = () => {
+    if (!searchQuery) return;
+    setIsTracing(true);
+    setTimeout(() => setIsTracing(false), 1500);
+  };
+
+  const toggleFollowActor = (actorName: string) => {
+    setFollowedActors(prev => 
+      prev.includes(actorName) 
+        ? prev.filter(name => name !== actorName)
+        : [...prev, actorName]
+    );
+  };
 
   const tabs = [
     { id: "overview", label: "Tổng quan" },
@@ -132,11 +221,29 @@ export function ThreatIntelPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded text-[10px] font-black text-muted-foreground hover:text-foreground transition-all uppercase tracking-widest cursor-pointer">
-            <Download className="w-3.5 h-3.5" /> Xuất IOCs
+          <button 
+            onClick={handleExport}
+            disabled={isExporting}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded text-[10px] font-black transition-all uppercase tracking-widest cursor-pointer",
+              isExporting ? "text-emerald-500 border-emerald-500/30" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {isExporting ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
+            {isExporting ? "Đã xuất file" : "Xuất IOCs"}
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded text-[10px] font-black text-cyan-500 hover:bg-cyan-500/20 transition-all uppercase tracking-widest cursor-pointer">
-            <RefreshCw className="w-3.5 h-3.5" /> Đồng bộ Feeds
+          <button 
+            onClick={handleSync}
+            disabled={isSyncing}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 border rounded text-[10px] font-black transition-all uppercase tracking-widest cursor-pointer",
+              isSyncing 
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" 
+                : "bg-cyan-500/10 border-cyan-500/20 text-cyan-500 hover:bg-cyan-500/20"
+            )}
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5", isSyncing && "animate-spin")} />
+            {isSyncing ? "Đang đồng bộ..." : "Đồng bộ Feeds"}
           </button>
         </div>
       </div>
@@ -197,10 +304,21 @@ export function ThreatIntelPage() {
           className="w-full bg-card border border-border rounded-xl pl-12 pr-32 py-3.5 text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/5 transition-all uppercase tracking-wider shadow-sm"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleTrace()}
         />
         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-2">
-          <button className="px-4 py-2 bg-cyan-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-cyan-600 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 fill-current" /> TRUY VẾT
+          <button 
+            onClick={handleTrace}
+            disabled={isTracing || !searchQuery}
+            className={cn(
+              "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+              isTracing 
+                ? "bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                : "bg-cyan-500 text-white hover:bg-cyan-600 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+          >
+            {isTracing ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5 fill-current" />}
+            {isTracing ? "HOÀN TẤT" : "TRUY VẾT"}
           </button>
         </div>
       </div>
@@ -529,8 +647,19 @@ export function ThreatIntelPage() {
                 <div key={actor.name} className="bg-card border border-border rounded-2xl p-7 hover:border-cyan-500/50 transition-all duration-500 group relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 blur-3xl rounded-full -mr-32 -mt-32 pointer-events-none group-hover:bg-rose-500/10 transition-colors" />
                   
-                  <div className="absolute top-6 right-6 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                    {actor.status}
+                  <div className="absolute top-6 right-6 flex items-center gap-2">
+                    {followedActors.includes(actor.name) && (
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 text-[9px] font-black uppercase tracking-[0.2em]"
+                      >
+                        Đang theo dõi
+                      </motion.div>
+                    )}
+                    <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] font-black uppercase tracking-[0.2em] shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                      {actor.status}
+                    </div>
                   </div>
 
                   <div className="flex items-start gap-5 mb-8 relative z-10">
@@ -574,7 +703,10 @@ export function ThreatIntelPage() {
                     <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest font-black flex items-center gap-2">
                       <Clock className="w-4 h-4 text-cyan-500" /> Hoạt động gần nhất: Hôm nay
                     </span>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-cyan-500/5 hover:bg-cyan-500/10 border border-cyan-500/20 rounded-xl text-[11px] font-black text-cyan-500 uppercase tracking-widest transition-all group/btn">
+                    <button 
+                      onClick={() => setSelectedActor(actor)}
+                      className="flex items-center gap-2 px-4 py-2 bg-cyan-500/5 hover:bg-cyan-500/10 border border-cyan-500/20 rounded-xl text-[11px] font-black text-cyan-500 uppercase tracking-widest transition-all group/btn"
+                    >
                       Xem hồ sơ <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </button>
                   </div>
@@ -698,6 +830,121 @@ export function ThreatIntelPage() {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* ── Threat Actor Profile Panel ────────────────────────────────────────── */}
+      <FloatingPanel
+        isOpen={!!selectedActor}
+        onClose={() => setSelectedActor(null)}
+        title={selectedActor ? `Hồ sơ Tác nhân: ${selectedActor.name}` : "Hồ sơ Tác nhân"}
+        className="max-w-md"
+      >
+        {selectedActor && (
+          <div className="p-6 space-y-8">
+            {/* Header Info */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-background border border-border flex items-center justify-center text-rose-500 shadow-inner">
+                  <User className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-foreground uppercase tracking-tight leading-tight">{selectedActor.name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Globe className="w-3.5 h-3.5 text-cyan-500" />
+                    <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest font-bold">Nguồn gốc: {selectedActor.origin}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-muted/20 border border-border/50 rounded-xl">
+                <p className="text-[11px] text-foreground leading-relaxed font-medium">
+                  {selectedActor.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Aliases */}
+            {selectedActor.aliases && (
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Hash className="w-3.5 h-3.5 text-cyan-500" /> Tên gọi khác (Aliases)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedActor.aliases.map(alias => (
+                    <span key={alias} className="px-2.5 py-1 rounded bg-background border border-border text-[9px] font-mono font-black text-muted-foreground uppercase">
+                      {alias}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tools & TTPs */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Bug className="w-3.5 h-3.5 text-rose-500" /> Công cụ sử dụng
+                </p>
+                <div className="space-y-1.5">
+                  {selectedActor.tools?.map(tool => (
+                    <div key={tool} className="flex items-center gap-2 text-[10px] font-black text-foreground uppercase tracking-wide">
+                      <div className="w-1 h-1 rounded-full bg-rose-500" /> {tool}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                  <Target className="w-3.5 h-3.5 text-amber-500" /> Quốc gia mục tiêu
+                </p>
+                <div className="space-y-1.5">
+                  {selectedActor.targetCountries?.map(country => (
+                    <div key={country} className="flex items-center gap-2 text-[10px] font-black text-foreground uppercase tracking-wide">
+                      <div className="w-1 h-1 rounded-full bg-amber-500" /> {country}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Targeted Sectors */}
+            <div className="space-y-3">
+              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                <Shield className="w-3.5 h-3.5 text-emerald-500" /> Lĩnh vực mục tiêu
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {selectedActor.sectors.map(sector => (
+                  <span key={sector} className="px-3 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10 text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                    {sector}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="pt-4 border-t border-border/50">
+              <button 
+                onClick={() => selectedActor && toggleFollowActor(selectedActor.name)}
+                className={cn(
+                  "w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg",
+                  selectedActor && followedActors.includes(selectedActor.name)
+                    ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-500/20"
+                    : "bg-cyan-500 text-white hover:bg-cyan-600 shadow-cyan-500/20"
+                )}
+              >
+                {selectedActor && followedActors.includes(selectedActor.name) ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" /> ĐANG THEO DÕI
+                  </>
+                ) : (
+                  <>
+                    <Activity className="w-4 h-4" /> THEO DÕI TÁC NHÂN NÀY
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </FloatingPanel>
     </div>
   );
 }

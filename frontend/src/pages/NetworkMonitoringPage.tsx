@@ -45,6 +45,13 @@ export const NetworkMonitoringPage: React.FC = () => {
 
   // Selected Log for inspection
   const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = () => {
+    if (logs.length === 0) return;
+    setIsExporting(true);
+    setTimeout(() => setIsExporting(false), 2000);
+  };
 
   // Sync selected log if it gets updated inside current logs list or keep it stable
   useEffect(() => {
@@ -119,7 +126,7 @@ export const NetworkMonitoringPage: React.FC = () => {
         </div>
 
         {/* Live Packets/sec Rates and Sensors throughput */}
-        <div className="flex items-center gap-4 text-xs font-mono">
+        <div className="flex items-center gap-6 text-xs font-mono">
           <div className="flex items-center gap-1.5">
             <Server className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-muted-foreground font-medium">THROUGHPUT:</span>
@@ -127,6 +134,39 @@ export const NetworkMonitoringPage: React.FC = () => {
               {isRunning ? `${livePacketRate} pkts/s` : "0 pkts/s"}
             </span>
           </div>
+
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Layers className="w-3.5 h-3.5" />
+            <span>BUFFER_USAGE:</span>
+            <span className="text-foreground font-black">{(logs.length / 10).toFixed(1)}%</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExport}
+            disabled={isExporting || logs.length === 0}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded border text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+              isExporting 
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" 
+                : "bg-muted border-border text-muted-foreground hover:text-foreground disabled:opacity-30"
+            }`}
+          >
+            <Download className={`w-3.5 h-3.5 ${isExporting ? "animate-bounce" : ""}`} />
+            {isExporting ? "EXPORTED" : "DOWNLOAD PCAP"}
+          </button>
+          
+          <button 
+            onClick={() => setIsRunning(!isRunning)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded font-black text-[10px] uppercase tracking-widest transition-all cursor-pointer ${
+              isRunning 
+                ? "bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20" 
+                : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20"
+            }`}
+          >
+            {isRunning ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+            {isRunning ? "STOP SENSOR" : "START SENSOR"}
+          </button>
         </div>
       </div>
 

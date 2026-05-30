@@ -24,6 +24,16 @@ export function AlertsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => setIsExporting(false), 2000);
+  };
+
+  const handleCreateRule = () => {
+    console.log("Opening Create Rule dialog...");
+  };
 
   // Filtering logic
   const filteredAlerts = useMemo(() => {
@@ -74,12 +84,24 @@ export function AlertsPage() {
           
           <div className="h-8 w-px bg-border mx-1" />
           
-          <button className="flex items-center gap-2 px-4 py-2 bg-muted border border-border rounded-lg text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all">
-            <Download size={14} />
-            Export
+          <button 
+            onClick={handleExport}
+            disabled={isExporting}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+              isExporting 
+                ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-500" 
+                : "bg-muted border border-border text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Download size={14} className={cn(isExporting && "animate-bounce")} />
+            {isExporting ? "Exported" : "Export"}
           </button>
           
-          <button className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-cyan-500/20 transition-all">
+          <button 
+            onClick={handleCreateRule}
+            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-cyan-500/20 transition-all active:scale-95"
+          >
             <Plus size={14} />
             Create Rule
           </button>
