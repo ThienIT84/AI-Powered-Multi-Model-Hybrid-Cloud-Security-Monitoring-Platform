@@ -115,26 +115,27 @@ export const TREND_DATASETS: Record<string, TrendItem[]> = {
 export const ASSETS_DATASETS: Record<string, CloudAsset[]> = {
   today: [
     { name: "EC2-PROD-APP-01", type: "Virtual Machine", platform: "AWS", alerts: 12, risk: 92, status: "Investigating" },
-    { name: "VPC-EAST-CORE", type: "Network Hub", platform: "Azure", alerts: 8, risk: 85, status: "Monitoring" },
-    { name: "RDS-POSTGRES-USERLOGS", type: "Relational DB", platform: "AWS", alerts: 5, risk: 65, status: "Mitigated" },
+    { name: "VPC-EAST-CORE", type: "Network Hub", platform: "AWS", alerts: 8, risk: 85, status: "Monitoring" },
+    { name: "S3-PAYMENTS-DECRYPTED", type: "Blob Store", platform: "AWS", alerts: 5, risk: 70, status: "Mitigated" },
+    { name: "RDS-POSTGRES-USERLOGS", type: "Relational DB", platform: "AWS", alerts: 4, risk: 60, status: "Mitigated" },
   ],
   "7d": [
     { name: "EC2-PROD-APP-01", type: "Virtual Machine", platform: "AWS", alerts: 85, risk: 92, status: "Investigating" },
-    { name: "VPC-EAST-CORE", type: "Network Hub", platform: "Azure", alerts: 62, risk: 85, status: "Monitoring" },
-    { name: "S3-PAYMENTS-DECRYPTED", type: "Blob Store", platform: "AWS", alerts: 34, risk: 78, status: "Mitigated" },
-    { name: "RDS-POSTGRES-USERLOGS", type: "Relational DB", platform: "AWS", alerts: 27, risk: 65, status: "Mitigated" },
+    { name: "VPC-EAST-CORE", type: "Network Hub", platform: "AWS", alerts: 62, risk: 85, status: "Monitoring" },
+    { name: "S3-PAYMENTS-DECRYPTED", type: "Blob Store", platform: "AWS", alerts: 34, risk: 70, status: "Mitigated" },
+    { name: "RDS-POSTGRES-USERLOGS", type: "Relational DB", platform: "AWS", alerts: 27, risk: 60, status: "Mitigated" },
   ],
   "30d": [
     { name: "EC2-PROD-APP-01", type: "Virtual Machine", platform: "AWS", alerts: 198, risk: 92, status: "Investigating" },
-    { name: "VPC-EAST-CORE", type: "Network Hub", platform: "Azure", alerts: 145, risk: 85, status: "Monitoring" },
-    { name: "S3-PAYMENTS-DECRYPTED", type: "Blob Store", platform: "AWS", alerts: 98, risk: 78, status: "Mitigated" },
-    { name: "RDS-POSTGRES-USERLOGS", type: "Relational DB", platform: "AWS", alerts: 84, risk: 65, status: "Mitigated" },
-    { name: "K8S-MICRO-INGRESS", type: "Container Cluster", platform: "GCP", alerts: 72, risk: 60, status: "Resolved" },
+    { name: "VPC-EAST-CORE", type: "Network Hub", platform: "AWS", alerts: 145, risk: 85, status: "Monitoring" },
+    { name: "S3-PAYMENTS-DECRYPTED", type: "Blob Store", platform: "AWS", alerts: 98, risk: 70, status: "Mitigated" },
+    { name: "RDS-POSTGRES-USERLOGS", type: "Relational DB", platform: "AWS", alerts: 84, risk: 60, status: "Mitigated" },
   ],
   custom: [
-    { name: "CUSTOM-PROD-VM", type: "Virtual Machine", platform: "AWS", alerts: 112, risk: 89, status: "Investigating" },
-    { name: "RDS-POSTGRES-USERLOGS", type: "Relational DB", platform: "AWS", alerts: 55, risk: 65, status: "Mitigated" },
-    { name: "K8S-MICRO-INGRESS", type: "Container Cluster", platform: "GCP", alerts: 43, risk: 60, status: "Resolved" },
+    { name: "EC2-PROD-APP-01", type: "Virtual Machine", platform: "AWS", alerts: 112, risk: 92, status: "Investigating" },
+    { name: "VPC-EAST-CORE", type: "Network Hub", platform: "AWS", alerts: 70, risk: 85, status: "Monitoring" },
+    { name: "S3-PAYMENTS-DECRYPTED", type: "Blob Store", platform: "AWS", alerts: 30, risk: 70, status: "Mitigated" },
+    { name: "RDS-POSTGRES-USERLOGS", type: "Relational DB", platform: "AWS", alerts: 15, risk: 60, status: "Mitigated" },
   ]
 };
 
@@ -184,11 +185,11 @@ export const OFFENDING_IPS_DATASETS: Record<string, AttackingIP[]> = {
     { ip: "198.51.100.12", country: "United States (US)", count: 41, mainAttack: "DDoS Attempt", lastActive: "35m ago", status: "Monitored" },
   ],
   "30d": [
-    { ip: "185.220.101.5", country: "Russia (RU)", count: 421, mainAttack: "Brute Force", lastActive: "2m ago", status: "Active" },
-    { ip: "45.142.120.44", country: "China (CN)", count: 310, mainAttack: "Web Attack", lastActive: "12m ago", status: "Active" },
-    { ip: "91.241.19.82", country: "Netherlands (NL)", count: 188, mainAttack: "Network Anomaly", lastActive: "1h ago", status: "Flagged" },
-    { ip: "198.51.100.12", country: "United States (US)", count: 142, mainAttack: "DDoS Attempt", lastActive: "3h ago", status: "Monitored" },
-    { ip: "103.245.20.1", country: "India (IN)", count: 91, mainAttack: "Malware Activity", lastActive: "8h ago", status: "Stopped" },
+    { ip: "185.220.101.5", country: "Russia (RU)", count: 421, mainAttack: "Brute Force", lastActive: "2 min ago", status: "Active" },
+    { ip: "45.142.120.44", country: "China (CN)", count: 318, mainAttack: "Web Attack", lastActive: "12 min ago", status: "Active" },
+    { ip: "91.241.19.82", country: "Netherlands (NL)", count: 188, mainAttack: "Network Anomaly", lastActive: "1 hr ago", status: "Flagged" },
+    { ip: "198.51.100.12", country: "United States (US)", count: 142, mainAttack: "DDoS", lastActive: "3 hr ago", status: "Monitored" },
+    { ip: "103.245.20.1", country: "India (IN)", count: 91, mainAttack: "Malware", lastActive: "8 hr ago", status: "Stopped" },
   ],
   custom: [
     { ip: "185.220.101.5", country: "Russia (RU)", count: 210, mainAttack: "Brute Force", lastActive: "3m ago", status: "Active" },
@@ -210,7 +211,7 @@ export const SHAP_EXPLAIN_DATA = [
 
 export const MODEL_METRICS_DATA: ModelMetric[] = [
   {
-    name: "AI1: Network Anomaly",
+    name: "AI1 — Network Anomaly",
     source: "Zeek conn.log",
     status: "Active",
     metrics: { accuracy: "98.4%", precision: "97.9%", recall: "98.1%", f1: "98.0%" },
@@ -219,7 +220,7 @@ export const MODEL_METRICS_DATA: ModelMetric[] = [
     lineColor: "bg-cyan-500",
   },
   {
-    name: "AI2A: Attack Classifier",
+    name: "AI2A — Attack Classifier",
     source: "Zeek conn.log",
     status: "Active",
     metrics: { accuracy: "96.5%", precision: "95.8%", recall: "96.2%", f1: "96.0%" },
@@ -228,7 +229,7 @@ export const MODEL_METRICS_DATA: ModelMetric[] = [
     lineColor: "bg-purple-500",
   },
   {
-    name: "AI2B: Threat Intel Sync",
+    name: "AI2B — Web Threat Detector",
     source: "Zeek http.log",
     status: "Retraining",
     metrics: { accuracy: "94.2%", precision: "93.9%", recall: "94.5%", f1: "94.2%" },

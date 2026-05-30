@@ -98,7 +98,7 @@ export function ReportFilters({
                 key={type.value}
                 id={`tab-${type.value}`}
                 onClick={() => onReportTypeChange(type.value as ReportType)}
-                className={`relative px-5 py-3 rounded-lg text-left transition-all duration-300 min-w-42.5px lg:min-w-47.5px cursor-pointer snap-start overflow-hidden flex-1 ${
+                className={`relative px-5 py-3 rounded-lg text-left transition-all duration-300 min-w-42.5 lg:min-w-47.5 cursor-pointer snap-start overflow-hidden flex-1 ${
                   isActive 
                     ? "bg-background border border-border" 
                     : "bg-muted/30 border border-transparent hover:bg-muted hover:border-border"
@@ -115,7 +115,7 @@ export function ReportFilters({
                 {isActive && (
                   <motion.div 
                     layoutId="activeTabBorderGlow"
-                    className="absolute left-0 top-0 bottom-0 w-0.75px"
+                    className="absolute left-0 top-0 bottom-0 w-0.75"
                     style={{ 
                       backgroundColor: currentType === "executive" ? CYBER_COLORS.low 
                                       : currentType === "threat" ? CYBER_COLORS.critical 
@@ -168,7 +168,7 @@ export function ReportFilters({
                 setIsTimeDropdownOpen(!isTimeDropdownOpen);
                 setIsFormatDropdownOpen(false);
               }}
-              className={`flex items-center justify-between min-w-42.5px bg-background border rounded-lg px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:border-foreground/15 hover:text-foreground transition duration-200 cursor-pointer ${
+              className={`flex items-center justify-between min-w-42.5 bg-background border rounded-lg px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:border-foreground/15 hover:text-foreground transition duration-200 cursor-pointer ${
                 isTimeDropdownOpen ? "border-cyan-555 dark:border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.1)]" : "border-border"
               }`}
             >
@@ -187,7 +187,7 @@ export function ReportFilters({
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 mt-1 w-55px bg-card border border-border rounded-lg shadow-xl z-50 p-1 divide-y divide-border"
+                    className="absolute right-0 mt-1 w-55 bg-card border border-border rounded-lg shadow-xl z-50 p-1 divide-y divide-border"
                   >
                     {timeframes.map((tf) => (
                       <button
@@ -222,7 +222,7 @@ export function ReportFilters({
                 setIsFormatDropdownOpen(!isFormatDropdownOpen);
                 setIsTimeDropdownOpen(false);
               }}
-              className={`flex items-center justify-between min-w-30px bg-background border rounded-lg px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:border-foreground/15 hover:text-foreground transition duration-200 cursor-pointer ${
+              className={`flex items-center justify-between min-w-30 bg-background border rounded-lg px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:border-foreground/15 hover:text-foreground transition duration-200 cursor-pointer ${
                 isFormatDropdownOpen ? "border-cyan-500/50" : "border-border"
               }`}
             >
@@ -241,7 +241,7 @@ export function ReportFilters({
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 mt-1 w-32.5px bg-card border border-border rounded-lg shadow-xl z-50 p-1"
+                    className="absolute right-0 mt-1 w-32.5 bg-card border border-border rounded-lg shadow-xl z-50 p-1"
                   >
                     {["pdf", "csv", "json"].map((f) => (
                       <button
@@ -269,7 +269,7 @@ export function ReportFilters({
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className={`cursor-pointer flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest border transition-all duration-300 min-w-37.5px relative overflow-hidden ${
+            className={`cursor-pointer flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest border transition-all duration-300 min-w-37.5 relative overflow-hidden ${
               exportSuccess
                 ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
                 : isExporting
@@ -316,15 +316,15 @@ export function ReportFilters({
             transition={{ duration: 0.3 }}
             className="overflow-hidden"
           >
-            <div className="bg-slate-950/40 border border-slate-900 rounded-xl p-4 space-y-3 shadow-inner relative">
-              <div className="absolute top-2 right-2 flex items-center gap-1 text-[8px] font-mono text-cyan-500/80 uppercase">
+            <div className="bg-muted/40 border border-border rounded-xl p-4 space-y-3 shadow-inner relative">
+              <div className="absolute top-2 right-2 flex items-center gap-1 text-[8px] font-mono text-cyan-600 dark:text-cyan-400 uppercase">
                 <Clock className="w-2.5 h-2.5" />
                 <span>Simulated Range Audit</span>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <span className="text-[9px] font-mono font-bold tracking-wider text-slate-500 uppercase flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
                     SELECT START RANGE DATE_TIME
                   </span>
@@ -333,13 +333,13 @@ export function ReportFilters({
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-[10px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition uppercase"
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-[10px] font-mono text-foreground focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition uppercase"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[9px] font-mono font-bold tracking-wider text-slate-500 uppercase flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                     SELECT END RANGE DATE_TIME
                   </span>
@@ -348,19 +348,19 @@ export function ReportFilters({
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-[10px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition uppercase"
+                      className="w-full bg-background border border-border rounded-lg px-3 py-2 text-[10px] font-mono text-foreground focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition uppercase"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Informative range estimation */}
-              <div className="flex items-center gap-2 text-[9px] font-mono text-slate-400 bg-slate-900/60 p-2 border border-slate-900/60 rounded-lg leading-normal">
-                <AlertCircle className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+              <div className="flex items-center gap-2 text-[9px] font-mono text-muted-foreground bg-muted/60 p-2 border border-border/80 rounded-lg leading-normal">
+                <AlertCircle className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
                 <span className="uppercase">
                   Selected Range: {startDate} to {endDate} • Estimating log intake of approximately{" "}
-                  <strong className="text-cyan-400 font-mono">230,452,192 packets</strong> with{" "}
-                  <strong className="text-red-400 font-mono">152 expected threat alerts</strong>.
+                  <strong className="text-cyan-600 dark:text-cyan-400 font-mono">230,452,192 packets</strong> with{" "}
+                  <strong className="text-red-555 dark:text-red-400 font-mono">152 expected threat alerts</strong>.
                 </span>
               </div>
             </div>
