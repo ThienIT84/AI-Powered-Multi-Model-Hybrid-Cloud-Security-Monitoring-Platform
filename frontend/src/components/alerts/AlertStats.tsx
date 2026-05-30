@@ -71,7 +71,7 @@ export function AlertStats({ alerts }: { alerts: Alert[] }) {
         label="Total Alerts" 
         value={stats.total} 
         icon={Activity} 
-        color="text-cyan-500" 
+        color="text-cyan-700 dark:text-cyan-500" 
         trend={12} 
         percentage="+12%" 
       />
@@ -79,7 +79,7 @@ export function AlertStats({ alerts }: { alerts: Alert[] }) {
         label="Critical Alerts" 
         value={stats.critical} 
         icon={ShieldAlert} 
-        color="text-red-500" 
+        color="text-red-700 dark:text-red-500" 
         trend={-5} 
         percentage="-5%" 
       />
@@ -87,7 +87,7 @@ export function AlertStats({ alerts }: { alerts: Alert[] }) {
         label="High Severity" 
         value={stats.high} 
         icon={AlertTriangle} 
-        color="text-orange-500" 
+        color="text-orange-700 dark:text-orange-500" 
         trend={8} 
         percentage="+8%" 
       />
@@ -95,7 +95,7 @@ export function AlertStats({ alerts }: { alerts: Alert[] }) {
         label="AI Investigating" 
         value={stats.aiInvolved} 
         icon={BrainCircuit} 
-        color="text-purple-500" 
+        color="text-purple-700 dark:text-purple-500" 
         trend={24} 
         percentage="+24%" 
       />

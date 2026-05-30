@@ -23,6 +23,14 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   
+  --color-xanh-accent: var(--xanh-accent);
+  --color-critical-accent: var(--critical-accent);
+  --color-high-accent: var(--high-accent);
+  --color-medium-accent: var(--medium-accent);
+  --color-low-accent: var(--low-accent);
+  --color-emerald-accent: var(--emerald-accent);
+  --color-purple-accent: var(--purple-accent);
+  
   --color-border: var(--border);
   --color-input: var(--input);
   
@@ -58,6 +66,15 @@
     
     --primary: #0f172a;
     --primary-foreground: #f8fafc;
+
+    /* Super Saturated Neon Intensity (Vibrant & Deep) */
+    --xanh-accent: #0044ff;      /* Xanh dương rực rỡ */
+    --critical-accent: #ff0044;  /* Đỏ Neon cực mạnh */
+    --high-accent: #ff6600;      /* Cam Neon rực rỡ */
+    --medium-accent: #eab308;    /* Vàng rực rỡ */
+    --low-accent: #22d3ee;       /* Cyan Neon */
+    --emerald-accent: #10b981;   /* Emerald Neon */
+    --purple-accent: #a855f7;    /* Purple Neon */
   }
 
   .dark {
@@ -81,6 +98,14 @@
     
     --primary: #f8fafc;
     --primary-foreground: #0f172a;
+
+    --xanh-accent: #22d3ee;
+    --critical-accent: #ef4444;
+    --high-accent: #f97316;
+    --medium-accent: #eab308;
+    --low-accent: #3b82f6;
+    --emerald-accent: #10b981;
+    --purple-accent: #a855f7;
   }
 
   body {
@@ -89,6 +114,20 @@
 }
 
 @layer components {
+  .neon-card {
+    @apply relative overflow-hidden transition-all duration-300;
+  }
+  .neon-card:hover {
+    @apply scale-[1.03] z-10;
+  }
+  
+  .neon-border-blue:hover { box-shadow: 0 12px 30px -5px color-mix(in srgb, var(--xanh-accent), transparent 60%); }
+  .neon-border-red:hover { box-shadow: 0 12px 30px -5px color-mix(in srgb, var(--critical-accent), transparent 60%); }
+  .neon-border-orange:hover { box-shadow: 0 12px 30px -5px color-mix(in srgb, var(--high-accent), transparent 60%); }
+  .neon-border-yellow:hover { box-shadow: 0 12px 30px -5px color-mix(in srgb, var(--medium-accent), transparent 60%); }
+  .neon-border-purple:hover { box-shadow: 0 12px 30px -5px color-mix(in srgb, var(--purple-accent), transparent 60%); }
+  .neon-border-emerald:hover { box-shadow: 0 12px 30px -5px color-mix(in srgb, var(--emerald-accent), transparent 60%); }
+
   .neon-glow-cyan {
     box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
   }

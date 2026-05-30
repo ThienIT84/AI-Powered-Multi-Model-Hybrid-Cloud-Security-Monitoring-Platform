@@ -59,10 +59,10 @@ export function ReportStats() {
       isPositive: false,
       detail: "vs previous 30 days",
       icon: ShieldAlert,
-      color: "text-cyan-400 border-cyan-500/30",
-      glowColor: "shadow-[0_0_20px_rgba(6,182,212,0.12)]",
+      color: "text-cyan-600 dark:text-cyan-500 border-cyan-500/30",
+      glowColor: "shadow-[0_0_20px_rgba(8,145,178,0.12)]",
       borderColor: "border-cyan-500/20 hover:border-cyan-500/50",
-      badgeColor: "bg-cyan-500/10 text-cyan-400",
+      badgeColor: "bg-cyan-500/10 text-cyan-600",
       pulse: true
     },
     {
@@ -74,10 +74,10 @@ export function ReportStats() {
       isPositive: true,
       detail: "Mitigated and closed",
       icon: AlertTriangle,
-      color: "text-red-400 border-red-500/30",
-      glowColor: "shadow-[0_0_20px_rgba(244,63,94,0.15)]",
+      color: "text-red-600 dark:text-red-500 border-red-500/30",
+      glowColor: "shadow-[0_0_20px_rgba(225,29,72,0.15)]",
       borderColor: "border-red-500/20 hover:border-red-500/50",
-      badgeColor: "bg-red-500/10 text-red-400",
+      badgeColor: "bg-red-500/10 text-red-600",
       pulse: true
     },
     {
@@ -89,10 +89,10 @@ export function ReportStats() {
       isPositive: true,
       detail: "SLA Standard: 15m",
       icon: Hourglass,
-      color: "text-amber-400 border-amber-500/30",
-      glowColor: "shadow-[0_0_20px_rgba(245,158,11,0.12)]",
+      color: "text-amber-600 dark:text-amber-500 border-amber-500/30",
+      glowColor: "shadow-[0_0_20px_rgba(217,119,6,0.12)]",
       borderColor: "border-amber-500/20 hover:border-amber-500/50",
-      badgeColor: "bg-amber-500/10 text-amber-400",
+      badgeColor: "bg-amber-500/10 text-amber-600",
       pulse: false
     },
     {
@@ -104,10 +104,10 @@ export function ReportStats() {
       isPositive: true,
       detail: "AI Fusion Engine Tuning",
       icon: ShieldX,
-      color: "text-emerald-400 border-emerald-500/30",
-      glowColor: "shadow-[0_0_20px_rgba(16,185,129,0.12)]",
+      color: "text-emerald-600 dark:text-emerald-500 border-emerald-500/30",
+      glowColor: "shadow-[0_0_20px_rgba(5,150,105,0.12)]",
       borderColor: "border-emerald-500/20 hover:border-emerald-500/50",
-      badgeColor: "bg-emerald-500/10 text-emerald-400",
+      badgeColor: "bg-emerald-500/10 text-emerald-600",
       pulse: false
     },
   ];
