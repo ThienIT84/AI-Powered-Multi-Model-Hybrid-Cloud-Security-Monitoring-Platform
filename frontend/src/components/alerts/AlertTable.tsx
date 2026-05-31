@@ -6,10 +6,11 @@ import {
   Search,
   Monitor,
   ArrowUpDown,
-  TrendingUp,
-  TrendingDown,
   Sparkles,
-  Play
+  Info,
+  CheckCircle,
+  XCircle,
+  TrendingUp
 } from "lucide-react";
 import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
 import { cn } from "../../lib/utils";
@@ -19,11 +20,12 @@ interface AlertTableProps {
   alerts: Alert[];
   onSelectAlert: (alert: Alert | null) => void;
   selectedAlertId?: string | null;
+  onUpdateAlert?: (alertId: string, updates: Partial<Alert>) => void;
 }
 
-export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTableProps) {
+export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert }: AlertTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
-  const pageSize = 15; // Clean pagination size for dense SOC layout
+  const pageSize = 15; 
 
   // Table-level filters
   const [severityFilter, setSeverityFilter] = React.useState<string>("ALL");
@@ -116,7 +118,6 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
     }
   };
 
-  // Highlight classes for custom headers that have active sorting
   const headerSortIcon = (field: "timestamp" | "riskScore" | "severity") => {
     if (sortField !== field) return <ArrowUpDown size={10} className="text-muted-foreground/35 ml-1.5 transition-colors" />;
     return <ArrowUpDown size={10} className="text-cyan-500 ml-1.5" />;
@@ -133,7 +134,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
            </span>
            <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-1.5">
-             <Sparkles size={11} className="text-cyan-500" />
+             <Sparkles size={11} className="text-cyan-500 animate-pulse" />
              AI FUSION LAYER DECISION CONSOLE
            </h3>
         </div>
@@ -142,15 +143,14 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
         <div className="flex items-center gap-2 bg-background border border-border px-2.5 py-0.5 rounded shadow-sm text-[8px] font-black">
            <span className="text-muted-foreground uppercase tracking-widest opacity-60 font-mono">SOC REPORT STATS:</span>
            <span className="text-cyan-500 uppercase flex items-center gap-1.5 font-bold">
-             <Monitor size={10} className="text-cyan-500 animate-pulse" />
+             <Monitor size={10} className="text-cyan-500" />
              AI DECISION MULTI-VECTOR COHERENCE
            </span>
         </div>
       </div>
 
-      {/* FILTERS BAR (Severity, Attack Type, IP search) */}
+      {/* FILTERS BAR */}
       <div className="p-2 border-b border-border flex flex-wrap items-center gap-3 bg-card font-bold text-[8.5px] shrink-0">
-        {/* Severity dropdown selector */}
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground uppercase tracking-wider text-[7.5px] font-black">SEVERITY:</span>
           <select 
@@ -166,7 +166,6 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
           </select>
         </div>
 
-        {/* Attack Type select dropdown */}
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground uppercase tracking-wider text-[7.5px] font-black">ATTACK:</span>
           <select 
@@ -181,7 +180,6 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
           </select>
         </div>
 
-        {/* IP Search bar filter */}
         <div className="flex items-center gap-1.5 flex-1 min-w-30">
           <span className="text-muted-foreground uppercase tracking-wider text-[7.5px] font-black shrink-0">SOURCE:</span>
           <div className="relative w-full max-w-xs">
@@ -199,7 +197,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
 
       {/* Events Table details with Vertical Scroll and Sticky Headers */}
       <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar bg-card min-h-35 max-h-145">
-        <table className="w-full text-left border-collapse table-fixed min-w-337.5">
+        <table className="w-full text-left border-collapse table-fixed min-w-355">
           <thead>
             <tr className="border-b border-border bg-secondary/15 h-9">
               <th 
@@ -210,40 +208,43 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                   Timestamp {headerSortIcon("timestamp")}
                 </div>
               </th>
-              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest text-center w-[6%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
+              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest text-center w-[5%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
                 Severity
               </th>
-              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[14%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
+              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[11%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
                 Source → Destination
               </th>
               <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[8%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
                 AI1_RESULT
               </th>
-              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[9%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border/80">
+              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[8%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border/80">
                 AI2A_CLASS
               </th>
-              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[8%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
+              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[7%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
                 AI2B_WEB
               </th>
               <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[11%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
                 SURICATA_EVIDENCE
               </th>
-              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[15%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
+              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[14%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
                 FUSION_DECISION
               </th>
               <th 
-                className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[9%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border cursor-pointer hover:text-foreground transition-colors text-right"
+                className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[8%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border cursor-pointer hover:text-foreground transition-colors text-right"
                 onClick={() => toggleSort("riskScore")}
               >
                 <div className="flex items-center justify-end pr-1">
                   RISK_SCORE {headerSortIcon("riskScore")}
                 </div>
               </th>
-              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[7%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
-                INCIDENT_GROUP
+              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[6%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
+                GROUP
               </th>
               <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[5%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
                 STATUS
+              </th>
+              <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[9%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
+                ACTIONS
               </th>
             </tr>
           </thead>
@@ -251,7 +252,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
             <AnimatePresence initial={false}>
               {totalEvents === 0 ? (
                 <tr className="h-48">
-                  <td colSpan={11} className="px-4 py-12 text-center">
+                  <td colSpan={12} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 h-full">
                        <ShieldX className="w-8 h-8 text-muted/30" />
                        <div className="space-y-1">
@@ -266,7 +267,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                   const isSelected = selectedAlertId === alert.id;
                   const isCritical = alert.severity === Severity.CRITICAL;
                   
-                  // Compute the dynamic Fusion fields on-the-fly via our robust helper
+                  // Compute the dynamic Fusion fields on-the-fly
                   const meta = getAlertFusionMeta(alert);
 
                   // Map to mock Incident group
@@ -289,8 +290,8 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                      >
                        {/* Column 1: Timestamp */}
                        <td className="px-3 py-1">
-                          <div className="flex items-center gap-1.5 leading-none font-mono text-[8px] text-muted-foreground/80">
-                            {isCritical && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)] shrink-0 animate-[pulse_1.5s_infinite]" />}
+                          <div className="flex items-center gap-1.5 leading-none font-mono text-[8.5px] text-muted-foreground/80">
+                            {isCritical && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)] shrink-0 animate-pulse" />}
                             <span>{new Date(alert.timestamp).toLocaleTimeString('en-US', { hour12: false })}</span>
                           </div>
                        </td>
@@ -299,10 +300,10 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                        <td className="px-3 py-1">
                           <div className="flex justify-center select-none">
                             <span className={cn(
-                              "text-[7px] font-black px-1 py-[0.5px] rounded border uppercase font-mono tracking-widest leading-none block text-center min-w-10.5",
+                              "text-[7px] font-black px-1.5 py-[0.5px] rounded border uppercase font-mono tracking-widest leading-none block text-center min-w-10.5",
                               alert.severity === Severity.CRITICAL ? "bg-red-500/10 border-red-500/25 text-red-500 font-extrabold" :
                               alert.severity === Severity.HIGH ? "bg-orange-500/10 border-orange-500/25 text-orange-400" :
-                              alert.severity === Severity.MEDIUM ? "bg-yellow-500/10 border-yellow-500/25 text-yellow-400" :
+                              alert.severity === Severity.MEDIUM ? "bg-yellow-500/10 border-yellow-500/25 text-yellow-500" :
                               "bg-blue-500/10 border-blue-500/25 text-cyan-400"
                             )}>
                               {alert.severity}
@@ -316,7 +317,6 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                             <span className="text-foreground font-black">{alert.sourceIp}</span>
                             <span className="text-cyan-500/60 font-black">→</span>
                             <span className="text-foreground/90">{alert.destinationIp}</span>
-                            <span className="text-muted-foreground/45">:{alert.destinationPort}</span>
                           </div>
                        </td>
                        
@@ -382,7 +382,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                           </div>
                        </td>
 
-                       {/* Column 7: Suricata evidence overlay */}
+                       {/* Column 7: Suricata evidence */}
                        <td className="px-3 py-1">
                           <span className="font-mono text-[7px] font-black px-1.5 py-[0.5px] rounded bg-muted border border-border/80 text-muted-foreground truncate max-w-32.5 block">
                             {meta.suricataEvidence}
@@ -390,21 +390,21 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                        </td>
                        
                        {/* Column 8: FUSION_DECISION with glow */}
-                       <td className="px-3 py-1">
+                       <td className="px-3 py-1 font-mono">
                           <div className={cn(
                             "flex items-center gap-1 px-1.5 py-0.5 bg-[#06b6d4]/5 rounded border leading-none max-w-42.5 truncate select-none",
                             isCritical 
                               ? "border-red-500/30 text-red-500 hover:border-red-500/50 shadow-[0_0_8px_rgba(239,68,68,0.12)] bg-red-950/5" 
                               : "border-cyan-500/20 text-cyan-500 hover:border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.1)] bg-cyan-950/5"
                           )}>
-                             <span className="text-[7.2px] font-black uppercase tracking-wider font-mono shrink-0">
+                             <span className="text-[7.2px] font-black uppercase tracking-wider shrink-0">
                                {isCritical ? "CRIT" : String(alert.severity).toUpperCase()}:
                              </span>
                              <span className="text-[7.5px] font-bold uppercase truncate tracking-tight">{alert.attackType}</span>
                           </div>
                        </td>
                        
-                       {/* Column 9: RISK_SCORE with meter */}
+                       {/* Column 9: RISK_SCORE */}
                        <td className="px-3 py-1">
                           <div className="flex items-center justify-end gap-1.5 pr-1 select-none">
                              <span className={cn(
@@ -438,11 +438,47 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
                        <td className="px-3 py-1 text-center select-none">
                           <span className={cn(
                             "text-[7px] font-black px-1.5 py-[0.5px] rounded border uppercase tracking-wider font-mono leading-none block text-center",
-                            (alert.status !== AlertStatus.RESOLVED && alert.status !== AlertStatus.MITIGATED && alert.status !== AlertStatus.FALSE_POSITIVE) ? "bg-red-500/10 border-red-500/20 text-red-500" :
-                            "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                            alert.status === AlertStatus.NEW ? "bg-red-500/10 border-red-500/20 text-red-500" :
+                            alert.status === AlertStatus.INVESTIGATING ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" :
+                            alert.status === AlertStatus.RESOLVED ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 font-bold" :
+                            "bg-blue-500/10 border-blue-500/20 text-cyan-400"
                           )}>
                             {alert.status}
                           </span>
+                       </td>
+
+                       {/* SECTION 3 & 4: Quick Action column */}
+                       <td className="px-3 py-1 text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1">
+                             <button
+                               onClick={() => onSelectAlert(alert)}
+                               title="Investigate Detail"
+                               className="px-1 py-0.5 rounded bg-cyan-500/10 hover:bg-cyan-500 text-cyan-500 hover:text-white border border-cyan-500/20 text-[7px] font-black uppercase transition-all"
+                             >
+                               <Info size={10} className="inline mr-0.5" />
+                               Invest
+                             </button>
+                             <button
+                               onClick={() => {
+                                 if (onUpdateAlert) {
+                                   onUpdateAlert(alert.id, { status: AlertStatus.FALSE_POSITIVE });
+                                 }
+                               }}
+                               className="px-1 py-0.5 rounded bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border border-orange-500/20 text-[7px] font-black uppercase transition-all"
+                             >
+                               FP
+                             </button>
+                             <button
+                               onClick={() => {
+                                 if (onUpdateAlert) {
+                                   onUpdateAlert(alert.id, { status: AlertStatus.RESOLVED });
+                                 }
+                               }}
+                               className="px-1 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-[7px] font-black uppercase transition-all"
+                             >
+                               Resolve
+                             </button>
+                          </div>
                        </td>
                      </tr>
                   );
@@ -490,3 +526,5 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId }: AlertTabl
     </div>
   );
 }
+
+export default AlertTable;

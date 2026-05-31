@@ -30,14 +30,13 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
 import { cn } from "../../lib/utils";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
-import { FusionFlowDiagram } from "./fusion/FusionFlowDiagram";
-import { DecisionVotingPanel } from "./fusion/DecisionVotingPanel";
-import { AlertExplainabilityPanel } from "./fusion/AlertExplainabilityPanel";
-import { RiskScoreBreakdown } from "./fusion/RiskScoreBreakdown";
-import { MitreTechniqueCard } from "./mitre/MitreTechniqueCard";
-import { AssetContextCard } from "./assets/AssetContextCard";
-import { AlertActionPanel } from "./actions/AlertActionPanel";
+
+// Custom imported modules from alerts directory
+import { ConfidenceVotingPanel } from "./ConfidenceVotingPanel";
+import { FusionDecisionFlow } from "./FusionDecisionFlow";
+import { ExplainabilityPanel } from "./ExplainabilityPanel";
+import { MitreAttackPanel } from "./MitreAttackPanel";
+import { RawLogViewer } from "./RawLogViewer";
 
 interface AlertDetailDrawerProps {
   alert: Alert;
@@ -46,44 +45,10 @@ interface AlertDetailDrawerProps {
 }
 
 export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetailDrawerProps) {
-  const [activeTab, setActiveTab] = useState<"pipeline" | "radar" | "logs" | "timeline">("pipeline");
+  const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "decision_flow" | "explainability" | "mitre" | "raw_logs">("overview");
   const [copied, setCopied] = useState(false);
 
   const meta = getAlertFusionMeta(alert);
-
-  // Math components for Risk Scoring Formula breakdown
-  const finalRisk = alert.riskScore || 75;
-  const isSuricataMatch = meta.suricataEvidence !== "NO MATCH";
-  const suricataWeight = isSuricataMatch ? 20 : 0;
-  const baseZeekRiskValue = 15;
-  const aiContributionValue = finalRisk - baseZeekRiskValue - suricataWeight;
-
-  const radarData = [
-    { subject: 'Impact', A: alert.riskScore, fullMark: 100 },
-    { subject: 'Velocity', A: Math.min(100, Math.floor(alert.riskScore * 1.1)), fullMark: 100 },
-    { subject: 'Persistence', A: Math.max(20, Math.floor(alert.riskScore * 0.9)), fullMark: 100 },
-    { subject: 'Sophistication', A: Math.max(15, Math.floor((alert.confidenceScore || 0.8) * 100)), fullMark: 100 },
-    { subject: 'Evasion', A: Math.min(100, Math.floor(alert.riskScore * 0.8)), fullMark: 100 },
-  ];
-
-  const handleCopyLogs = () => {
-    const rawText = `
-[FUSION_INTELLIGENCE_REPORT]
-ID: CYH-${alert.id.replace("THR-", "")}
-Timestamp: ${alert.timestamp}
-Source: ${alert.sourceIp}:${alert.sourcePort || 49152}
-Destination: ${alert.destinationIp || alert.destIp || '10.0.12.15'}:${alert.destinationPort}
-AI1 Verdict: ${meta.ai1Result}
-AI2A network Class: ${meta.ai2aClass}
-AI2B Web Payload: ${meta.ai2bWeb}
-Suricata Evidence: ${meta.suricataEvidence}
-Consolidated Severity: ${alert.severity}
-Risk Score: ${alert.riskScore}/100
-`;
-    navigator.clipboard.writeText(rawText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleResolve = () => {
     if (onUpdateAlert) {
@@ -116,7 +81,9 @@ Risk Score: ${alert.riskScore}/100
 
   const displayId = alert.id.toLowerCase().startsWith('thr-')
     ? alert.id.toUpperCase()
-    : `#CYH-${alert.id.substring(0, 4).toUpperCase()}`;
+    : `THR-${alert.id.substring(0, 4).toUpperCase()}`;
+
+  const isWebUrl = alert.attackType.includes("XSS") || alert.attackType.includes("SQL") || alert.attackType.includes("Injection");
 
   return (
     <div className="w-full bg-card h-full flex flex-col overflow-hidden relative border-l border-border select-none">
@@ -135,7 +102,7 @@ Risk Score: ${alert.riskScore}/100
                 <span>•</span>
                 <span className="text-cyan-500 font-extrabold flex items-center gap-0.5">
                   <Activity size={10} className="text-cyan-500" />
-                  CORRELATED
+                  CORRELATED FUSION
                 </span>
               </div>
             </div>
@@ -177,152 +144,223 @@ Risk Score: ${alert.riskScore}/100
         </div>
       </div>
 
-      {/* Tabs Row */}
-      <div className="flex border-b border-border bg-muted/30 shrink-0">
-        {(['pipeline', 'radar', 'logs', 'timeline'] as const).map(tab => (
+      {/* TARGET 7: Tabs Rows matching: Overview, Evidence, Decision Flow, AI Explainability, MITRE, Raw Logs */}
+      <div className="flex border-b border-border bg-muted/30 shrink-0 overflow-x-auto custom-scrollbar">
+        {[
+          { key: "overview", label: "Overview" },
+          { key: "evidence", label: "Evidence" },
+          { key: "decision_flow", label: "Decision Flow" },
+          { key: "explainability", label: "Explainability" },
+          { key: "mitre", label: "MITRE" },
+          { key: "raw_logs", label: "Raw Logs" }
+        ].map(tab => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key as any)}
             className={cn(
-              "flex-1 py-2 text-[8px] font-black uppercase tracking-widest transition-all border-b-2 cursor-pointer text-center",
-              activeTab === tab 
+              "whitespace-nowrap px-3 py-2.5 text-[8.2px] font-black uppercase tracking-widest transition-all border-b-2 cursor-pointer text-center flex-1",
+              activeTab === tab.key 
                 ? "text-cyan-500 border-cyan-500 bg-cyan-500/4" 
                 : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/30"
             )}
           >
-            {tab === "pipeline" ? "DECISION TRACE" : tab === "radar" ? "DIAGNOSTICS" : tab}
+            {tab.label}
           </button>
         ))}
       </div>
 
       {/* Pane scroll area */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 space-y-4 bg-card">
-               {/* TAB 1: Pipeline Flow Visualization & Result Breakdown */}
-        {activeTab === 'pipeline' && (
-          <div className="space-y-6">
-            <FusionFlowDiagram alert={alert} />
-            <DecisionVotingPanel alert={alert} />
-            <RiskScoreBreakdown alert={alert} />
-            <MitreTechniqueCard alert={alert} />
-            <AssetContextCard alert={alert} />
-            <AlertExplainabilityPanel alert={alert} />
-            <AlertActionPanel alert={alert} />
-          </div>
-        )}
-
-        {/* TAB 2: Diagnostics/Behavior Radar map */}
-        {activeTab === 'radar' && (
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-5 bg-card">
+        
+        {/* TAB 1: OVERVIEW TAB (SECTION 8 requirements) */}
+        {activeTab === "overview" && (
           <div className="space-y-4">
-            <section className="space-y-2">
-              <h3 className="text-[8.5px] font-black text-foreground uppercase tracking-widest flex items-center gap-1.5 border-b border-border/40 pb-1">
-                <Brain className="w-4 h-4 text-purple-500" />
-                AI Behavioral Fingerprint Map
-              </h3>
-              <div className="h-50 w-full bg-muted/20 rounded-xl flex items-center justify-center border border-border/60 p-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                    <PolarGrid stroke="var(--border)" strokeWidth={0.5} />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8, fontWeight: 'bold', fill: 'var(--muted-foreground)' }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                    <Radar
-                      name="Threat Vector Analysis"
-                      dataKey="A"
-                      stroke="rgb(6, 182, 212)"
-                      fill="rgb(6, 182, 212)"
-                      fillOpacity={0.2}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            </section>
-
-            <section className="space-y-1.5 bg-muted/10 p-2.5 rounded-lg border border-border">
-              <span className="text-[7.5px] font-black text-muted-foreground uppercase tracking-widest block">Anomaly Diagnostic Tags</span>
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                <span className="px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/25 text-red-500 font-mono text-[7px] font-bold">OUTBOUND_BEACON</span>
-                <span className="px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/25 text-orange-500 font-mono text-[7px] font-bold">SUSPICIOUS_DNS</span>
-                <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/25 text-cyan-500 font-mono text-[7px] font-bold">RAT_HEURISTIC</span>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* TAB 3: Raw Logs Decoded */}
-        {activeTab === 'logs' && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b border-border pb-1">
-              <h3 className="text-[8.5px] font-black text-foreground uppercase tracking-widest">Decoded Frame Segments</h3>
-              <button 
-                onClick={handleCopyLogs}
-                className="flex items-center gap-1 text-[8px] font-black text-cyan-500 uppercase tracking-widest cursor-pointer hover:text-cyan-400 leading-none"
-              >
-                {copied ? (
-                  <>
-                    <Check size={11} /> Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy size={11} /> Copy Diagnostics
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="bg-muted/80 border border-border p-3 rounded-xl font-mono text-[8.5px] leading-relaxed relative overflow-x-auto max-w-full">
-              <div className="text-muted-foreground/85 space-y-1">
-                <p className="text-cyan-500 font-bold"># Cyber Fusion Center Decoder</p>
-                <p>Ingest: {new Date(alert.timestamp).getTime() / 1000} (Epoch)</p>
-                <p>Node_ID: CYH-ANTIGRAVITY-01</p>
-                <p>Source_Origin: {alert.sourceIp} port {alert.sourcePort || "49152"}</p>
-                <p>Destination: {alert.destinationIp || alert.destIp || "10.0.12.15"} port {alert.destinationPort}</p>
-                <p>Protocol: {alert.protocol} service {alert.protocol === 'HTTPS' ? 'ssl' : 'http'}</p>
-                <p className="text-red-400 font-semibold pt-2"># Decoded Base64 Frame Buffer Payload:</p>
-                <p className="text-red-400 bg-red-950/20 px-2 py-1 border border-red-950/25 rounded mt-1 break-all">
-                  {alert.rawPayload || alert.payload || "GET /api/v1/user/auth HTTP/1.1\\r\\nUser-Agent: Go-client-X"}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 4: Timeline Audit */}
-        {activeTab === 'timeline' && (
-          <div className="space-y-3">
-            <h4 className="text-[8.5px] font-black text-foreground uppercase tracking-widest flex items-center gap-1 border-b border-border pb-1">
-              <History className="w-3.5 h-3.5 text-cyan-500" />
-              SOC Incident Audit History
-            </h4>
-
-            <div className="relative pl-4 space-y-4">
-              <div className="absolute left-0.75 top-1.5 bottom-1.5 w-px bg-border border-l border-dashed border-border" />
+            {/* Metadata Table */}
+            <div className="bg-background/60 border border-border/80 rounded-xl p-3.5 space-y-3">
+              <span className="text-[7.5px] font-black text-muted-foreground uppercase tracking-widest block border-b border-border/30 pb-1.5">
+                CORRELATED META INFORMATIONS
+              </span>
               
-              {alert.timeline && alert.timeline.length > 0 ? (
-                alert.timeline.map((event, i) => (
-                  <div key={event.id || i} className="relative text-[8.5px]">
-                    <div className="absolute left-[-18.5px] top-1 w-2 h-2 rounded-full bg-cyan-500 border border-card" />
-                    <div className="flex flex-col gap-0.5 leading-none">
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-foreground uppercase tracking-wide">{event.type}</span>
-                        <span className="font-mono text-[7px] text-muted-foreground">{new Date(event.timestamp).toLocaleTimeString()}</span>
-                      </div>
-                      <p className="text-muted-foreground/90 font-medium leading-relaxed mt-1">{event.description}</p>
-                      {event.actor && (
-                        <span className="text-[7px] text-muted-foreground uppercase font-black tracking-widest mt-1">OPERATOR: {event.actor}</span>
-                      )}
-                    </div>
+              <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-[8.5px] font-mono leading-none">
+                <div>
+                  <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Timestamp</span>
+                  <span className="text-foreground">{alert.timestamp}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Protocol / Port</span>
+                  <span className="text-foreground">{alert.protocol} / {alert.destinationPort}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Source Host</span>
+                  <span className="text-cyan-400 font-extrabold">{alert.sourceIp}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Destination Host</span>
+                  <span className="text-foreground">{alert.destinationIp || "10.0.12.15"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Severity / risk score</span>
+                  <span className={cn(
+                    "font-bold",
+                    alert.severity === Severity.CRITICAL ? "text-red-500" : "text-cyan-500"
+                  )}>{alert.severity} ({alert.riskScore})</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Fusion Confidence</span>
+                  <span className="text-cyan-500 font-extrabold">{Math.round(alert.confidenceScore * 100)}%</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Campaign ID</span>
+                  <span className="text-foreground">CAMP-${alert.attackType.slice(0, 3).toUpperCase()}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">MITRE Technique</span>
+                  <span className="text-foreground">{alert.mitre?.techniqueId} - {alert.mitre?.techniqueName}</span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-border/30">
+                <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Affected Asset context</span>
+                <span className="text-[8.5px] text-muted-foreground/90 font-medium">AWS-DB-PROD-01 (Host Operating System: Ubuntu Linux 22.04 LTS)</span>
+              </div>
+            </div>
+
+            {/* Confidence Voting Panel nested inside Overview as required */}
+            <ConfidenceVotingPanel alert={alert} />
+          </div>
+        )}
+
+        {/* TAB 2: EVIDENCE TAB (SECTION 9 & 10 requirements) */}
+        {activeTab === "evidence" && (
+          <div className="space-y-4">
+            
+            {/* ZEEK EVIDENCE BLOCK */}
+            <div className="bg-background/60 border border-border/80 rounded-xl p-3.5 space-y-3.5">
+              <div className="flex items-center gap-1.5 border-b border-border/30 pb-1.5">
+                <Database size={12} className="text-cyan-500" />
+                <span className="text-[7.5px] text-muted-foreground uppercase tracking-widest font-black leading-none">
+                  ZEEK Connection telemetry evidence
+                </span>
+              </div>
+
+              {!isWebUrl ? (
+                // Network Ingress attributes
+                <div className="grid grid-cols-2 gap-3 text-[8.5px] font-mono leading-none">
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Connection State</span>
+                    <span className="text-foreground">{alert.zeekData?.connState || "SF (Successful Connection)"}</span>
                   </div>
-                ))
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Duration</span>
+                    <span className="text-foreground">{alert.zeekData?.duration || "1.24s"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Originator Packets</span>
+                    <span className="text-foreground">{alert.zeekData?.origPkts || 14} pkts</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Responder Packets</span>
+                    <span className="text-foreground">{alert.zeekData?.respPkts || 12} pkts</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Originator Bytes</span>
+                    <span className="text-foreground">{alert.zeekData?.origBytes || 3824} bytes</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Responder Bytes</span>
+                    <span className="text-foreground">{alert.zeekData?.respBytes || 4512} bytes</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Connection State History</span>
+                    <span className="text-cyan-500 font-extrabold font-mono">ShADadfF</span>
+                  </div>
+                </div>
               ) : (
-                <div className="relative text-[8.5px]">
-                  <div className="absolute left-[-18.5px] top-1 w-2 h-2 rounded-full bg-cyan-500 border border-card" />
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-extrabold text-foreground uppercase">Threat Detected</span>
-                    <p className="text-muted-foreground/90 leading-tight">Event was ingested and aggregated inside SOC real-time thread.</p>
+                // Web Ingress attributes
+                <div className="grid grid-cols-2 gap-3 text-[8.5px] font-mono leading-none">
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">HTTP Method</span>
+                    <span className="text-foreground">{alert.zeekData?.method || "POST"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">HTTP URI</span>
+                    <span className="text-foreground truncate block max-w-37.5">{alert.zeekData?.uri || "/api/v1/auth/gateway"}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Response Code</span>
+                    <span className="text-foreground">200 OK</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">User Agent Header</span>
+                    <span className="text-foreground text-[8px] break-all leading-normal block">{alert.zeekData?.userAgent || "Mozilla/5.0 (PentestBot/1.0; CLI)"}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Semantic Threat Indicators</span>
+                    <span className="text-red-400 font-extrabold">SUSPICIOUS_TOKEN_MATCH_SQLI_INJECTION</span>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* SURICATA EVIDENCE BLOCK (SECTION 10 requirements) */}
+            <div className="bg-background/60 border border-border/80 rounded-xl p-3.5 space-y-3.5">
+              <div className="flex items-center justify-between border-b border-border/30 pb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Shield size={12} className="text-blue-500" />
+                  <span className="text-[7.5px] text-muted-foreground uppercase tracking-widest font-black leading-none">
+                    Suricata intrusion rule evidence
+                  </span>
+                </div>
+                {alert.suricataData?.signatureId && (
+                  <span className="text-[6.5px] font-mono bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded border border-blue-500/20 font-bold uppercase tracking-widest leading-none">
+                    FUSION COMPATIBLE
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-[8.5px] font-mono leading-none">
+                <div>
+                  <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Signature ID</span>
+                  <span className="text-blue-400 font-extrabold">{alert.suricataData?.signatureId || "SID: 2010915"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Matched Category</span>
+                  <span className="text-foreground truncate block max-w-37.5">{alert.suricataData?.category || "Detection Mechanism Bypass"}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Intrusion Signature Rule Name</span>
+                  <span className="text-foreground leading-normal block">{alert.suricataData?.signature || alert.attackType + " Attempt Detected (FCAJ Fusion Rule)"}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Matched Signature Pattern</span>
+                  <span className="text-red-400 text-[8px] leading-normal break-all block py-1 bg-red-950/25 px-2 border border-red-950/30 rounded mt-1">
+                    {alert.rawPayload?.slice(0, 80) || alert.payload?.slice(0, 80) || "union select administrative credentials"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
           </div>
+        )}
+
+        {/* TAB 3: DECISION FLOW TAB (SECTION 11 requirements) */}
+        {activeTab === "decision_flow" && (
+          <FusionDecisionFlow alert={alert} />
+        )}
+
+        {/* TAB 4: EXPLAINABILITY TAB (SECTION 13 requirements) */}
+        {activeTab === "explainability" && (
+          <ExplainabilityPanel alert={alert} />
+        )}
+
+        {/* TAB 5: MITRE ATT&CK TAB (SECTION 14 requirements) */}
+        {activeTab === "mitre" && (
+          <MitreAttackPanel alert={alert} />
+        )}
+
+        {/* TAB 6: RAW LOGS TAB (SECTION 15 requirements) */}
+        {activeTab === "raw_logs" && (
+          <RawLogViewer alert={alert} />
         )}
 
       </div>
@@ -371,3 +409,5 @@ Risk Score: ${alert.riskScore}/100
     </div>
   );
 }
+
+export default AlertDetailDrawer;

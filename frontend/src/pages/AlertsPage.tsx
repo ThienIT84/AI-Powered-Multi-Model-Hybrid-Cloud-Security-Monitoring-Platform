@@ -19,8 +19,10 @@ import { AlertDetailedList } from "../components/alerts/AlertDetailedList";
 import { AlertTable } from "../components/alerts/AlertTable";
 import { AlertDetailDrawer } from "../components/alerts/AlertDetailDrawer";
 import { CreateRuleDrawer } from "../components/alerts/CreateRuleDrawer";
-import { DriftDashboard } from "../components/drift/DriftDashboard";
-import { CorrelationDashboard } from "../components/correlation/CorrelationDashboard";
+import { DatasetDriftPanel } from "../components/alerts/DatasetDriftPanel";
+import { ModelPerformancePanel } from "../components/alerts/ModelPerformancePanel";
+import { FusionAnalyticsPanel } from "../components/alerts/FusionAnalyticsPanel";
+import { IncidentCorrelationEngine } from "../components/alerts/IncidentCorrelationEngine";
 import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../types";
 import { cn } from "../lib/utils";
 
@@ -635,6 +637,7 @@ export function AlertsPage() {
               alerts={activeAlertsForDisplay}
               onSelectAlert={setSelectedAlert}
               selectedAlertId={activeSelectedAlert?.id}
+              onUpdateAlert={handleUpdateAlert}
             />
           ) : (
             <div className="bg-card border border-border rounded-xl shadow-sm flex flex-col w-full overflow-hidden min-h-0">
@@ -768,13 +771,17 @@ export function AlertsPage() {
 
       {mainTab === "drift" && (
         <div className="space-y-6">
-          <DriftDashboard />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <DatasetDriftPanel />
+            <ModelPerformancePanel />
+          </div>
+          <FusionAnalyticsPanel />
         </div>
       )}
 
       {mainTab === "correlation" && (
         <div className="space-y-6">
-          <CorrelationDashboard />
+          <IncidentCorrelationEngine />
         </div>
       )}
 
