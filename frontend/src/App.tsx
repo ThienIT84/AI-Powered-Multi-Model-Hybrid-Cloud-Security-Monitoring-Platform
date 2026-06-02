@@ -136,8 +136,6 @@ export default function App() {
           onToggleAlerts={() => openPanel('alerts')}
           onToggleSettings={() => openPanel('settings')}
           onClosePanels={closePanel}
-          socketError={error}
-          dataMode={dataMode}
         />
         
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
@@ -185,7 +183,7 @@ export default function App() {
                   <div className="lg:col-span-8">
                      <RealtimeFlowChart traffic={traffic} />
                   </div>
-                  <div className="lg:col-span-4 bg-card border border-border rounded-xl p-4 flex flex-col justify-between shadow-sm h-100">
+                  <div className="lg:col-span-4 bg-card border border-border rounded-xl p-4 flex flex-col justify-between shadow-sm h-fit self-start">
                      <div className="flex items-center justify-between border-b border-border/20 pb-2">
                         <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.15em]">NETWORK TELEMETRY PANEL</h3>
                         <span className="text-[7.5px] bg-[#06b6d4]/10 text-cyan-500 border border-cyan-500/15 px-2 py-0.5 rounded uppercase font-black font-mono">LIVE FLOWS</span>
@@ -227,17 +225,17 @@ export default function App() {
                    </div>
 
                    {/* DATASET STABILITY, MISMATCH & DIVERSITY PROFILER */}
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                       <DatasetGrowthPanel />
                       <DatasetMismatchPanel />
                       <AttackCoveragePanel />
                    </div>
 
                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                      <div className="lg:col-span-7">
+                      <div className="lg:col-span-5">
                          <ServiceDiversityPanel />
                       </div>
-                      <div className="lg:col-span-5">
+                      <div className="lg:col-span-7">
                          <BehaviorDiversityPanel />
                       </div>
                    </div>
@@ -296,11 +294,12 @@ export default function App() {
 
                    <MultiStageAttackGraph />
                    
-                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                       <SecurityActionCenter />
                       <ReportExportPanel />
                    </div>
                 </div>
+                
               </motion.div>
             ) : currentView === "alerts" ? (
               <AlertsPage key="alerts" />

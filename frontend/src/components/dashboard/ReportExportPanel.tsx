@@ -18,8 +18,8 @@ export function ReportExportPanel() {
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-between shadow-sm h-80 select-none">
-      <div className="flex items-center justify-between mb-2 border-b border-border/20 pb-2 shrink-0">
+    <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-start shadow-sm h-fit self-start select-none space-y-4">
+      <div className="flex items-center justify-between border-b border-border/20 pb-2 shrink-0">
         <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.15em] flex items-center gap-1.5">
           <FileDown className="w-4 h-4 text-cyan-500 animate-pulse" />
           SOC REPORT AUDIT EXPORT CONSOLE
@@ -29,7 +29,7 @@ export function ReportExportPanel() {
         </span>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center space-y-4 p-1">
+      <div className="flex flex-col justify-start space-y-4 p-1">
         
         {/* Toggle option buttons */}
         <div className="flex items-center gap-1.5 select-none leading-none font-mono">

@@ -18,7 +18,7 @@ export function AIEvaluationPanel() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 font-mono">
         
         {/* Module AI1 */}
-        <div className="bg-[#0c0f14]/50 border border-border/70 rounded-xl p-3 flex flex-col justify-between">
+        <div className="bg-secondary/40 border border-border/70 rounded-xl p-3 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center border-b border-border/15 pb-2 mb-2 leading-none">
               <span className="text-[9px] font-black text-foreground">AI1 GLOBAL OUTLIER</span>
@@ -47,7 +47,7 @@ export function AIEvaluationPanel() {
         </div>
 
         {/* Module AI2A */}
-        <div className="bg-[#0c0f14]/50 border border-border/70 rounded-xl p-3 flex flex-col justify-between">
+        <div className="bg-secondary/40 border border-border/70 rounded-xl p-3 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center border-b border-border/15 pb-2 mb-2 leading-none">
               <span className="text-[9px] font-black text-foreground">AI2A FEATURES CLASSIFIER</span>
@@ -82,7 +82,7 @@ export function AIEvaluationPanel() {
         </div>
 
         {/* Module AI2B */}
-        <div className="bg-[#0c0f14]/50 border border-border/70 rounded-xl p-3 flex flex-col justify-between">
+        <div className="bg-secondary/40 border border-border/70 rounded-xl p-3 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center border-b border-border/15 pb-2 mb-2 leading-none">
               <span className="text-[9px] font-black text-foreground">AI2B FEATURE MATCHER</span>
@@ -111,7 +111,7 @@ export function AIEvaluationPanel() {
         </div>
 
         {/* Module Fusion Layer */}
-        <div className="bg-[#0c0f14]/50 border border-border/70 rounded-xl p-3 flex flex-col justify-between">
+        <div className="bg-secondary/40 border border-border/70 rounded-xl p-3 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-center border-b border-border/15 pb-2 mb-2 leading-none">
               <span className="text-[9px] font-black text-foreground">FUSION LAYER VERDICT</span>

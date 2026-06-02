@@ -45,7 +45,7 @@ export function FusionRiskAnalytics() {
         {/* Key Metrics block */}
         <div className="lg:col-span-4 space-y-3 font-mono">
           
-          <div className="bg-[#0c0f14]/60 border border-border/70 p-3 rounded-lg leading-relaxed flex items-center justify-between">
+          <div className="bg-secondary/40 border border-border/70 p-3 rounded-lg leading-relaxed flex items-center justify-between">
             <div>
               <span className="text-muted-foreground block text-[7px] uppercase font-bold mb-0.5">AVG FUSION RISK SCORE</span>
               <span className="text-foreground text-2xl font-black">{avgRisk}</span>
@@ -58,7 +58,7 @@ export function FusionRiskAnalytics() {
             </div>
           </div>
 
-          <div className="bg-[#0c0f14]/60 border border-border/70 p-3 rounded-lg leading-relaxed flex items-center justify-between">
+          <div className="bg-secondary/40 border border-border/70 p-3 rounded-lg leading-relaxed flex items-center justify-between">
             <div>
               <span className="text-muted-foreground block text-[7px] uppercase font-bold mb-0.5">MAX PEAK RECORDED RISK</span>
               <span className="text-rose-500 text-2xl font-black">{maxRisk}</span>
@@ -71,7 +71,7 @@ export function FusionRiskAnalytics() {
             </div>
           </div>
 
-          <div className="bg-[#0c0f14]/60 border border-border/70 p-3 rounded-lg leading-relaxed">
+          <div className="bg-secondary/40 border border-border/70 p-3 rounded-lg leading-relaxed">
             <span className="text-muted-foreground block text-[7px] uppercase font-bold mb-1">COGNITIVE THREAT LEVEL</span>
             <div className="flex items-center gap-2 mt-1">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping shrink-0" />
@@ -82,7 +82,7 @@ export function FusionRiskAnalytics() {
         </div>
 
         {/* Risk Distribution Grid */}
-        <div className="lg:col-span-5 flex flex-col justify-between font-mono">
+        <div className="lg:col-span-5 flex flex-col justify-start font-mono">
           <div className="text-[8px] font-black text-muted-foreground uppercase mb-2 block">
             RISK CLASSIFICATION DISTRIBUTION
           </div>
@@ -103,7 +103,7 @@ export function FusionRiskAnalytics() {
         </div>
 
         {/* Risk Trend Visualizer */}
-        <div className="lg:col-span-3 flex flex-col justify-between font-mono bg-[#0c0f14]/40 border border-border/60 rounded-xl p-3">
+        <div className="lg:col-span-3 flex flex-col justify-between font-mono bg-secondary/30 border border-border/60 rounded-xl p-3">
           <div className="flex items-center justify-between text-[7.5px] font-black text-muted-foreground uppercase border-b border-border/10 pb-1.5 leading-none mb-2">
             <span>Risk Index Trend</span>
             <span className="text-rose-500 flex items-center gap-0.5 font-mono"><TrendingUp size={10} /> {delta}</span>

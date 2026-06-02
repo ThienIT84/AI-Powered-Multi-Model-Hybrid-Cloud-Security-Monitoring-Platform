@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Server, Database, ArrowRight, ShieldAlert, Cpu, Layers, Activity, AlertCircle, Cloud } from "lucide-react";
+import { ArrowRight, Cloud } from "lucide-react";
 import { cn } from "../../lib/utils";
-
-interface PipelineStep {
-  name: string;
-  status: "Healthy" | "Warning" | "Critical";
-  metric: string;
-  latency: string;
-}
 
 export function CloudPipelineMonitor() {
   const [ticks, setTicks] = useState(0);
@@ -55,10 +48,10 @@ export function CloudPipelineMonitor() {
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm select-none">
       <div className="flex items-center justify-between mb-4 border-b border-border/20 pb-2">
         <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.15em] flex items-center gap-1.5">
-          <Cloud className="w-4 h-4 text-cyan-500 animate-pulse" />
+          <Cloud className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-pulse" />
           SECTION 27: AWS SEGMENTED SECURITY DATA PIPELINE VISUALIZATION
         </h3>
-        <span className="text-[7px] bg-[#06b6d4]/10 text-cyan-500 border border-cyan-500/15 px-2 py-0.5 rounded uppercase font-black font-mono">
+        <span className="text-[7px] bg-cyan-500/10 dark:bg-[#06b6d4]/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/15 dark:border-cyan-500/15 px-2 py-0.5 rounded uppercase font-black font-mono">
           ENDPOINT SYNCED
         </span>
       </div>
@@ -66,24 +59,24 @@ export function CloudPipelineMonitor() {
       {/* Global metrics grid */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 select-none">
         <div className="bg-background/80 border border-border p-2.5 rounded-lg leading-tight font-mono text-[8.5px]">
-          <span className="text-muted-foreground block text-[6.5px] uppercase font-bold mb-1">AGGREGATE RATE</span>
-          <span className="text-cyan-400 font-black text-base">{1620 + (ticks % 7)} events/sec</span>
+          <span className="text-muted-foreground block text-[6.5px] uppercase font-black mb-1">AGGREGATE RATE</span>
+          <span className="text-cyan-600 dark:text-cyan-400 font-black text-sm md:text-base leading-none block mt-0.5">{1620 + (ticks % 7)} events/sec</span>
         </div>
         <div className="bg-background/80 border border-border p-2.5 rounded-lg leading-tight font-mono text-[8.5px]">
-          <span className="text-muted-foreground block text-[6.5px] uppercase font-bold mb-1">E2E TARGET LATENCY</span>
-          <span className="text-foreground font-black text-base">{(16.2 + Math.sin(ticks) * 0.4).toFixed(2)} ms</span>
+          <span className="text-muted-foreground block text-[6.5px] uppercase font-black mb-1">E2E TARGET LATENCY</span>
+          <span className="text-foreground font-black text-sm md:text-base leading-none block mt-0.5">{(16.2 + Math.sin(ticks) * 0.4).toFixed(2)} ms</span>
         </div>
         <div className="bg-background/80 border border-border p-2.5 rounded-lg leading-tight font-mono text-[8.5px]">
-          <span className="text-muted-foreground block text-[6.5px] uppercase font-bold mb-1">DROPPED STREAM EVENTS</span>
-          <span className="text-emerald-500 font-extrabold text-base">0 events (0.00%)</span>
+          <span className="text-muted-foreground block text-[6.5px] uppercase font-black mb-1">DROPPED STREAM EVENTS</span>
+          <span className="text-emerald-600 dark:text-emerald-500 font-extrabold text-sm md:text-base leading-none block mt-0.5">0 events (0.00%)</span>
         </div>
         <div className="bg-background/80 border border-border p-2.5 rounded-lg leading-tight font-mono text-[8.5px]">
-          <span className="text-muted-foreground block text-[6.5px] uppercase font-bold mb-1">ACTIVE QUEUE BACKLOG</span>
-          <span className="text-foreground font-black text-base">{Math.max(0, (ticks % 3) - 1)} tasks pending</span>
+          <span className="text-muted-foreground block text-[6.5px] uppercase font-black mb-1">ACTIVE QUEUE BACKLOG</span>
+          <span className="text-foreground font-black text-sm md:text-base leading-none block mt-0.5">{Math.max(0, (ticks % 3) - 1)} tasks pending</span>
         </div>
         <div className="bg-background/80 border border-border p-2.5 rounded-lg leading-tight font-mono text-[8.5px]">
-          <span className="text-muted-foreground block text-[6.5px] uppercase font-bold mb-1">PIPELINE INTEGRITY</span>
-          <span className="text-emerald-500 font-extrabold text-base uppercase tracking-wider">100.0% SECURE</span>
+          <span className="text-muted-foreground block text-[6.5px] uppercase font-black mb-1">PIPELINE INTEGRITY</span>
+          <span className="text-emerald-600 dark:text-emerald-500 font-extrabold text-sm md:text-base leading-none block mt-0.5 uppercase tracking-wider">100.0% SECURE</span>
         </div>
       </div>
 
@@ -101,8 +94,8 @@ export function CloudPipelineMonitor() {
                 className={cn(
                   "flex-1 w-full xl:w-auto p-2.5 rounded-xl border flex flex-col justify-between h-21.25 leading-relaxed transition-all",
                   isWarning 
-                    ? "bg-amber-950/20 border-amber-500/40 text-amber-500" 
-                    : "bg-[#0c0f14]/80 border-border hover:border-cyan-500/30 text-foreground"
+                    ? "bg-amber-500/10 dark:bg-amber-950/20 border-amber-500/25 dark:border-amber-500/40 text-amber-750 dark:text-amber-500" 
+                    : "bg-secondary/40 border-border hover:border-cyan-500/30 text-foreground"
                 )}
               >
                 <div className="flex items-center justify-between gap-1">
@@ -112,19 +105,19 @@ export function CloudPipelineMonitor() {
                   <div className="flex items-center shrink-0">
                     <span className={cn(
                       "w-1.5 h-1.5 rounded-full animate-pulse",
-                      isWarning ? "bg-amber-500" : "bg-emerald-500"
+                      isWarning ? "bg-amber-550 dark:bg-amber-500" : "bg-emerald-550 dark:bg-emerald-500"
                     )} />
                   </div>
                 </div>
 
-                <div className="text-[7.5px] text-muted-foreground leading-none font-bold mt-1 uppercase flex flex-col gap-1">
+                <div className="text-[7.5px] text-muted-foreground leading-none font-black mt-1 uppercase flex flex-col gap-1">
                   <div>Value: <strong className="text-foreground font-black">{wMetric}</strong></div>
-                  <div>Latency: <strong className="text-cyan-400 font-extrabold">{wLat}</strong></div>
+                  <div>Latency: <strong className="text-cyan-600 dark:text-cyan-400 font-black">{wLat}</strong></div>
                 </div>
 
-                <div className="flex items-center justify-between text-[6.5px] font-mono leading-none border-t border-border/10 pt-1.5 mt-1 font-black opacity-50">
+                <div className="flex items-center justify-between text-[6.5px] font-mono leading-none border-t border-border/10 pt-1.5 mt-1 font-black opacity-60">
                   <span>STAGE_0{idx + 1}</span>
-                  <span className={isWarning ? "text-amber-500" : "text-emerald-500"}>
+                  <span className={isWarning ? "text-amber-600 dark:text-amber-500" : "text-emerald-600 dark:text-emerald-500"}>
                     {isWarning ? "WARNING" : "HEALTHY"}
                   </span>
                 </div>

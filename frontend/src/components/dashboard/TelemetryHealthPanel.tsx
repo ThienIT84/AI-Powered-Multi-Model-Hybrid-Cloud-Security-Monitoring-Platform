@@ -61,7 +61,7 @@ export function TelemetryHealthPanel() {
           return (
             <div 
               key={src.id} 
-              className="bg-[#0c0f14]/50 border border-border/70 rounded-xl p-3 flex flex-col justify-between font-mono hover:border-cyan-500/20 transition-all"
+              className="bg-secondary/40 border border-border/70 rounded-xl p-3 flex flex-col justify-between font-mono hover:border-cyan-500/20 transition-all"
             >
               <div className="flex items-center justify-between border-b border-border/10 pb-1.5 mb-1.5">
                 <span className="text-[8.5px] font-black text-foreground">{src.name}</span>

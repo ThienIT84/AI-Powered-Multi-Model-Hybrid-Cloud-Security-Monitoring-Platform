@@ -40,7 +40,7 @@ export function CampaignOverviewPanel() {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-0.5 space-y-3.5 py-1 select-none font-mono text-[9px] leading-none">
         {campaigns.map(c => (
-          <div key={c.id} className="bg-[#0c1015]/60 hover:bg-[#0c1015] border border-border p-3.5 rounded-xl leading-relaxed flex flex-col gap-2 transition-all">
+          <div key={c.id} className="bg-secondary/40 hover:bg-secondary/60 border border-border p-3.5 rounded-xl leading-relaxed flex flex-col gap-2 transition-all">
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-2">
                 <span className="px-1.5 py-0.5 rounded bg-purple-500/15 border border-purple-500/20 text-purple-400 font-extrabold text-[8px]">

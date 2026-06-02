@@ -18,7 +18,7 @@ export function DatasetGrowthPanel() {
   const normalSamples = 1666090 + ticks * 3;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 shadow-sm select-none">
+    <div className="bg-card border border-border rounded-xl p-4 shadow-sm select-none h-fit self-start">
       <div className="flex items-center justify-between mb-4 border-b border-border/20 pb-2">
         <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.15em] flex items-center gap-1.5">
           <Database className="w-4 h-4 text-cyan-500 animate-pulse" />
@@ -33,12 +33,12 @@ export function DatasetGrowthPanel() {
         
         {/* Core Size Stats Tab */}
         <div className="space-y-3">
-          <div className="bg-[#0c0f14]/50 border border-border p-3 rounded-lg leading-relaxed">
+          <div className="bg-secondary/40 border border-border p-3 rounded-lg leading-relaxed">
             <span className="text-muted-foreground block text-[7px] uppercase font-bold mb-0.5">CONN_DATASET TOTAL SEGMENTS</span>
             <span className="text-foreground text-lg font-black">{connSize.toLocaleString()} rows</span>
             <div className="text-[7px] text-cyan-400 mt-1 uppercase font-semibold">Active telemetry storage pool</div>
           </div>
-          <div className="bg-[#0c0f14]/50 border border-border p-3 rounded-lg leading-relaxed">
+          <div className="bg-secondary/40 border border-border p-3 rounded-lg leading-relaxed">
              <span className="text-muted-foreground block text-[7px] uppercase font-bold mb-0.5">HTTP_DATASET RAW LOGS</span>
              <span className="text-foreground text-lg font-black">{httpSize.toLocaleString()} rows</span>
              <div className="text-[7px] text-cyan-400 mt-1 uppercase font-semibold">HTTP parsing cluster index</div>
@@ -46,7 +46,7 @@ export function DatasetGrowthPanel() {
         </div>
 
         {/* Growth Statistics Block */}
-        <div className="bg-secondary/15 border border-border rounded-xl p-3 flex flex-col justify-between">
+        <div className="bg-secondary/15 border border-border rounded-xl p-3 flex flex-col justify-start space-y-3">
           <div className="text-[8px] font-black text-muted-foreground uppercase mb-2 border-b border-border/10 pb-1 flex justify-between">
             <span>PERIODIC LOG REVENUE RATE</span>
             <span className="text-cyan-400 flex items-center gap-0.5"><TrendingUp size={9} /> Live</span>
@@ -71,13 +71,13 @@ export function DatasetGrowthPanel() {
             </div>
           </div>
 
-          <div className="text-[6.5px] text-muted-foreground border-t border-border/10 pt-2 mt-2 font-black uppercase text-center">
+          <div className="text-[6.5px] text-muted-foreground border-t border-border/10 pt-2 mt-auto font-black uppercase text-center">
              Synchronized with local storage database
           </div>
         </div>
 
         {/* Samples Distribution Block */}
-        <div className="bg-secondary/15 border border-border rounded-xl p-3 flex flex-col justify-between">
+        <div className="bg-secondary/15 border border-border rounded-xl p-3 flex flex-col justify-start space-y-3">
           <div className="text-[8px] font-black text-muted-foreground uppercase mb-2.5 border-b border-border/10 pb-1">
             DATASET SECTOR CLASSIFICATION PERCENT MIX
           </div>
@@ -104,7 +104,7 @@ export function DatasetGrowthPanel() {
             </div>
           </div>
 
-          <div className="text-[6.5px] text-muted-foreground border-t border-border/10 pt-2 mt-2 font-black uppercase flex items-center justify-between">
+          <div className="text-[6.5px] text-muted-foreground border-t border-border/10 pt-2 mt-auto font-black uppercase flex items-center justify-between">
             <span>FCAJ CLUSTER RATIO</span>
             <span className="text-cyan-400">NORMAL STABLE</span>
           </div>

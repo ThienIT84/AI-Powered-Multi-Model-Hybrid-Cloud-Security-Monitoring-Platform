@@ -15,8 +15,8 @@ export function PublicVsZeekComparison() {
   ];
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-between shadow-sm h-80 select-none">
-      <div className="flex items-center justify-between mb-2 border-b border-border/20 pb-2 shrink-0">
+    <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-start shadow-sm h-fit self-start select-none space-y-4">
+      <div className="flex items-center justify-between border-b border-border/20 pb-2 shrink-0">
         <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.12em] flex items-center gap-1.5">
           <Database className="w-4 h-4 text-cyan-500" />
           PUBLIC CO-TRAINING VS ZEEK COMPARE
@@ -27,7 +27,7 @@ export function PublicVsZeekComparison() {
         </span>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center space-y-3 p-1">
+      <div className="flex flex-col justify-start space-y-3 p-1">
         
         {/* High level coherence overview */}
         <div className="grid grid-cols-2 gap-2 leading-none font-mono text-[8.5px] font-bold">
@@ -45,8 +45,8 @@ export function PublicVsZeekComparison() {
         <div className="flex-1 overflow-y-auto custom-scrollbar text-[8.5px] font-mono leading-none">
           <div className="grid grid-cols-12 pb-1.5 border-b border-border/20 text-[7px] font-black text-muted-foreground uppercase shrink-0">
             <span className="col-span-5">CO-TRAIN FEATURE</span>
-            <span className="col-span-2.5 text-right">ZEEK LIVE</span>
-            <span className="col-span-2.5 text-right">PUBLIC REF</span>
+            <span className="col-span-3 text-right">ZEEK LIVE</span>
+            <span className="col-span-2 text-right">PUBLIC REF</span>
             <span className="col-span-2 text-right">STATUS</span>
           </div>
 
@@ -54,8 +54,8 @@ export function PublicVsZeekComparison() {
             {features.map(f => (
               <div key={f.label} className="grid grid-cols-12 items-center text-foreground">
                 <span className="col-span-5 text-[8px] truncate pr-1 text-muted-foreground uppercase">{f.label}</span>
-                <span className="col-span-2.5 text-right font-black">{f.lab}</span>
-                <span className="col-span-2.5 text-right">{f.public}</span>
+                <span className="col-span-3 text-right font-black">{f.lab}</span>
+                <span className="col-span-2 text-right">{f.public}</span>
                 <span className="col-span-2 text-right font-semibold text-emerald-500">GOOD</span>
               </div>
             ))}

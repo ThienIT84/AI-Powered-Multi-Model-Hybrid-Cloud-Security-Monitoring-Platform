@@ -88,7 +88,7 @@ export function AIEngineStatusPanel({ alertsCount = 0 }: AIEngineStatusPanelProp
         {models.map((model) => (
           <div 
             key={model.id} 
-            className="bg-[#0c0f13]/60 border border-border hover:border-border/80 p-3.5 rounded-xl transition-all flex flex-col justify-between space-y-3"
+            className="bg-secondary/40 border border-border hover:border-border/80 p-3.5 rounded-xl transition-all flex flex-col justify-between space-y-3"
           >
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">

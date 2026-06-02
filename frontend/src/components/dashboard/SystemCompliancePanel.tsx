@@ -40,7 +40,7 @@ export function SystemCompliancePanel() {
           return (
             <div 
               key={feat.name} 
-              className="bg-[#0c0f14]/50 border border-border/75 rounded-xl p-3 flex items-center justify-between font-mono"
+              className="bg-secondary/40 border border-border/75 rounded-xl p-3 flex items-center justify-between font-mono"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <CheckCircle2 size={16} className="text-emerald-500 shrink-0 select-none" />

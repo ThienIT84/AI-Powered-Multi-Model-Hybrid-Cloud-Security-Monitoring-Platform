@@ -51,13 +51,13 @@ export function BehaviorDiversityPanel() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-3">
         {baseActivities.map((user) => {
           const apiOps = getDynamicApi(user.id, user.api);
           const isSshActive = user.ssh !== "No Activity";
 
           return (
-            <div key={user.id} className="bg-[#0c0f14]/50 border border-border/70 rounded-xl p-3 flex flex-col justify-between font-mono hover:border-cyan-500/20 transition-all">
+            <div key={user.id} className="bg-secondary/40 border border-border/70 rounded-xl p-3 flex flex-col justify-between font-mono hover:border-cyan-500/20 transition-all min-w-0 overflow-hidden wrap-break-word">
               <div className="border-b border-border/10 pb-2 mb-2 leading-none">
                 <span className="text-[9.5px] font-black text-foreground block">{user.name}</span>
                 <span className="text-[6.5px] text-muted-foreground mt-1 block uppercase font-bold">{user.role}</span>

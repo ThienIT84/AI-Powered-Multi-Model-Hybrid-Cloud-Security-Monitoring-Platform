@@ -23,7 +23,7 @@ interface RealtimeAlertFeedProps {
 
 export function RealtimeAlertFeed({ alerts = [], onSelectAlert, selectedAlertId }: RealtimeAlertFeedProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 20;
   const [filterQuery, setFilterQuery] = useState("");
 
   const filteredAlerts = useMemo(() => {
@@ -75,19 +75,19 @@ export function RealtimeAlertFeed({ alerts = [], onSelectAlert, selectedAlertId 
       </div>
 
       {/* Main Alerts Stream list */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar bg-card min-h-35 max-h-105">
-        <table className="w-full text-left border-collapse table-fixed min-w-310">
+      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto custom-scrollbar bg-card">
+        <table className="w-full text-left border-collapse table-fixed min-w-218">
           <thead>
             <tr className="border-b border-border bg-secondary/5 h-8 font-mono text-[7.5px] font-black text-muted-foreground uppercase tracking-widest">
-              <th className="px-3 py-1 w-[9%]">Timestamp</th>
-              <th className="px-3 py-1 w-[6%] text-center">Severity</th>
+              <th className="px-3 py-1 w-[16%]">Timestamp</th>
+              <th className="px-3 py-1 w-[8%] text-center">Severity</th>
               <th className="px-3 py-1 w-[12%]">Source Ip</th>
               <th className="px-3 py-1 w-[12%]">Destination</th>
-              <th className="px-3 py-1 w-[13%]">Attack Stage</th>
-              <th className="px-3 py-1 w-[7%] text-right font-mono">RISK SCORE</th>
-              <th className="px-3 py-1 w-[7%] text-right font-mono">CONFIDENCE</th>
-              <th className="px-3 py-1 w-[9%]">MITRE ATT&CK</th>
-              <th className="px-3 py-1 w-[8%] text-center">CAMPAIGN ID</th>
+              <th className="px-3 py-1 w-[15%]">Attack Stage</th>
+              <th className="px-3 py-1 w-[9%] text-right font-mono">RISK SCORE</th>
+              <th className="px-3 py-1 w-[9%] text-right font-mono">CONFIDENCE</th>
+              <th className="px-3 py-1 w-[10%]">MITRE ATT&CK</th>
+              <th className="px-3 py-1 w-[9%] text-center">CAMPAIGN ID</th>
             </tr>
           </thead>
           <tbody>
@@ -103,19 +103,25 @@ export function RealtimeAlertFeed({ alerts = [], onSelectAlert, selectedAlertId 
                   const isSelected = selectedAlertId === alert.id;
                   const mitreName = alert.mitre?.techniqueId || "T1595";
                   const campaignId = alert.attackType.includes("Scan") || alert.attackType.includes("Force") ? "CAMP-201" : "CAMP-202";
+                  
+                  const formattedTime = (() => {
+                    const d = new Date(alert.timestamp);
+                    const pad = (num: number) => String(num).padStart(2, "0");
+                    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                  })();
 
                   return (
                     <tr 
                       key={alert.id}
                       onClick={() => onSelectAlert && onSelectAlert(isSelected ? null : alert)}
                       className={cn(
-                        "border-b border-border/30 transition-all cursor-pointer h-9 text-[9.5px]",
+                        "border-b border-border/30 transition-all cursor-pointer h-9.5 text-[9.5px]",
                         isSelected ? "bg-cyan-500/5" : "hover:bg-muted/30"
                       )}
                     >
                       {/* Timestamp */}
                       <td className="px-3 py-1 font-mono text-[8.5px] text-muted-foreground">
-                        {new Date(alert.timestamp).toLocaleTimeString([], { hour12: false })}
+                        {formattedTime}
                       </td>
 
                       {/* Severity */}

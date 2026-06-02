@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ShieldCheck, Flame, Radio, Shuffle, AlertTriangle, Layers, MonitorPlay } from "lucide-react";
+import { Radio, Shuffle, MonitorPlay } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface DemoCycle {
@@ -71,13 +71,13 @@ export function DemoModeWidget() {
       
       {/* Header with active flashing indicator */}
       <div className="flex items-center justify-between mb-4 border-b border-cyan-500/10 pb-2">
-        <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.15em] flex items-center gap-1.5 font-mono">
-          <MonitorPlay className="w-4 h-4 text-cyan-400 animate-pulse" />
+        <h3 className="text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-[0.15em] flex items-center gap-1.5 font-mono">
+          <MonitorPlay className="w-4 h-4 text-cyan-650 dark:text-cyan-400 animate-pulse" />
           SECTION 39: LIVE DEFENSE INSTRUCTIONS & DEMONSTRATION GRAPHICS WRAPPER
         </h3>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-          <span className="text-[7px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded uppercase font-black font-mono">
+          <span className="w-2 h-2 rounded-full bg-cyan-600 dark:bg-cyan-400 animate-ping" />
+          <span className="text-[7px] bg-cyan-500/15 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded uppercase font-black font-mono">
             LIVE SIMULATION LOOPING
           </span>
         </div>
@@ -90,20 +90,20 @@ export function DemoModeWidget() {
           <div>
             <span className="text-muted-foreground text-[7.5px] uppercase font-black block mb-1">LOOPING SCENE TITLE</span>
             <div className="text-sm font-black text-foreground capitalize tracking-wide flex items-center gap-1.5">
-              <Radio size={13} className="text-cyan-400 animate-pulse shrink-0" />
+              <Radio size={13} className="text-cyan-600 dark:text-cyan-400 animate-pulse shrink-0" />
               {active.attack}
             </div>
           </div>
 
           <div className="bg-secondary/15 border border-border/80 p-3 rounded-lg leading-relaxed">
-             <span className="text-muted-foreground block text-[7px] uppercase font-bold mb-1">MITRE ATT&CK FRAMEWORK DECORATOR</span>
-             <span className="text-amber-500 font-extrabold text-[10.5px]">{active.mitre}</span>
+             <span className="text-muted-foreground block text-[7px] uppercase font-black mb-1">MITRE ATT&CK FRAMEWORK DECORATOR</span>
+             <span className="text-amber-600 dark:text-amber-500 font-extrabold text-[10.5px]">{active.mitre}</span>
           </div>
 
           <div className="flex items-center gap-2">
              <button 
                onClick={() => setCurrentIndex((prev) => (prev + 1) % demoCycles.length)}
-               className="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/20 hover:border-cyan-500/40 text-[7.5px] uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer"
+               className="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-405 font-black border border-cyan-500/20 hover:border-cyan-500/40 text-[7.5px] uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer"
              >
                 <Shuffle size={10} /> FORCE SHIFT SCENE
              </button>
@@ -116,29 +116,29 @@ export function DemoModeWidget() {
         {/* Right column: live system state reactions */}
         <div className="lg:col-span-7 grid grid-cols-2 gap-4">
           
-          <div className="bg-[#0c0f14]/50 border border-border/70 p-3 rounded-xl flex flex-col justify-between h-20">
-            <span className="text-muted-foreground text-[7px] uppercase font-bold">AI1 OUTLIER FILTER VERDICT</span>
+          <div className="bg-secondary/40 border border-border/70 p-3 rounded-xl flex flex-col justify-between h-20">
+            <span className="text-muted-foreground text-[7px] uppercase font-black">AI1 OUTLIER FILTER VERDICT</span>
             <span className="text-foreground text-[8.5px] font-black truncate">{active.ai1Decision}</span>
-            <span className="text-[6.5px] text-emerald-500 font-bold uppercase">CORRECT FILTRATION</span>
+            <span className="text-[6.5px] text-emerald-600 dark:text-emerald-500 font-black uppercase">CORRECT FILTRATION</span>
           </div>
 
-          <div className="bg-[#0c0f14]/50 border border-border/70 p-3 rounded-xl flex flex-col justify-between h-20">
-            <span className="text-muted-foreground text-[7px] uppercase font-bold">AI2 PROTOCOL ALGORITHM</span>
+          <div className="bg-secondary/40 border border-border/70 p-3 rounded-xl flex flex-col justify-between h-20">
+            <span className="text-muted-foreground text-[7px] uppercase font-black">AI2 PROTOCOL ALGORITHM</span>
             <span className="text-foreground text-[8.5px] font-black truncate">{active.ai2Decision}</span>
-            <span className="text-[6.5px] text-emerald-500 font-bold uppercase">METRIC ANCHOR SECTOR</span>
+            <span className="text-[6.5px] text-emerald-600 dark:text-emerald-500 font-black uppercase">METRIC ANCHOR SECTOR</span>
           </div>
 
-          <div className="bg-[#0c0f14]/50 border border-border/70 p-3 rounded-xl flex flex-col justify-between h-20">
-            <span className="text-[7px] uppercase font-bold text-muted-foreground">FUSION LAYER SYNAPSE</span>
-            <span className="text-cyan-400 text-[8.5px] font-black truncate">{active.fusionVerdict}</span>
-            <span className="text-[6.5px] text-emerald-500 font-bold uppercase">THREAT LEVEL CORRELATED</span>
+          <div className="bg-secondary/40 border border-border/70 p-3 rounded-xl flex flex-col justify-between h-20">
+            <span className="text-muted-foreground text-[7px] uppercase font-black text-cyan-650 dark:text-cyan-400">FUSION LAYER SYNAPSE</span>
+            <span className="text-cyan-700 dark:text-cyan-400 text-[8.5px] font-black truncate">{active.fusionVerdict}</span>
+            <span className="text-[6.5px] text-emerald-600 dark:text-emerald-500 font-black uppercase">THREAT LEVEL CORRELATED</span>
           </div>
 
-          <div className="bg-[#0c0f14]/50 border border-border/70 p-3 rounded-xl flex flex-col justify-between h-20">
-            <span className="text-muted-foreground text-[7px] uppercase font-bold">COGNITIVE FUSION RISK INDEX</span>
+          <div className="bg-secondary/40 border border-border/70 p-3 rounded-xl flex flex-col justify-between h-20">
+            <span className="text-muted-foreground text-[7px] uppercase font-black">COGNITIVE FUSION RISK INDEX</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-rose-500 text-lg font-black">{active.riskScore}</span>
-              <span className="text-[7px] text-muted-foreground">/100 Max</span>
+              <span className="text-rose-600 dark:text-rose-500 text-lg font-black">{active.riskScore}</span>
+              <span className="text-[7px] text-muted-foreground font-black">/100 Max</span>
             </div>
             <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                <div className="h-full bg-rose-500 rounded-full" style={{ width: `${active.riskScore}%` }} />
