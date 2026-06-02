@@ -38,14 +38,14 @@ export function AttackCampaignGraph() {
                   "flex-1 border rounded-lg p-3 flex flex-col justify-between h-24.5 transition-all cursor-pointer relative",
                   isTriggered 
                     ? (isSelected 
-                        ? "border-[#06b6d4] bg-cyan-950/25 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.18)]" 
+                        ? "border-[#06b6d4] bg-cyan-500/10 dark:bg-cyan-950/25 text-cyan-650 dark:text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.18)]" 
                         : "border-border hover:border-border/80 bg-background/50 text-muted-foreground/90")
                     : "border-border/30 opacity-40 hover:opacity-50 pointer-events-none select-none text-muted-foreground/30 bg-secondary/10"
                 )}
               >
                 <div className="flex justify-between items-start leading-none select-none">
                   <span className="text-[7.5px] font-mono tracking-wider font-extrabold uppercase text-muted-foreground/75">STAGE-0{idx + 1}</span>
-                  {isTriggered && <Zap size={10} className={isSelected ? "text-cyan-400 fill-cyan-400 animate-pulse" : "text-muted-foreground/40"} />}
+                  {isTriggered && <Zap size={10} className={isSelected ? "text-cyan-600 dark:text-cyan-400 fill-current animate-pulse" : "text-muted-foreground/40"} />}
                 </div>
 
                 <div className="space-y-0.5 leading-none select-none">

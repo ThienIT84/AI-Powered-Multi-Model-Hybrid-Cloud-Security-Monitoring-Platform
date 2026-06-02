@@ -57,7 +57,7 @@ export function MitreAttackPanel({ alert }: MitreAttackPanelProps) {
       <div className="bg-secondary/15 border border-border/50 rounded-xl p-3.5 space-y-3.5">
         <div className="flex justify-between items-start bg-card border border-border p-3 rounded-lg leading-none">
           <div className="space-y-1.5">
-            <span className="font-mono text-[8px] text-[#06b6d4] font-black bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/10">
+            <span className="font-mono text-[8.5px] text-cyan-650 dark:text-[#06b6d4] font-black bg-cyan-500/10 dark:bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/15">
               {code}
             </span>
             <h4 className="text-[10px] font-black text-foreground uppercase tracking-wide pt-1">{name}</h4>

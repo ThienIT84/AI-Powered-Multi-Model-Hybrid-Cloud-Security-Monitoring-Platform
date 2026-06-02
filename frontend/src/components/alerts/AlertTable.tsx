@@ -394,8 +394,8 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                           <div className={cn(
                             "flex items-center gap-1 px-1.5 py-0.5 bg-[#06b6d4]/5 rounded border leading-none max-w-42.5 truncate select-none",
                             isCritical 
-                              ? "border-red-500/30 text-red-500 hover:border-red-500/50 shadow-[0_0_8px_rgba(239,68,68,0.12)] bg-red-950/5" 
-                              : "border-cyan-500/20 text-cyan-500 hover:border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.1)] bg-cyan-950/5"
+                              ? "border-red-500/30 text-red-650 dark:text-red-400 hover:border-red-500/50 shadow-[0_0_8px_rgba(239,68,68,0.12)] bg-red-500/5 dark:bg-red-950/20" 
+                              : "border-cyan-500/20 text-cyan-650 dark:text-cyan-400 hover:border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.1)] bg-cyan-500/5 dark:bg-cyan-950/20"
                           )}>
                              <span className="text-[7.2px] font-black uppercase tracking-wider shrink-0">
                                {isCritical ? "CRIT" : String(alert.severity).toUpperCase()}:

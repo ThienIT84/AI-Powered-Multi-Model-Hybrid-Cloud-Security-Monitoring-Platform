@@ -321,7 +321,7 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetail
               <div className="grid grid-cols-2 gap-3 text-[8.5px] font-mono leading-none">
                 <div>
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Signature ID</span>
-                  <span className="text-blue-400 font-extrabold">{alert.suricataData?.signatureId || "SID: 2010915"}</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-extrabold">{alert.suricataData?.signatureId || "SID: 2010915"}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Matched Category</span>
@@ -333,7 +333,7 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetail
                 </div>
                 <div className="col-span-2">
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Matched Signature Pattern</span>
-                  <span className="text-red-400 text-[8px] leading-normal break-all block py-1 bg-red-950/25 px-2 border border-red-950/30 rounded mt-1">
+                  <span className="text-red-600 dark:text-red-400 text-[8px] leading-normal break-all block py-1 bg-red-500/10 dark:bg-red-950/25 px-2 border border-red-500/15 dark:border-red-950/30 rounded mt-1">
                     {alert.rawPayload?.slice(0, 80) || alert.payload?.slice(0, 80) || "union select administrative credentials"}
                   </span>
                 </div>

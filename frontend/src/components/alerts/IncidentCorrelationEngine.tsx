@@ -112,42 +112,42 @@ export function IncidentCorrelationEngine() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-1 border border-border/40 bg-card rounded-lg p-4 relative overflow-hidden text-center text-[7.5px] font-mono uppercase">
               
               {/* Node 1: Attacker */}
-              <div className="p-1 px-1.5 border border-red-500/30 bg-red-950/20 text-red-400 rounded w-full md:w-auto">
+              <div className="p-1 px-1.5 border border-red-500/30 bg-red-500/10 dark:bg-red-950/20 text-red-650 dark:text-red-400 rounded w-full md:w-auto">
                 <span className="text-[6.5px] text-muted-foreground/60 block leading-none mb-0.5">Originator</span>
                 Attacker IP
               </div>
               <ArrowRight size={10} className="text-muted-foreground/30 md:block hidden shrink-0" />
 
               {/* Node 2: Zeek */}
-              <div className="p-1 px-1.5 border border-cyan-500/20 bg-cyan-950/10 text-cyan-400 rounded w-full md:w-auto">
+              <div className="p-1 px-1.5 border border-cyan-500/20 bg-cyan-500/10 dark:bg-cyan-950/10 text-cyan-650 dark:text-cyan-400 rounded w-full md:w-auto">
                 <span className="text-[6.5px] text-muted-foreground/60 block leading-none mb-0.5">Sensor</span>
                 Zeek conn.log
               </div>
               <ArrowRight size={10} className="text-muted-foreground/30 md:block hidden shrink-0" />
 
               {/* Node 3: AI1 */}
-              <div className="p-1 px-1.5 border border-red-500/30 bg-red-950/25 text-red-500 rounded w-full md:w-auto font-bold animate-[pulse_2s_infinite]">
+              <div className="p-1 px-1.5 border border-red-500/30 bg-red-500/15 dark:bg-red-950/25 text-red-650 dark:text-red-500 rounded w-full md:w-auto font-bold animate-[pulse_2s_infinite]">
                 <span className="text-[6.5px] text-muted-foreground/60 block leading-none mb-0.5">Model</span>
                 AI1 Anomaly
               </div>
               <ArrowRight size={10} className="text-muted-foreground/30 md:block hidden shrink-0" />
 
               {/* Node 4: AI2A */}
-              <div className="p-1 px-1.5 border border-orange-500/25 bg-orange-950/10 text-orange-400 rounded w-full md:w-auto">
+              <div className="p-1 px-1.5 border border-orange-500/25 bg-orange-500/10 dark:bg-orange-950/10 text-orange-650 dark:text-orange-400 rounded w-full md:w-auto">
                 <span className="text-[6.5px] text-muted-foreground/60 block leading-none mb-0.5">Model</span>
                 AI2A Class
               </div>
               <ArrowRight size={10} className="text-muted-foreground/30 md:block hidden shrink-0" />
 
               {/* Node 5: AI2B */}
-              <div className="p-1 px-1.5 border border-purple-500/25 bg-purple-950/10 text-purple-400 rounded w-full md:w-auto">
+              <div className="p-1 px-1.5 border border-purple-500/25 bg-purple-500/10 dark:bg-purple-950/10 text-purple-650 dark:text-purple-400 rounded w-full md:w-auto">
                 <span className="text-[6.5px] text-muted-foreground/60 block leading-none mb-0.5">Model</span>
                 AI2B Payload
               </div>
               <ArrowRight size={10} className="text-muted-foreground/30 md:block hidden shrink-0" />
 
               {/* Node 6: Suricata */}
-              <div className="p-1 px-1.5 border border-blue-500/30 bg-blue-950/20 text-blue-400 rounded w-full md:w-auto">
+              <div className="p-1 px-1.5 border border-blue-500/30 bg-blue-500/10 dark:bg-blue-950/20 text-blue-650 dark:text-blue-400 rounded w-full md:w-auto">
                 <span className="text-[6.5px] text-muted-foreground/60 block leading-none mb-0.5">Signature</span>
                 Suricata Hits
               </div>
@@ -161,7 +161,7 @@ export function IncidentCorrelationEngine() {
               <ArrowRight size={10} className="text-muted-foreground/30 md:block hidden shrink-0" />
 
               {/* Node 8: Database */}
-              <div className="p-1 px-1.5 border border-emerald-500/30 bg-emerald-950/20 text-emerald-400 rounded w-full md:w-auto">
+              <div className="p-1 px-1.5 border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/20 text-emerald-650 dark:text-emerald-400 rounded w-full md:w-auto">
                 <span className="text-[6.5px] text-muted-foreground/60 block leading-none mb-0.5">Storage</span>
                 Database Log
               </div>

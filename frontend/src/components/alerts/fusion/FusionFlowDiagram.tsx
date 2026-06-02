@@ -33,7 +33,8 @@ export function FusionFlowDiagram({ alert }: FusionFlowDiagramProps) {
       label: "Zeek Ingestion",
       type: "ingest",
       icon: Database,
-      colorClass: "border-cyan-500 bg-cyan-950/20 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.15)]",
+      colorClass: "border-cyan-500/40 bg-cyan-500/10 dark:bg-cyan-950/20 text-cyan-650 dark:text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.15)]",
+      textClass: "text-cyan-650 dark:text-cyan-400",
       glowing: false,
       status: alert.protocol,
       confidence: 1.0,
@@ -51,8 +52,9 @@ export function FusionFlowDiagram({ alert }: FusionFlowDiagramProps) {
       type: "model",
       icon: Brain,
       colorClass: isAnomaly 
-        ? "border-red-500 bg-red-950/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]" 
-        : "border-emerald-500 bg-emerald-950/10 text-emerald-400",
+        ? "border-red-500/40 bg-red-500/10 dark:bg-red-950/20 text-red-650 dark:text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.2)]" 
+        : "border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/10 text-emerald-650 dark:text-emerald-400",
+      textClass: isAnomaly ? "text-red-650 dark:text-red-400" : "text-emerald-650 dark:text-emerald-400",
       glowing: isAnomaly,
       status: meta.ai1Result,
       confidence: 0.72 + (alert.riskScore * 0.0025),
@@ -70,8 +72,9 @@ export function FusionFlowDiagram({ alert }: FusionFlowDiagramProps) {
       type: "model",
       icon: Cpu,
       colorClass: hasTrafficThreat 
-        ? "border-orange-500 bg-orange-950/20 text-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.15)]" 
+        ? "border-orange-500/40 bg-orange-500/10 dark:bg-orange-950/20 text-orange-650 dark:text-orange-400 shadow-[0_0_10px_rgba(249,115,22,0.15)]" 
         : "border-muted text-muted-foreground",
+      textClass: hasTrafficThreat ? "text-orange-650 dark:text-orange-400" : "text-muted-foreground/60",
       glowing: hasTrafficThreat,
       status: meta.ai2aClass,
       confidence: alert.confidenceScore,
@@ -89,8 +92,9 @@ export function FusionFlowDiagram({ alert }: FusionFlowDiagramProps) {
       type: "model",
       icon: Cpu,
       colorClass: hasWebThreat
-        ? "border-purple-500 bg-purple-950/20 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.15)]" 
+        ? "border-purple-500/40 bg-purple-500/10 dark:bg-purple-950/20 text-purple-650 dark:text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.15)]" 
         : "border-muted text-muted-foreground",
+      textClass: hasWebThreat ? "text-purple-650 dark:text-purple-400" : "text-muted-foreground/60",
       glowing: hasWebThreat,
       status: meta.ai2bWeb,
       confidence: hasWebThreat ? 0.94 : 0.12,
@@ -108,8 +112,9 @@ export function FusionFlowDiagram({ alert }: FusionFlowDiagramProps) {
       type: "rule",
       icon: ShieldAlert,
       colorClass: hasSuricata
-        ? "border-blue-500 bg-blue-950/20 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.15)]" 
+        ? "border-blue-500/40 bg-blue-500/10 dark:bg-blue-950/20 text-blue-650 dark:text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.15)]" 
         : "border-muted text-muted-foreground",
+      textClass: hasSuricata ? "text-blue-650 dark:text-blue-400" : "text-muted-foreground/60",
       glowing: hasSuricata,
       status: hasSuricata ? "ID MATCH" : "BYPASSED",
       confidence: hasSuricata ? 1.0 : 0.0,
@@ -125,7 +130,8 @@ export function FusionFlowDiagram({ alert }: FusionFlowDiagramProps) {
       label: "Fusion Engine",
       type: "fusion",
       icon: Flame,
-      colorClass: "border-yellow-500 bg-yellow-950/35 text-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.25)]",
+      colorClass: "border-yellow-500 bg-yellow-500/10 dark:bg-yellow-950/35 text-yellow-600 dark:text-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.25)]",
+      textClass: "text-yellow-600 dark:text-yellow-400",
       glowing: true,
       status: `RISK ${alert.riskScore}`,
       confidence: alert.confidenceScore * 0.9 + 0.1,
@@ -184,7 +190,7 @@ export function FusionFlowDiagram({ alert }: FusionFlowDiagramProps) {
 
                   <div className="space-y-0.5 mt-2">
                     <span className="text-[8px] font-black uppercase text-foreground leading-none block truncate">{node.label}</span>
-                    <span className="text-[7.2px] font-mono font-black text-[#06b6d4] tracking-wider uppercase block leading-none">{node.status}</span>
+                    <span className={cn("text-[7.2px] font-mono font-black tracking-wider uppercase block leading-none", node.textClass)}>{node.status}</span>
                   </div>
                 </motion.div>
 

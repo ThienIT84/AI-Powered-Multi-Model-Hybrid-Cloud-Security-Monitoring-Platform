@@ -38,7 +38,8 @@ export function FusionDecisionFlow({ alert }: FusionDecisionFlowProps) {
       confidence: "100%",
       contribution: "Ingestion Base",
       status: "ACTIVE",
-      colorClass: "border-cyan-500/50 bg-cyan-950/20 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.15)]",
+      colorClass: "border-cyan-500/40 bg-cyan-500/10 dark:bg-cyan-950/20 text-cyan-650 dark:text-cyan-450 shadow-[0_0_12px_rgba(6,182,212,0.15)]",
+      textClass: "text-cyan-600 dark:text-cyan-400",
       icon: Database,
       details: [
         `Source Host: ${alert.sourceIp}`,
@@ -55,8 +56,9 @@ export function FusionDecisionFlow({ alert }: FusionDecisionFlowProps) {
       contribution: "25% Weight",
       status: isAnomaly ? "TRIGGERED" : "CLEAN",
       colorClass: isAnomaly 
-        ? "border-red-500/50 bg-red-950/30 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.2)]" 
-        : "border-emerald-500/50 bg-emerald-950/20 text-emerald-400",
+        ? "border-red-500/40 bg-red-500/10 dark:bg-red-950/30 text-red-650 dark:text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.2)]" 
+        : "border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/20 text-emerald-650 dark:text-emerald-400",
+      textClass: isAnomaly ? "text-red-600 dark:text-red-450" : "text-emerald-600 dark:text-emerald-400",
       icon: Brain,
       details: [
         `Algorithm: Deep Isolation Forest`,
@@ -73,8 +75,9 @@ export function FusionDecisionFlow({ alert }: FusionDecisionFlowProps) {
       contribution: "30% Weight",
       status: meta.ai2aClass !== "Normal" ? "TRIGGERED" : "CLEAN",
       colorClass: meta.ai2aClass !== "Normal"
-        ? "border-orange-500/50 bg-orange-950/30 text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]"
-        : "border-emerald-500/50 bg-emerald-950/20 text-emerald-400",
+        ? "border-orange-500/40 bg-orange-500/10 dark:bg-orange-950/30 text-orange-650 dark:text-orange-400 shadow-[0_0_12px_rgba(249,115,22,0.15)]"
+        : "border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/20 text-emerald-650 dark:text-emerald-400",
+      textClass: meta.ai2aClass !== "Normal" ? "text-orange-600 dark:text-orange-400" : "text-emerald-600 dark:text-emerald-400",
       icon: Cpu,
       details: [
         `Algorithm: Extreme Gradient Boosting (XGBoost)`,
@@ -91,8 +94,9 @@ export function FusionDecisionFlow({ alert }: FusionDecisionFlowProps) {
       contribution: "25% Weight",
       status: meta.ai2bWeb !== "NONE" ? "TRIGGERED" : "CLEAN",
       colorClass: meta.ai2bWeb !== "NONE"
-        ? "border-purple-500/50 bg-purple-950/35 text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
-        : "border-emerald-500/50 bg-emerald-950/10 text-emerald-400",
+        ? "border-purple-500/40 bg-purple-500/10 dark:bg-purple-950/35 text-purple-650 dark:text-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.15)]"
+        : "border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-950/10 text-emerald-650 dark:text-emerald-400",
+      textClass: meta.ai2bWeb !== "NONE" ? "text-purple-600 dark:text-purple-400" : "text-emerald-600 dark:text-emerald-400",
       icon: Cpu,
       details: [
         `Algorithm: Character-level CNN Embeddings`,
@@ -109,8 +113,9 @@ export function FusionDecisionFlow({ alert }: FusionDecisionFlowProps) {
       contribution: hasSuricata ? "20% Weight" : "Bypassed Weight",
       status: hasSuricata ? "MATCHED" : "CLEAN",
       colorClass: hasSuricata
-        ? "border-blue-500/50 bg-blue-950/30 text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]"
+        ? "border-blue-500/40 bg-blue-500/10 dark:bg-blue-950/30 text-blue-650 dark:text-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.15)]"
         : "border-muted text-muted-foreground bg-card/10",
+      textClass: hasSuricata ? "text-blue-650 dark:text-blue-400" : "text-muted-foreground/60",
       icon: ShieldAlert,
       details: [
         `Suricata Evidence Code: ${meta.suricataEvidence}`,
@@ -126,8 +131,9 @@ export function FusionDecisionFlow({ alert }: FusionDecisionFlowProps) {
       contribution: "Synthesis Consensus",
       status: alert.severity === "Critical" ? "CRITICAL ALERT" : "ALERT CONFIRMED",
       colorClass: alert.severity === "Critical"
-        ? "border-red-500 bg-red-950/50 text-red-500 shadow-[0_0_16px_rgba(239,68,68,0.3)] animate-pulse"
-        : "border-cyan-500 bg-cyan-950/40 text-cyan-500 shadow-[0_0_16px_rgba(6,182,212,0.25)]",
+        ? "border-red-500 bg-red-500/10 text-red-600 dark:text-red-500 dark:bg-red-950/50 shadow-[0_0_16px_rgba(239,68,68,0.3)] animate-pulse"
+        : "border-cyan-500 bg-cyan-500/10 text-cyan-600 dark:text-cyan-500 dark:bg-cyan-950/40 shadow-[0_0_16px_rgba(6,182,212,0.25)]",
+      textClass: alert.severity === "Critical" ? "text-red-650 dark:text-red-400" : "text-cyan-650 dark:text-cyan-400",
       icon: Flame,
       details: [
         `Fitted Risk Score: ${alert.riskScore}/100`,
@@ -181,7 +187,7 @@ export function FusionDecisionFlow({ alert }: FusionDecisionFlowProps) {
                 <div className="space-y-0.5 min-w-0">
                   <span className="text-[7.5px] font-black uppercase text-foreground truncate block">{node.label}</span>
                   <div className="flex items-center justify-between mt-1 text-[7px] leading-none">
-                    <span className="font-mono text-[7px] font-black uppercase truncate text-cyan-400">{node.prediction}</span>
+                    <span className={cn("font-mono text-[7px] font-black uppercase truncate", node.textClass)}>{node.prediction}</span>
                     <span className="font-mono text-[7px] font-bold text-muted-foreground/90 shrink-0 ml-1">({node.confidence})</span>
                   </div>
                 </div>
