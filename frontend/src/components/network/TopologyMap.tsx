@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { 
   Network, 
   MapPin, 
@@ -33,16 +33,25 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
   selectedNodeIP
 }) => {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
   // Define static SOC Node layout parameters
   const nodes: NodeItem[] = [
-    { id: "ext-1", label: "External Proxy Node", ip: "185.190.240.8", type: "external", x: 100, y: 120 },
-    { id: "ext-2", label: "Offshore Bucket Server", ip: "45.227.254.12", type: "external", x: 100, y: 280 },
-    { id: "aws-1", label: "AWS S3 Cloudfront Core", ip: "13.224.29.89", type: "aws-service", x: 380, y: 80 },
-    { id: "web-1", label: "Corporate Web Server", ip: "10.0.12.24", type: "web-server", x: 380, y: 200 },
-    { id: "db-1", label: "SIEM Core PostgreSQL", ip: "10.0.12.3", type: "web-server", x: 380, y: 320 },
-    { id: "user-1", label: "Developer Workstation", ip: "192.168.1.109", type: "user-vm", x: 660, y: 120 },
-    { id: "user-2", label: "HR Department Subnet", ip: "192.168.1.45", type: "user-vm", x: 660, y: 280 },
+    { id: "ext-1", label: "External Proxy Node", ip: "185.190.240.8", type: "external", x: 100, y: 110 },
+    { id: "ext-2", label: "Offshore Bucket Server", ip: "45.227.254.12", type: "external", x: 100, y: 270 },
+    { id: "aws-1", label: "AWS S3 Cloudfront Core", ip: "13.224.29.89", type: "aws-service", x: 380, y: 55 },
+    { id: "web-1", label: "Corporate Web Server", ip: "10.0.12.24", type: "web-server", x: 380, y: 190 },
+    { id: "db-1", label: "SIEM Core PostgreSQL", ip: "10.0.12.3", type: "web-server", x: 380, y: 325 },
+    { id: "user-1", label: "Developer Workstation", ip: "192.168.1.109", type: "user-vm", x: 660, y: 110 },
+    { id: "user-2", label: "HR Department Subnet", ip: "192.168.1.45", type: "user-vm", x: 660, y: 270 },
   ];
 
   // Define edges representing network connections
@@ -96,25 +105,25 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
   const getNodeColorClass = (status: "normal" | "suspicious" | "compromised", element: "fill" | "stroke" | "text" | "glow") => {
     if (status === "compromised") {
       switch (element) {
-        case "fill": return "fill-red-500 text-red-500 bg-red-950/40 border-red-500/50";
+        case "fill": return "fill-red-500 text-red-500 bg-red-952/45 border-red-500/50";
         case "stroke": return "stroke-red-500";
-        case "text": return "text-red-400";
+        case "text": return "text-red-500 dark:text-red-400";
         case "glow": return "rgba(239, 68, 68, 0.45)";
       }
     }
     if (status === "suspicious") {
       switch (element) {
-        case "fill": return "fill-amber-500 text-amber-500 bg-amber-950/20 border-amber-500/40";
+        case "fill": return "fill-amber-500 text-amber-500 bg-amber-952/25 border-amber-500/40";
         case "stroke": return "stroke-amber-500";
-        case "text": return "text-amber-400";
+        case "text": return "text-amber-600 dark:text-amber-405";
         case "glow": return "rgba(245, 158, 11, 0.35)";
       }
     }
     // Normal / Clean status:
     switch (element) {
-      case "fill": return "fill-emerald-500 text-emerald-500 bg-slate-900 border-slate-800";
+      case "fill": return "fill-emerald-500 text-emerald-500 bg-emerald-50 dark:bg-slate-900 border-border";
       case "stroke": return "stroke-emerald-500";
-      case "text": return "text-emerald-400";
+      case "text": return "text-emerald-500 dark:text-emerald-400";
       case "glow": return "rgba(16, 185, 129, 0.2)";
     }
   };
@@ -130,16 +139,16 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
 
   return (
     <div 
-      className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm flex flex-col justify-between font-mono relative overflow-hidden h-95" 
+      className="bg-card border border-border text-foreground rounded-lg p-4 shadow-sm flex flex-col justify-between font-mono relative overflow-hidden h-130" 
       id="topology-graph-container"
     >
       {/* Absolute Header HUD */}
-      <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-2 z-10 relative">
+      <div className="flex items-center justify-between border-b border-border pb-2 mb-2 z-10 relative">
         <div className="flex items-center gap-2">
           <Network className="w-4 h-4 text-emerald-500 animate-spin" style={{ animationDuration: '40s' }} />
           <div>
-            <span className="text-[8px] text-slate-500 font-extrabold uppercase tracking-widest block">SIEM RECONSTRUCTION</span>
-            <h3 className="text-[10px] font-black text-slate-200 uppercase tracking-widest">
+            <span className="text-[8px] text-muted-foreground font-extrabold uppercase tracking-widest block font-sans">SIEM RECONSTRUCTION</span>
+            <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest">
               DYNAMIC NETWORK TOPOLOGY GRAPH
             </h3>
           </div>
@@ -149,34 +158,34 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
         {selectedNodeIP && (
           <button 
             onClick={() => onSelectNodeIP(null)}
-            className="text-[9px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 hover:text-slate-100 cursor-pointer"
+            className="text-[9px] text-muted-foreground bg-secondary px-2 py-0.5 rounded border border-border hover:text-foreground cursor-pointer"
           >
-            Clear Filter: <strong className="text-emerald-450">{selectedNodeIP}</strong>
+            Clear Filter: <strong className="text-emerald-600 dark:text-emerald-400">{selectedNodeIP}</strong>
           </button>
         )}
       </div>
 
       {/* Topology Map Graph Space SVG Wrapper */}
-      <div className="flex-1 relative min-h-55">
+      <div className="flex-1 relative min-h-95">
         {/* Absolute Hint Panel */}
-        <div className="absolute top-1 left-1 bg-slate-900/60 p-1.5 rounded border border-slate-900 text-[8px] max-w-42.5 space-y-1 pointer-events-none z-10">
-          <div className="text-slate-500 font-extrabold flex items-center gap-1">
-            <Info className="w-2.5 h-2.5 text-emerald-500" />
+        <div className="absolute top-1 left-1 bg-background/85 dark:bg-slate-900/60 p-1.5 rounded border border-border text-[8px] max-w-42.5 space-y-1 pointer-events-none z-10 shadow-sm">
+          <div className="text-muted-foreground font-extrabold flex items-center gap-1 font-sans">
+            <Info className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-500" />
             <span>TOPOLOGY GUIDE</span>
           </div>
           <div className="flex gap-1.5 items-center">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" /> <span className="text-slate-400">Normal Nodes</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> <span className="text-muted-foreground">Normal Nodes</span>
           </div>
           <div className="flex gap-1.5 items-center">
-            <span className="w-2 h-2 rounded-full bg-amber-500" /> <span className="text-slate-400">Suspicious Alert</span>
+            <span className="w-2 h-2 rounded-full bg-amber-500" /> <span className="text-muted-foreground">Suspicious Alert</span>
           </div>
-          <div className="flex gap-1.5 items-center text-red-400">
+          <div className="flex gap-1.5 items-center text-red-650 dark:text-red-400">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-ping absolute" />
             <span className="w-2 h-2 rounded-full bg-red-500 relative" /> <span>Compromised Node</span>
           </div>
         </div>
 
-        <svg className="w-full h-full" id="topology-svg" style={{ minHeight: "240px" }}>
+        <svg className="w-full h-full" id="topology-svg" viewBox="0 0 760 460" style={{ minHeight: "380px" }}>
           {/* SVG DEFINITIONS & FILTERS */}
           <defs>
             <filter id="shadow-filter" x="-20%" y="-20%" width="140%" height="140%">
@@ -201,7 +210,7 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
           </defs>
 
           {/* BACKGROUND GRAPH GRID */}
-          <g stroke="rgba(148,163,184,0.015)" strokeWidth="1">
+          <g stroke={isDark ? "rgba(148,163,184,0.03)" : "rgba(100,116,139,0.08)"} strokeWidth="1">
             {Array.from({ length: 15 }).map((_, i) => (
               <line key={`lh-${i}`} x1="0%" y1={`${i * 7}%`} x2="100%" y2={`${i * 7}%`} />
             ))}
@@ -233,7 +242,7 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                   y1={fromNode.y}
                   x2={toNode.x}
                   y2={toNode.y}
-                  stroke={strokeColor === "url(#normalGrad)" ? "rgba(16,185,129,0.15)" : isCompromised ? "rgba(239, 68, 68, 0.45)" : "rgba(245, 158, 11, 0.35)"}
+                  stroke={strokeColor === "url(#normalGrad)" ? (isDark ? "rgba(16,185,129,0.15)" : "rgba(16,185,129,0.35)") : isCompromised ? "rgba(239, 68, 68, 0.45)" : "rgba(245, 158, 11, 0.35)"}
                   strokeWidth={isCompromised ? 1.8 : isSuspicious ? 1.2 : 1.0}
                   strokeDasharray={isCompromised ? "4 4" : isSuspicious ? "5 3" : undefined}
                 />
@@ -284,8 +293,22 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                 {/* Main Node Circle */}
                 <circle
                   r={radius}
-                  fill={state.status === "compromised" ? "#450a0a" : state.status === "suspicious" ? "#451a03" : "#020617"}
-                  stroke={isSelected ? "#38bdf8" : state.status === "compromised" ? "#f43f5e" : state.status === "suspicious" ? "#f59e0b" : "#1e293b"}
+                  fill={
+                    state.status === "compromised" 
+                      ? (isDark ? "#450a0a" : "#fee2e2") 
+                      : state.status === "suspicious" 
+                      ? (isDark ? "#451a03" : "#fef3c7") 
+                      : (isDark ? "#020617" : "#d1fae5")
+                  }
+                  stroke={
+                    isSelected 
+                      ? "#38bdf8" 
+                      : state.status === "compromised" 
+                      ? "#f43f5e" 
+                      : state.status === "suspicious" 
+                      ? "#f59e0b" 
+                      : (isDark ? "#1e293b" : "#10b981")
+                  }
                   strokeWidth={isSelected ? 2.5 : isHovered ? 2.0 : 1.5}
                   style={{ transition: "stroke 0.2s, stroke-width 0.2s" }}
                 />
@@ -308,13 +331,13 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                       width={180}
                       height={40}
                       rx={3}
-                      fill="#020617"
-                      stroke="#1e293b"
+                      fill={isDark ? "#020617" : "#ffffff"}
+                      stroke={isDark ? "#1e293b" : "#cbd5e1"}
                       strokeWidth={1}
                     />
                     <text
                       textAnchor="middle"
-                      fill="#f8fafc"
+                      fill={isDark ? "#f8fafc" : "#0f172a"}
                       fontSize={8}
                       fontWeight="bold"
                       fontFamily="monospace"
@@ -324,7 +347,7 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                     </text>
                     <text
                       textAnchor="middle"
-                      fill="#38bdf8"
+                      fill={isDark ? "#38bdf8" : "#0284c7"}
                       fontSize={7}
                       fontFamily="monospace"
                       y={16}
@@ -333,7 +356,7 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                     </text>
                     <text
                       textAnchor="middle"
-                      fill="#64748b"
+                      fill={isDark ? "#64748b" : "#475569"}
                       fontSize={7}
                       fontFamily="monospace"
                       y={26}
@@ -348,7 +371,7 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
                   <text
                     y={radius + 11}
                     textAnchor="middle"
-                    fill={state.status === "compromised" ? "#f87171" : state.status === "suspicious" ? "#fbbf24" : "#94a3b8"}
+                    fill={state.status === "compromised" ? (isDark ? "#f87171" : "#dc2626") : state.status === "suspicious" ? (isDark ? "#fbbf24" : "#d97706") : (isDark ? "#94a3b8" : "#475569")}
                     fontSize={7.5}
                     fontWeight={isSelected ? "bold" : "normal"}
                     fontFamily="monospace"
@@ -363,10 +386,10 @@ export const TopologyMap: React.FC<TopologyMapProps> = ({
       </div>
 
       {/* Selected Metadata Display */}
-      <div className="bg-slate-900 border border-slate-900 p-2 rounded text-[9px] text-slate-400 mt-2 flex items-center justify-between">
+      <div className="bg-secondary p-2 rounded text-[9px] text-muted-foreground mt-2 flex items-center justify-between">
         <span>Click node to filter Event explorer list.</span>
-        <div className="flex items-center gap-1.5 uppercase text-[8px] font-bold text-slate-500">
-          <span className="w-1.5 h-1.5 bg-emerald-505 rounded-full animate-pulse" />
+        <div className="flex items-center gap-1.5 uppercase text-[8px] font-bold text-muted-foreground">
+          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
           <span>Topology Live</span>
         </div>
       </div>

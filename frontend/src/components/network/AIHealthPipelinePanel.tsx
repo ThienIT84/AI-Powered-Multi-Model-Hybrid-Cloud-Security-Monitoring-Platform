@@ -179,60 +179,60 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
   }, [logs, anomalousCount]);
 
   return (
-    <div className="space-y-6 text-slate-100 font-mono text-[11px]" id="ai-health-pipeline-panel-root">
+    <div className="space-y-6 text-foreground font-mono text-[11px]" id="ai-health-pipeline-panel-root">
       {/* SECTION ROW 1: SQS PIPELINE FLOW DIAGRAM */}
-      <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
-        <div className="flex items-center gap-2 border-b border-slate-900 pb-2.5 mb-3">
-          <Workflow className="w-5 h-5 text-indigo-400 animate-pulse" />
+      <div className="bg-card border border-border rounded-lg p-4 shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="flex items-center gap-2 border-b border-border pb-2.5 mb-3">
+          <Workflow className="w-5 h-5 text-indigo-500 dark:text-indigo-400 animate-pulse" />
           <div>
-            <span className="text-[9px] text-slate-500 font-bold block uppercase tracking-widest leading-none">REAL-TIME TELEMETRY STREAM GRAPH</span>
-            <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+            <span className="text-[9px] text-muted-foreground font-bold block uppercase tracking-widest leading-none">REAL-TIME TELEMETRY STREAM GRAPH</span>
+            <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
               AWS SQS PIPELINE MONITOR
             </h3>
           </div>
         </div>
 
         {/* Dynamic ASCII / SVG Pipeline workflow */}
-        <div className="p-3.5 bg-slate-900/30 rounded border border-slate-900 flex flex-col md:flex-row items-center justify-between gap-1 text-[10px] text-center select-none font-mono">
-          <div className="flex-1 px-2 py-1.5 border border-slate-800 rounded bg-slate-950">
-            <div className="text-[8px] text-slate-500 font-bold">ZEEK LOGS</div>
-            <div className="text-emerald-400 font-extrabold font-mono mt-0.5">conn.log JSON</div>
-            <div className="text-[8px] text-slate-450 mt-0.5">Throughput: {sqsMetrics.messagesSec} f/s</div>
+        <div className="p-3.5 bg-secondary/35 dark:bg-slate-900/30 rounded border border-border flex flex-col md:flex-row items-center justify-between gap-1 text-[10px] text-center select-none font-mono">
+          <div className="flex-1 px-2 py-1.5 border border-border rounded bg-card">
+            <div className="text-[8px] text-muted-foreground font-bold">ZEEK LOGS</div>
+            <div className="text-emerald-600 dark:text-emerald-400 font-extrabold font-mono mt-0.5">conn.log JSON</div>
+            <div className="text-[8.5px] text-muted-foreground mt-0.5">Throughput: {sqsMetrics.messagesSec} f/s</div>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-655 hidden md:block rotate-90 md:rotate-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground/60 hidden md:block rotate-90 md:rotate-0" />
           
-          <div className="flex-1 px-2 py-1.5 border border-slate-800 rounded bg-slate-950">
-            <div className="text-[8px] text-indigo-400 font-bold">AWS SQS</div>
-            <div className="text-slate-100 font-extrabold font-mono mt-0.5">Queue Buffer</div>
-            <div className="text-[8px] text-indigo-400 font-bold mt-0.5">Depth: {sqsMetrics.queueDepth} logs</div>
+          <div className="flex-1 px-2 py-1.5 border border-border rounded bg-card">
+            <div className="text-[8px] text-indigo-650 dark:text-indigo-400 font-bold">AWS SQS</div>
+            <div className="text-foreground font-extrabold font-mono mt-0.5">Queue Buffer</div>
+            <div className="text-[8px] text-indigo-650 dark:text-indigo-400 font-bold mt-0.5">Depth: {sqsMetrics.queueDepth} logs</div>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-655 hidden md:block rotate-90 md:rotate-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground/60 hidden md:block rotate-90 md:rotate-0" />
 
-          <div className="flex-1 px-2 py-1.5 border border-slate-800 rounded bg-slate-950">
-            <div className="text-[8px] text-amber-500 font-bold">BATCH CONSUMER</div>
-            <div className="text-slate-100 font-extrabold font-mono mt-0.5">Feature Router</div>
-            <div className="text-[8px] text-slate-450 mt-0.5">{sqsMetrics.consumerStatus}</div>
+          <div className="flex-1 px-2 py-1.5 border border-border rounded bg-card">
+            <div className="text-[8px] text-amber-600 dark:text-amber-500 font-bold">BATCH CONSUMER</div>
+            <div className="text-foreground font-extrabold font-mono mt-0.5">Feature Router</div>
+            <div className="text-[8px] text-muted-foreground mt-0.5">{sqsMetrics.consumerStatus}</div>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-655 hidden md:block rotate-90 md:rotate-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground/60 hidden md:block rotate-90 md:rotate-0" />
 
-          <div className="flex-1 px-2 py-1.5 border border-slate-800 rounded bg-slate-950">
-            <div className="text-[8px] text-cyan-405 font-bold">AI INFERENCE</div>
-            <div className="text-cyan-400 font-extrabold mt-0.5">AI1 & AI2A ONNX</div>
-            <div className="text-[8px] text-slate-450 mt-0.5">Latency: {ai1Metrics.latency}ms</div>
+          <div className="flex-1 px-2 py-1.5 border border-border rounded bg-card">
+            <div className="text-[8px] text-cyan-600 dark:text-cyan-405 font-bold">AI INFERENCE</div>
+            <div className="text-cyan-650 dark:text-cyan-400 font-extrabold mt-0.5">AI1 & AI2A ONNX</div>
+            <div className="text-[8px] text-muted-foreground mt-0.5">Latency: {ai1Metrics.latency}ms</div>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-655 hidden md:block rotate-90 md:rotate-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground/60 hidden md:block rotate-90 md:rotate-0" />
 
-          <div className="flex-1 px-2 py-1.5 border border-slate-800 rounded bg-slate-950">
-            <div className="text-[8px] text-rose-500 font-bold">FUSION LAYER</div>
-            <div className="text-pink-400 font-extrabold mt-0.5">Decision Router</div>
-            <div className="text-[8px] text-slate-450 mt-0.5">End-to-End: {sqsMetrics.e2eLatency}</div>
+          <div className="flex-1 px-2 py-1.5 border border-border rounded bg-card">
+            <div className="text-[8px] text-rose-600 dark:text-rose-500 font-bold">FUSION LAYER</div>
+            <div className="text-pink-600 dark:text-pink-400 font-extrabold mt-0.5">Decision Router</div>
+            <div className="text-[8px] text-muted-foreground mt-0.5">End-to-End: {sqsMetrics.e2eLatency}</div>
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-655 hidden md:block rotate-90 md:rotate-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground/60 hidden md:block rotate-90 md:rotate-0" />
 
-          <div className="flex-1 px-2 py-1.5 border border-slate-800 rounded bg-slate-950">
-            <div className="text-[8px] text-purple-400 font-bold">SIEM DATABASE</div>
-            <div className="text-slate-100 font-extrabold mt-0.5">PostgreSQL</div>
-            <div className="text-[8px] text-emerald-500 font-bold mt-0.5">Stored & Stream</div>
+          <div className="flex-1 px-2 py-1.5 border border-border rounded bg-card">
+            <div className="text-[8px] text-purple-600 dark:text-purple-400 font-bold">SIEM DATABASE</div>
+            <div className="text-foreground font-extrabold mt-0.5 font-sans">PostgreSQL</div>
+            <div className="text-[8px] text-emerald-600 dark:text-emerald-500 font-bold mt-0.5">Stored & Stream</div>
           </div>
         </div>
       </div>
@@ -241,128 +241,128 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         
         {/* Core AI1 Runtime Card */}
-        <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm flex flex-col justify-between">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-1.5 border-b border-slate-900 pb-2 mb-2.5">
+            <div className="flex items-center gap-1.5 border-b border-border pb-2 mb-2.5">
               <Cpu className="w-4 h-4 text-emerald-500" />
-              <h4 className="font-extrabold uppercase text-slate-200">AI1 ANOMALY ENGINE SUMMARY</h4>
+              <h4 className="font-extrabold uppercase text-foreground">AI1 ANOMALY ENGINE SUMMARY</h4>
             </div>
 
             <div className="space-y-1.5 text-[10px]">
               <div className="flex justify-between">
-                <span className="text-slate-500 font-bold">Engine Status:</span>
-                <span className="text-emerald-450 font-extrabold">{ai1Metrics.status}</span>
+                <span className="text-muted-foreground font-bold">Engine Status:</span>
+                <span className="text-emerald-600 dark:text-emerald-450 font-extrabold">{ai1Metrics.status}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Inference Runtime:</span>
-                <span className="text-slate-300">{ai1Metrics.runtime}</span>
+                <span className="text-muted-foreground">Inference Runtime:</span>
+                <span className="text-slate-700 dark:text-slate-300">{ai1Metrics.runtime}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Inference Latency:</span>
-                <span className="font-bold text-slate-100">{ai1Metrics.latency} ms</span>
+                <span className="text-muted-foreground">Inference Latency:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-100">{ai1Metrics.latency} ms</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Throughput Speed:</span>
-                <span className="text-slate-200">{ai1Metrics.predictionsSec} pred/s</span>
+                <span className="text-muted-foreground">Throughput Speed:</span>
+                <span className="text-slate-700 dark:text-slate-200">{ai1Metrics.predictionsSec} pred/s</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Frame Backlog Queue:</span>
-                <span className={`font-black ${ai1Metrics.queue > 0 ? "text-amber-500" : "text-slate-500"}`}>
+                <span className="text-muted-foreground">Frame Backlog Queue:</span>
+                <span className={`font-black ${ai1Metrics.queue > 0 ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground"}`}>
                   {ai1Metrics.queue} packets
                 </span>
               </div>
               <div className="flex justify-between animate-pulse">
-                <span className="text-slate-500">Resource (CPU/RAM):</span>
-                <span className="text-cyan-400 font-bold">{ai1Metrics.cpu}% CPU / {ai1Metrics.ram}</span>
+                <span className="text-muted-foreground">Resource (CPU/RAM):</span>
+                <span className="text-cyan-600 dark:text-cyan-400 font-bold">{ai1Metrics.cpu}% CPU / {ai1Metrics.ram}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-900 text-[8.5px] text-slate-500 py-1 px-1.5 uppercase rounded mt-3">
+          <div className="bg-secondary text-[8.5px] text-muted-foreground py-1 px-1.5 uppercase rounded mt-3">
             VERSION INDEX REFERENCE: {ai1Metrics.version}
           </div>
         </div>
 
         {/* Core AI2A Classifier Runtime Card */}
-        <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm flex flex-col justify-between">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-1.5 border-b border-slate-900 pb-2 mb-2.5">
-              <Cpu className="w-4 h-4 text-amber-500 animate-pulse" />
-              <h4 className="font-extrabold uppercase text-slate-200">AI2A CLASSIFIER SUMMARY</h4>
+            <div className="flex items-center gap-1.5 border-b border-border pb-2 mb-2.5">
+              <Cpu className="w-4 h-4 text-amber-550 dark:text-amber-500 animate-pulse" />
+              <h4 className="font-extrabold uppercase text-foreground">AI2A CLASSIFIER SUMMARY</h4>
             </div>
 
             <div className="space-y-1.5 text-[10px]">
               <div className="flex justify-between">
-                <span className="text-slate-500 font-bold">Engine Status:</span>
-                <span className="text-emerald-450 font-extrabold">{ai2aMetrics.status}</span>
+                <span className="text-muted-foreground font-bold">Engine Status:</span>
+                <span className="text-emerald-600 dark:text-emerald-450 font-extrabold">{ai2aMetrics.status}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Inference Runtime:</span>
-                <span className="text-slate-300">{ai2aMetrics.runtime}</span>
+                <span className="text-muted-foreground">Inference Runtime:</span>
+                <span className="text-slate-700 dark:text-slate-300">{ai2aMetrics.runtime}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Inference Latency:</span>
-                <span className="font-bold text-slate-100">{ai2aMetrics.latency} ms</span>
+                <span className="text-muted-foreground">Inference Latency:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-100">{ai2aMetrics.latency} ms</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Throughput Speed:</span>
-                <span className="text-slate-200">{ai2aMetrics.predictionsSec} pred/s</span>
+                <span className="text-muted-foreground">Throughput Speed:</span>
+                <span className="text-slate-705 dark:text-slate-200">{ai2aMetrics.predictionsSec} pred/s</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Frame Backlog Queue:</span>
-                <span className={`font-black ${ai2aMetrics.queue > 0 ? "text-amber-500" : "text-slate-500"}`}>
+                <span className="text-muted-foreground">Frame Backlog Queue:</span>
+                <span className={`font-black ${ai2aMetrics.queue > 0 ? "text-amber-600 dark:text-amber-500" : "text-muted-foreground"}`}>
                   {ai2aMetrics.queue} packets
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Resource (CPU/RAM):</span>
-                <span className="text-cyan-400 font-bold">{ai2aMetrics.cpu}% CPU / {ai2aMetrics.ram}</span>
+                <span className="text-muted-foreground">Resource (CPU/RAM):</span>
+                <span className="text-cyan-600 dark:text-cyan-400 font-bold">{ai2aMetrics.cpu}% CPU / {ai2aMetrics.ram}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-900 text-[8.5px] text-slate-500 py-1 px-1.5 uppercase rounded mt-3">
+          <div className="bg-secondary text-[8.5px] text-muted-foreground py-1 px-1.5 uppercase rounded mt-3">
             VERSION INDEX REFERENCE: {ai2aMetrics.version}
           </div>
         </div>
 
         {/* SQS Buffer parameters */}
-        <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm flex flex-col justify-between">
+        <div className="bg-card border border-border rounded-lg p-4 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-1.5 border-b border-slate-900 pb-2 mb-2.5">
-              <Radio className="w-4 h-4 text-indigo-400 animate-ping" style={{ animationDuration: "3s" }} />
-              <h4 className="font-extrabold uppercase text-slate-200">SQS PIPELINE HEALTH</h4>
+            <div className="flex items-center gap-1.5 border-b border-border pb-2 mb-2.5">
+              <Radio className="w-4 h-4 text-indigo-500 dark:text-indigo-400 animate-ping" style={{ animationDuration: "3s" }} />
+              <h4 className="font-extrabold uppercase text-foreground">SQS PIPELINE HEALTH</h4>
             </div>
 
             <div className="space-y-1.5 text-[10px]">
               <div className="flex justify-between">
-                <span className="text-slate-500">Queue Buffer Depth:</span>
-                <span className={`font-black ${sqsMetrics.queueDepth > 4 ? "text-rose-450" : "text-slate-200"}`}>{sqsMetrics.queueDepth} feeds</span>
+                <span className="text-muted-foreground font-bold">Queue Buffer Depth:</span>
+                <span className={`font-black ${sqsMetrics.queueDepth > 4 ? "text-rose-600 dark:text-rose-450" : "text-slate-800 dark:text-slate-200"}`}>{sqsMetrics.queueDepth} feeds</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Polled Messages rate:</span>
-                <span className="text-slate-200 font-bold">{sqsMetrics.messagesSec} msgs/sec</span>
+                <span className="text-muted-foreground font-bold">Polled Messages rate:</span>
+                <span className="text-slate-850 dark:text-slate-200 font-bold">{sqsMetrics.messagesSec} msgs/sec</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Client Batch Size:</span>
-                <span className="text-slate-400">{sqsMetrics.batchSize} lines per transaction</span>
+                <span className="text-muted-foreground">Client Batch Size:</span>
+                <span className="text-slate-550 dark:text-slate-400">{sqsMetrics.batchSize} lines per transaction</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Pipeline Retries count:</span>
-                <span className="text-emerald-500 font-bold">{sqsMetrics.retryCount} failed attempts</span>
+                <span className="text-muted-foreground font-bold font-mono">Pipeline Retries count:</span>
+                <span className="text-emerald-600 dark:text-emerald-500 font-bold">{sqsMetrics.retryCount} failed attempts</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Failed / Dead-Letters:</span>
-                <span className="text-slate-500 font-extrabold">{sqsMetrics.failedCount} dumps</span>
+                <span className="text-muted-foreground">Failed / Dead-Letters:</span>
+                <span className="text-slate-450 dark:text-slate-550 font-extrabold">{sqsMetrics.failedCount} dumps</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Parallel Workers:</span>
-                <span className="text-slate-100 font-bold">{sqsMetrics.consumerStatus}</span>
+                <span className="text-muted-foreground">Parallel Workers:</span>
+                <span className="text-slate-800 dark:text-slate-100 font-bold">{sqsMetrics.consumerStatus}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-905 p-1.5 rounded text-[8.5px] uppercase text-slate-550 border border-slate-900">
+          <div className="bg-secondary text-[8.5px] text-muted-foreground py-1.5 px-1.5 uppercase rounded border border-border">
             Pipeline transport type: JSON stream over Websocket
           </div>
         </div>
@@ -373,16 +373,16 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         
         {/* Flow Feature Analytics Histograms */}
-        <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm space-y-3">
-          <div className="flex items-center gap-1.5 border-b border-slate-900 pb-2">
-            <Sliders className="w-4 h-4 text-emerald-505" />
-            <h4 className="font-extrabold uppercase text-slate-200">FLOW FEATURE DISTRIBUTION ANALYTICS</h4>
+        <div className="bg-card border border-border rounded-lg p-4 shadow-sm space-y-3">
+          <div className="flex items-center gap-1.5 border-b border-border pb-2">
+            <Sliders className="w-4 h-4 text-emerald-600 dark:text-emerald-405" />
+            <h4 className="font-extrabold uppercase text-foreground">FLOW FEATURE DISTRIBUTION ANALYTICS</h4>
           </div>
 
           <div className="grid grid-cols-2 gap-4 h-32.5">
             {/* Duration Bins Chart */}
             <div className="h-full">
-              <span className="text-[8px] text-slate-500 font-bold uppercase text-center block mb-1">Duration Distribution</span>
+              <span className="text-[8px] text-muted-foreground font-bold uppercase text-center block mb-1">Duration Distribution</span>
               <ResponsiveContainer width="100%" height="90%">
                 <BarChart data={durationDistribution} margin={{ top: 0, right: 0, left: -42, bottom: 0 }}>
                   <XAxis dataKey="bin" stroke="#64748b" fontSize={7} tickLine={false} />
@@ -394,7 +394,7 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
 
             {/* Bytes Rate Bins Chart */}
             <div className="h-full">
-              <span className="text-[8px] text-slate-500 font-bold uppercase text-center block mb-1">Byte rate Distribution</span>
+              <span className="text-[8px] text-muted-foreground font-bold uppercase text-center block mb-1">Byte rate Distribution</span>
               <ResponsiveContainer width="100%" height="90%">
                 <BarChart data={bytesRateDistribution} margin={{ top: 0, right: 0, left: -42, bottom: 0 }}>
                   <XAxis dataKey="rateRange" stroke="#64748b" fontSize={7} tickLine={false} />
@@ -405,41 +405,41 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
             </div>
           </div>
 
-          <p className="text-[8px] text-slate-500 leading-none text-center">
+          <p className="text-[8px] text-muted-foreground leading-none text-center">
             Multi-variate features evaluated on-premise within ONNX heuristic parameters
           </p>
         </div>
 
         {/* Telemetry and Freshness metrics scorecard */}
-        <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm space-y-2.5">
-          <div className="flex items-center gap-1.5 border-b border-slate-900 pb-2">
-            <Radio className="w-4 h-4 text-cyan-400" />
-            <h4 className="font-extrabold uppercase text-slate-200">TELEMETRY DATA FRESHNESS & QUALITY SCORE</h4>
+        <div className="bg-card border border-border rounded-lg p-4 shadow-sm space-y-2.5">
+          <div className="flex items-center gap-1.5 border-b border-border pb-2">
+            <Radio className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+            <h4 className="font-extrabold uppercase text-foreground">TELEMETRY DATA FRESHNESS & QUALITY SCORE</h4>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <div className="flex justify-between items-center bg-slate-900/40 p-1.5 rounded border border-slate-900 leading-none">
-                <span className="text-slate-500 font-bold text-[8.5px]">Service Diversity:</span>
-                <span className="font-bold text-slate-200">HTTP/HTTPS/SSH/DNS</span>
+              <div className="flex justify-between items-center bg-secondary/40 dark:bg-slate-900/40 p-1.5 rounded border border-border leading-none">
+                <span className="text-muted-foreground font-bold text-[8.5px]">Service Diversity:</span>
+                <span className="font-bold text-slate-700 dark:text-slate-200">HTTP/HTTPS/SSH/DNS</span>
               </div>
-              <div className="flex justify-between items-center bg-slate-900/40 p-1.5 rounded border border-slate-900 leading-none">
-                <span className="text-slate-500 font-bold text-[8.5px]">Attack Varieties:</span>
-                <span className="text-amber-500 font-bold">{qualityMetrics.attackDiversity}</span>
+              <div className="flex justify-between items-center bg-secondary/40 dark:bg-slate-900/40 p-1.5 rounded border border-border leading-none">
+                <span className="text-muted-foreground font-bold text-[8.5px]">Attack Varieties:</span>
+                <span className="text-amber-600 dark:text-amber-500 font-bold">{qualityMetrics.attackDiversity}</span>
               </div>
-              <div className="flex justify-between items-center bg-slate-900/40 p-1.5 rounded border border-slate-900 leading-none">
-                <span className="text-slate-500 font-bold text-[8.5px]">Time Freshness:</span>
-                <span className="text-cyan-450 font-extrabold">{qualityMetrics.freshness}</span>
+              <div className="flex justify-between items-center bg-secondary/40 dark:bg-slate-900/40 p-1.5 rounded border border-border leading-none">
+                <span className="text-muted-foreground font-bold text-[8.5px]">Time Freshness:</span>
+                <span className="text-cyan-650 dark:text-cyan-405 font-extrabold">{qualityMetrics.freshness}</span>
               </div>
             </div>
 
             <div>
-              <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest block leading-none mb-1">USER AGENT DIVERSITY SCORES</span>
+              <span className="text-[8px] text-muted-foreground uppercase font-black tracking-widest block leading-none mb-1">USER AGENT DIVERSITY SCORES</span>
               <div className="text-[8.5px] space-y-1">
                 {qualityMetrics.userAgents.slice(0, 3).map((u, idx) => (
-                  <div key={idx} className="flex justify-between items-center border-b border-slate-900/40 pb-0.5">
-                    <span className="text-slate-400 truncate max-w-27.5">{u.name}</span>
-                    <strong className="text-slate-200">{u.percentage}%</strong>
+                  <div key={idx} className="flex justify-between items-center border-b border-border/40 pb-0.5">
+                    <span className="text-muted-foreground truncate max-w-27.5">{u.name}</span>
+                    <strong className="text-slate-750 dark:text-slate-200">{u.percentage}%</strong>
                   </div>
                 ))}
               </div>
@@ -450,20 +450,20 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
       </div>
 
       {/* ROW 4: TOP 50 OUTLIER FLOWS TABLE */}
-      <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+      <div className="bg-card border border-border rounded-lg p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between border-b border-border pb-2">
           <div className="flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-red-500 animate-pulse" />
-            <h4 className="font-extrabold uppercase text-slate-200">
+            <h4 className="font-extrabold uppercase text-foreground">
               CROSS-CORRELATION: TOP OUTLIER ANOMALOUS FLOWS (RANKED BY RISK SCORE)
             </h4>
           </div>
-          <span className="text-[8.5px] uppercase text-slate-550 italic font-black">Memory logs audit buffer</span>
+          <span className="text-[8.5px] uppercase text-muted-foreground italic font-black">Memory logs audit buffer</span>
         </div>
 
-        <div className="overflow-x-auto max-h-40 border border-slate-905 rounded bg-slate-950/40 custom-scrollbar pr-1">
+        <div className="overflow-x-auto max-h-40 border border-border rounded bg-secondary/15 dark:bg-slate-950/40 custom-scrollbar pr-1">
           <table className="w-full text-left font-mono">
-            <thead className="bg-slate-900 sticky top-0 z-10 text-[8.5px] uppercase text-slate-500 border-b border-slate-900">
+            <thead className="bg-secondary/40 dark:bg-slate-900 sticky top-0 z-10 text-[8.5px] uppercase text-muted-foreground border-b border-border">
               <tr>
                 <th className="px-3 py-1.5">Timestamp</th>
                 <th className="px-3 py-1.5">UID Token</th>
@@ -474,10 +474,10 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
                 <th className="px-3 py-1.5 text-right">MITRE Category Target</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-900/30 text-[9px]">
+            <tbody className="divide-y divide-border/40 text-[9px]">
               {topOutlierLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-slate-500 italic">
+                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground italic">
                     All telemetry feeds match base traffic profiles with 100% confidence. No outliers registered.
                   </td>
                 </tr>
@@ -493,18 +493,18 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
                     : "T1498: Denial of Service Flood";
 
                   return (
-                    <tr key={log.id} className="hover:bg-slate-900/40 duration-150">
-                      <td className="px-3 py-1.5 font-bold text-slate-450">{log.timestamp}</td>
-                      <td className="px-3 py-1.5 font-extrabold text-slate-350">{log.id}</td>
-                      <td className="px-3 py-1.5 text-slate-205 font-bold">{log.srcIp}</td>
-                      <td className="px-3 py-1.5 text-slate-205">{log.destIp}</td>
-                      <td className="px-3 py-1.5"><span className="bg-slate-900/80 border border-slate-805 px-1 py-0.2 rounded font-extrabold">{log.protocol}</span></td>
+                    <tr key={log.id} className="hover:bg-secondary/40 dark:hover:bg-slate-900/40 duration-150 border-b border-border/30">
+                      <td className="px-3 py-1.5 font-bold text-muted-foreground">{log.timestamp}</td>
+                      <td className="px-3 py-1.5 font-extrabold text-slate-700 dark:text-slate-350">{log.id}</td>
+                      <td className="px-3 py-1.5 text-slate-800 dark:text-slate-205 font-bold">{log.srcIp}</td>
+                      <td className="px-3 py-1.5 text-slate-800 dark:text-slate-205">{log.destIp}</td>
+                      <td className="px-3 py-1.5"><span className="bg-secondary dark:bg-slate-900/80 border border-border px-1 py-0.2 rounded font-extrabold text-foreground">{log.protocol}</span></td>
                       <td className="px-3 py-1.5 text-center font-black">
-                        <span className={isCritical ? "text-red-400 animate-pulse" : "text-amber-500"}>
+                        <span className={isCritical ? "text-red-500 dark:text-red-400 animate-pulse" : "text-amber-600 dark:text-amber-500"}>
                           {log.threatScore}/100
                         </span>
                       </td>
-                      <td className="px-3 py-1.5 text-right font-black text-slate-450">{mitreName}</td>
+                      <td className="px-3 py-1.5 text-right font-black text-muted-foreground">{mitreName}</td>
                     </tr>
                   );
                 })
@@ -515,36 +515,36 @@ export const AIHealthPipelinePanel: React.FC<AIHealthPipelinePanelProps> = ({ lo
       </div>
 
       {/* SECTION ROW 5: SOC HISTORICAL PERFORMANCE METRICS */}
-      <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm space-y-3.5" id="soc-performance-metrics-submodule">
-        <div className="flex items-center gap-1.5 border-b border-slate-900 pb-2">
-          <Activity className="w-5 h-5 text-emerald-450 animate-pulse" />
-          <h4 className="font-extrabold uppercase text-slate-200">SOC SECURITY OPERATIONS EXECUTIVE REPORT CARD</h4>
+      <div className="bg-card border border-border rounded-lg p-4 shadow-sm space-y-3.5" id="soc-performance-metrics-submodule">
+        <div className="flex items-center gap-1.5 border-b border-border pb-2">
+          <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-450 animate-pulse" />
+          <h4 className="font-extrabold uppercase text-foreground">SOC SECURITY OPERATIONS EXECUTIVE REPORT CARD</h4>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3.5 font-mono text-center">
-          <div className="bg-slate-900/60 p-2 border border-slate-900 rounded">
-            <span className="text-[8px] text-slate-500 uppercase block font-bold mb-1">Total flows Processed</span>
-            <strong className="text-sm font-black text-slate-100">{socMetrics.flowsProcessed.toLocaleString()}</strong>
+          <div className="bg-secondary/50 dark:bg-slate-900/60 p-2 border border-border rounded shadow-sm">
+            <span className="text-[8px] text-muted-foreground uppercase font-bold block mb-1 truncate">Total flows Processed</span>
+            <strong className="text-sm font-black text-slate-800 dark:text-slate-100">{socMetrics.flowsProcessed.toLocaleString()}</strong>
           </div>
-          <div className="bg-slate-900/60 p-2 border border-slate-900 rounded">
-            <span className="text-[8px] text-slate-500 uppercase block font-bold mb-1">AI heuristic Predictions</span>
-            <strong className="text-sm font-black text-slate-100">{socMetrics.predictionsMade.toLocaleString()}</strong>
+          <div className="bg-secondary/50 dark:bg-slate-900/60 p-2 border border-border rounded shadow-sm">
+            <span className="text-[8px] text-muted-foreground uppercase font-bold block mb-1 truncate">AI heuristic Predictions</span>
+            <strong className="text-sm font-black text-slate-800 dark:text-slate-100">{socMetrics.predictionsMade.toLocaleString()}</strong>
           </div>
-          <div className="bg-slate-900/60 p-2 border border-slate-900 rounded">
-            <span className="text-[8px] text-slate-500 uppercase block font-bold mb-1">Fusion Layer decisions</span>
-            <strong className="text-sm font-black text-emerald-405">{socMetrics.fusionDecisions.toLocaleString()}</strong>
+          <div className="bg-secondary/50 dark:bg-slate-900/60 p-2 border border-border rounded shadow-sm">
+            <span className="text-[8px] text-muted-foreground uppercase font-bold block mb-1 truncate font-mono">Fusion dcsns</span>
+            <strong className="text-sm font-black text-emerald-600 dark:text-emerald-405">{socMetrics.fusionDecisions.toLocaleString()}</strong>
           </div>
-          <div className="bg-slate-900/60 p-2 border border-slate-900 rounded">
-            <span className="text-[8px] text-slate-500 uppercase block font-bold mb-1">Average detection Latency</span>
-            <strong className="text-sm font-black text-indigo-400">{socMetrics.avgLatency}</strong>
+          <div className="bg-secondary/50 dark:bg-slate-900/60 p-2 border border-border rounded shadow-sm">
+            <span className="text-[8px] text-muted-foreground uppercase font-bold block mb-1 truncate">Avg detection Latency</span>
+            <strong className="text-sm font-black text-indigo-650 dark:text-indigo-400">{socMetrics.avgLatency}</strong>
           </div>
-          <div className="bg-slate-900/60 p-2 border border-slate-900 rounded">
-            <span className="text-[8px] text-slate-500 uppercase block font-bold mb-1">Average triaging duration</span>
-            <strong className="text-sm font-black text-cyan-400">{socMetrics.avgInvestTime}</strong>
+          <div className="bg-secondary/50 dark:bg-slate-900/60 p-2 border border-border rounded shadow-sm">
+            <span className="text-[8px] text-muted-foreground uppercase font-bold block mb-1 truncate">Avg triaging duration</span>
+            <strong className="text-sm font-black text-cyan-600 dark:text-cyan-400">{socMetrics.avgInvestTime}</strong>
           </div>
-          <div className="bg-slate-900/60 p-2 border border-slate-900 rounded">
-            <span className="text-[8px] text-slate-500 uppercase block font-bold mb-1">False Positives reviewed</span>
-            <strong className="text-sm font-black text-amber-500">{socMetrics.fpReviewCount} cases</strong>
+          <div className="bg-secondary/50 dark:bg-slate-900/60 p-2 border border-border rounded shadow-sm">
+            <span className="text-[8px] text-muted-foreground uppercase font-bold block mb-1 truncate">False Positives reviewed</span>
+            <strong className="text-sm font-black text-amber-600 dark:text-amber-500">{socMetrics.fpReviewCount} cases</strong>
           </div>
         </div>
       </div>

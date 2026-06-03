@@ -147,12 +147,12 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
   }, [logs]);
 
   const getHeatmapColor = (volume: number) => {
-    if (volume === 0) return "bg-slate-950 text-slate-700 hover:border-slate-800";
-    if (volume < 5) return "bg-emerald-950/20 text-emerald-500 border-emerald-950/20";
-    if (volume < 20) return "bg-emerald-950/50 text-emerald-400 border-emerald-800/40";
-    if (volume < 50) return "bg-amber-950/30 text-amber-500 border-amber-800/20";
-    if (volume < 85) return "bg-amber-950/60 text-amber-400 border-amber-500/30";
-    return "bg-red-950/60 text-red-400 border-red-500/40 shadow-[0_0_8px_rgba(239,68,68,0.25)] ring-1 ring-red-500/20 animate-pulse";
+    if (volume === 0) return "bg-muted dark:bg-slate-950 text-muted-foreground/60 dark:text-slate-700 hover:border-border dark:hover:border-slate-800";
+    if (volume < 5) return "bg-emerald-500/5 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-500 border-emerald-500/10 dark:border-emerald-950/30";
+    if (volume < 20) return "bg-emerald-500/15 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-800/40";
+    if (volume < 50) return "bg-amber-500/5 dark:bg-amber-950/30 text-amber-600 dark:text-amber-500 border-amber-500/10 dark:border-amber-801";
+    if (volume < 85) return "bg-amber-500/20 dark:bg-amber-950/60 text-amber-705 dark:text-amber-400 border-amber-500/30";
+    return "bg-red-500/20 dark:bg-red-950/60 text-red-650 dark:text-red-400 border-red-500/40 shadow-[0_0_8px_rgba(239,68,68,0.25)] ring-1 ring-red-500/20 animate-pulse";
   };
 
   // FORENSIC EXPORTS (Simulate actual downloads or copies)
@@ -176,59 +176,59 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
   };
 
   return (
-    <div className="space-y-6 text-slate-100 font-mono" id="threat-hunting-panel-root">
+    <div className="space-y-6 text-foreground dark:text-slate-100 font-mono" id="threat-hunting-panel-root">
       
       {/* ROW 1: FORENSICS EXPORTS CONTROL AND INCIDENT CORRELATION */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* Export & Forensic Hub */}
-        <div className="lg:col-span-5 bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-1.5 border-b border-slate-900 pb-1.5 mb-2">
-              <Download className="w-4 h-4 text-emerald-500" />
-              <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+            <div className="flex items-center gap-1.5 border-b border-border dark:border-slate-900 pb-1.5 mb-2">
+              <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+              <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
                 SIEM FORENSICS DISCOVERY & EXPORT HUB
               </h3>
             </div>
-            <p className="text-[10px] text-slate-400 leading-normal font-sans mb-3">
+            <p className="text-[10px] text-muted-foreground dark:text-slate-400 leading-normal font-sans mb-3">
               SOC compliant payload backup triggers. Download active filtered subnets, threat hunting metrics, or incident telemetry.
             </p>
 
             <div className="grid grid-cols-3 gap-2">
               <button 
                 onClick={() => triggerDownload("csv")}
-                className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/20 rounded flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center group transition-colors"
+                className="p-2.5 bg-secondary hover:bg-secondary/80 border border-border dark:bg-slate-900 dark:hover:bg-slate-800 dark:border-slate-800 rounded flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center group transition-colors"
               >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                <span className="text-[8.5px] font-black uppercase tracking-wider">Export CSV</span>
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-500 group-hover:scale-110 transition-transform" />
+                <span className="text-[8.5px] font-black uppercase tracking-wider text-foreground dark:text-slate-300">Export CSV</span>
               </button>
               
               <button 
                 onClick={() => triggerDownload("json")}
-                className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/20 rounded flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center group transition-colors"
+                className="p-2.5 bg-secondary hover:bg-secondary/80 border border-border dark:bg-slate-900 dark:hover:bg-slate-800 dark:border-slate-800 rounded flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center group transition-colors"
               >
-                <FileJson className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-                <span className="text-[8.5px] font-black uppercase tracking-wider">JSON Stream</span>
+                <FileJson className="w-4 h-4 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform" />
+                <span className="text-[8.5px] font-black uppercase tracking-wider text-foreground dark:text-slate-300">JSON Stream</span>
               </button>
 
               <button 
                 onClick={() => triggerDownload("pdf")}
-                className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-rose-500/20 rounded flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center group transition-colors"
+                className="p-2.5 bg-secondary hover:bg-secondary/80 border border-border dark:bg-slate-900 dark:hover:bg-slate-800 dark:border-slate-800 rounded flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center group transition-colors"
               >
-                <FileText className="w-4 h-4 text-rose-450 group-hover:scale-110 transition-transform" />
-                <span className="text-[8.5px] font-black uppercase tracking-wider">PDF Report</span>
+                <FileText className="w-4 h-4 text-rose-600 dark:text-rose-450 group-hover:scale-110 transition-transform" />
+                <span className="text-[8.5px] font-black uppercase tracking-wider text-foreground dark:text-slate-300">PDF Report</span>
               </button>
             </div>
           </div>
 
           <div className="mt-3">
             {downloadFeedback && (
-              <div className="bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 p-2 text-[8px] uppercase font-black text-center rounded animate-fade-in">
+              <div className="bg-emerald-505/10 dark:bg-emerald-955/40 text-emerald-650 dark:text-emerald-400 border border-emerald-500/20 p-2 text-[8px] uppercase font-black text-center rounded animate-fade-in">
                 {downloadFeedback}
               </div>
             )}
             {!downloadFeedback && (
-              <span className="text-[8.5px] text-slate-500 text-center block leading-none">
+              <span className="text-[8.5px] text-muted-foreground dark:text-slate-500 text-center block leading-none">
                 Copy forensic JSON configurations for direct SIEM integration
               </span>
             )}
@@ -236,21 +236,21 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
         </div>
 
         {/* Incident Correlation Preview widget */}
-        <div className="lg:col-span-7 bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-1.5 border-b border-slate-900 pb-1.5 mb-2">
-              <ShieldAlert className="w-4 h-4 text-amber-500 animate-pulse" />
-              <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+            <div className="flex items-center gap-1.5 border-b border-border dark:border-slate-900 pb-1.5 mb-2">
+              <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-500 animate-pulse" />
+              <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
                 INCIDENT CORRELATION ALERT LINK (INCIDENT #42)
               </h3>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mt-2 text-[10px]">
               <div className="md:col-span-8 space-y-1.5 font-sans">
-                <p className="text-slate-300 leading-normal">
-                  Our correlation engine identified a cluster of anomalous flows sharing high risk indices mapping directly to <strong className="text-amber-400 font-mono">Incident #42: "Multi-stage APT database raid."</strong>
+                <p className="text-muted-foreground dark:text-slate-300 leading-normal">
+                  Our correlation engine identified a cluster of anomalous flows sharing high risk indices mapping directly to <strong className="text-amber-700 dark:text-amber-400 font-mono">Incident #42: "Multi-stage APT database raid."</strong>
                 </p>
-                <div className="text-[9px] font-mono text-slate-500 flex flex-wrap gap-2 uppercase">
+                <div className="text-[9px] font-mono text-muted-foreground dark:text-slate-500 flex flex-wrap gap-2 uppercase">
                   <span>Owner: Analyst-09</span>
                   <span>•</span>
                   <span>Status: Active Investigation</span>
@@ -259,15 +259,15 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
                 </div>
               </div>
 
-              <div className="md:col-span-4 bg-slate-900 border border-slate-850 p-2.5 rounded font-mono text-[9px] flex flex-col justify-between">
+              <div className="md:col-span-4 bg-secondary dark:bg-slate-900 border border-border dark:border-slate-850 p-2.5 rounded font-mono text-[9px] flex flex-col justify-between">
                 <div>
-                  <span className="text-slate-500 font-extrabold uppercase text-[8px] block">Triggering Flow limits:</span>
-                  <span className="text-slate-200 font-bold block">156 MB Data Leak</span>
-                  <span className="text-red-400 block font-bold">Heuristics Score 98%</span>
+                  <span className="text-muted-foreground dark:text-slate-500 font-extrabold uppercase text-[8px] block">Triggering Flow limits:</span>
+                  <span className="text-foreground dark:text-slate-200 font-bold block">156 MB Data Leak</span>
+                  <span className="text-red-650 dark:text-red-400 block font-bold">Heuristics Score 98%</span>
                 </div>
                 <button 
                   onClick={() => alert("Simulating link to Alert details: Incident #42 context has been marked priority.")}
-                  className="mt-2 w-full py-1 text-center bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 text-[8.5px] font-black uppercase rounded cursor-pointer"
+                  className="mt-2 w-full py-1 text-center bg-primary/10 dark:bg-slate-800 hover:bg-primary/20 dark:hover:bg-slate-750 text-primary dark:text-slate-200 border border-primary/20 dark:border-slate-700 text-[8.5px] font-black uppercase rounded cursor-pointer"
                 >
                   Inspect Incident #42
                 </button>
@@ -275,7 +275,7 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
             </div>
           </div>
 
-          <div className="bg-amber-950/20 border border-amber-500/10 p-1.5 rounded text-[8px] text-amber-500 mt-2 flex justify-between items-center font-sans font-medium">
+          <div className="bg-amber-500/5 dark:bg-amber-955/20 border border-amber-500/15 p-1.5 rounded text-[8px] text-amber-700 dark:text-amber-500 mt-2 flex justify-between items-center font-sans font-medium">
             <span>Playbooks executed: APT-Containment-SSH, Exfiltration-IP-Drop.</span>
             <span className="font-mono text-[8px] font-bold">Active</span>
           </div>
@@ -287,48 +287,48 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* Query Builder */}
-        <div className="lg:col-span-8 bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-xs space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+        <div className="lg:col-span-8 bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-xs space-y-3">
+          <div className="flex items-center justify-between border-b border-border dark:border-slate-900 pb-2">
             <div className="flex items-center gap-1.5">
-              <Search className="w-4 h-4 text-emerald-500" />
-              <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+              <Search className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+              <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
                 ZEEK CONN.LOG THREAT HUNTING LOGS BUILDER
               </h3>
             </div>
-            <span className="text-[8.5px] text-slate-500 uppercase font-black">Interactive Heuristics Search</span>
+            <span className="text-[8.5px] text-muted-foreground dark:text-slate-500 uppercase font-black">Interactive Heuristics Search</span>
           </div>
 
           {/* Query Filters row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
             <div>
-              <label className="text-slate-500 font-bold block mb-1">Target Endpoint / IP:</label>
+              <label className="text-muted-foreground dark:text-slate-500 font-bold block mb-1">Target Endpoint / IP:</label>
               <input 
                 type="text" 
                 placeholder="e.g. 10.0.12.3"
                 value={huntRuleIP}
                 onChange={(e) => setHuntRuleIP(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 py-1.5 px-2 rounded text-slate-200 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-background dark:bg-slate-900 border border-border dark:border-slate-800 py-1.5 px-2 rounded text-foreground dark:text-slate-200 focus:outline-none focus:border-emerald-500"
               />
             </div>
 
             <div>
-              <label className="text-slate-500 font-bold block mb-1">Risk Threshold Score: ({huntRuleRisk})</label>
+              <label className="text-muted-foreground dark:text-slate-500 font-bold block mb-1">Risk Threshold Score: ({huntRuleRisk})</label>
               <input 
                 type="range"
                 min="0"
                 max="100"
                 value={huntRuleRisk}
                 onChange={(e) => setHuntRuleRisk(e.target.value)}
-                className="w-full accent-emerald-500 mt-2 cursor-pointer h-1.5 bg-slate-900 rounded-full appearance-none"
+                className="w-full accent-emerald-500 mt-2 cursor-pointer h-1.5 bg-secondary dark:bg-slate-900 rounded-full appearance-none"
               />
             </div>
 
             <div>
-              <label className="text-slate-500 font-bold block mb-1">Protocol Identifier:</label>
+              <label className="text-muted-foreground dark:text-slate-500 font-bold block mb-1">Protocol Identifier:</label>
               <select 
                 value={huntRuleProto}
                 onChange={(e) => setHuntRuleProto(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 py-1.5 px-2 rounded text-slate-200 focus:outline-none focus:border-emerald-505 cursor-pointer"
+                className="w-full bg-background dark:bg-slate-900 border border-border dark:border-slate-800 py-1.5 px-2 rounded text-foreground dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer"
               >
                 <option value="ALL">ALL PROTOCOLS</option>
                 <option value="TCP">TCP</option>
@@ -338,11 +338,11 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
             </div>
 
             <div>
-              <label className="text-slate-500 font-bold block mb-1">AI Classification Type:</label>
+              <label className="text-muted-foreground dark:text-slate-500 font-bold block mb-1">AI Classification Type:</label>
               <select 
                 value={huntRuleAttackType}
                 onChange={(e) => setHuntRuleAttackType(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 py-1.5 px-2 rounded text-slate-200 focus:outline-none focus:border-emerald-505 cursor-pointer"
+                className="w-full bg-background dark:bg-slate-900 border border-border dark:border-slate-800 py-1.5 px-2 rounded text-foreground dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer"
               >
                 <option value="ALL">ALL (Anomalous & Clean)</option>
                 <option value="NOMAL">Clean-Only (Normal)</option>
@@ -354,18 +354,18 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
           </div>
 
           {/* Action Query and interactive input */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-900/60">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border dark:border-slate-900/60">
             <div className="flex items-center gap-2">
               <input 
                 type="text" 
                 placeholder="Save current query name..."
                 value={saveName}
                 onChange={(e) => setSaveName(e.target.value)}
-                className="bg-slate-900 border border-slate-800 py-1 px-2 text-[10px] rounded text-slate-205 focus:outline-none focus:border-cyan-500 w-44"
+                className="bg-background dark:bg-slate-900 border border-border dark:border-slate-800 py-1 px-2 text-[10px] rounded text-foreground dark:text-slate-200 focus:outline-none focus:border-cyan-500 w-44"
               />
               <button 
                 onClick={handleSaveQuery}
-                className="px-2 py-1 bg-slate-900 hover:bg-slate-820 border border-slate-800 rounded text-[9px] text-slate-300 hover:text-slate-100 flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-2 py-1 bg-secondary hover:bg-secondary/80 border border-border dark:bg-slate-900 dark:hover:bg-slate-800 dark:border-slate-800 rounded text-[9px] text-muted-foreground hover:text-foreground dark:text-slate-300 dark:hover:text-slate-100 flex items-center gap-1 cursor-pointer transition-colors"
               >
                 <Save className="w-3 h-3" /> Save Hunt
               </button>
@@ -373,7 +373,7 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
 
             <button 
               onClick={handleExecuteHunt}
-              className="px-4 py-1.5 bg-emerald-505 hover:bg-emerald-500 text-slate-950 font-black text-xs uppercase tracking-widest rounded flex items-center gap-1 cursor-pointer transition-all hover:scale-[1.01]"
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-450 text-white dark:text-slate-950 font-black text-xs uppercase tracking-widest rounded flex items-center gap-1 cursor-pointer transition-all hover:scale-[1.01]"
             >
               <Play className="w-3.5 h-3.5 fill-current" /> Execute Zeek Hunt
             </button>
@@ -381,28 +381,28 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
 
           {/* Results Display Pane */}
           {hasSearched && (
-            <div className="bg-slate-950 rounded border border-slate-900 p-2 text-[10px] animate-fade-in space-y-2">
-              <div className="text-slate-500 font-bold uppercase tracking-wider text-[8px] flex justify-between">
+            <div className="bg-background dark:bg-slate-950 rounded border border-border dark:border-slate-900 p-2 text-[10px] animate-fade-in space-y-2">
+              <div className="text-muted-foreground dark:text-slate-500 font-bold uppercase tracking-wider text-[8px] flex justify-between">
                 <span>QueryResult Database Query Results</span>
-                <span className="text-emerald-505">{searchResults.length} Match flows discovered</span>
+                <span className="text-emerald-600 dark:text-emerald-400">{searchResults.length} Match flows discovered</span>
               </div>
 
               <div className="max-h-35 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
                 {searchResults.length === 0 ? (
-                  <div className="text-slate-500 italic text-[9px] py-4 text-center">
+                  <div className="text-muted-foreground dark:text-slate-500 italic text-[9px] py-4 text-center">
                     No log packets matched search query. Broaden standard risk boundaries.
                   </div>
                 ) : (
                   searchResults.slice(0, 10).map((res) => (
-                    <div key={res.id} className="bg-slate-900/40 p-1.5 rounded border border-slate-900 flex items-center justify-between text-[9px]">
+                    <div key={res.id} className="bg-secondary/40 dark:bg-slate-900/40 p-1.5 rounded border border-border dark:border-slate-900 flex items-center justify-between text-[9px]">
                       <div>
-                        <span className="font-extrabold text-slate-400">{res.id}</span>
-                        <span className="text-slate-500 ml-2">{res.srcIp} → {res.destIp}</span>
-                        <span className="text-slate-000 ml-2 bg-slate-800 px-1 py-0.2 rounded font-black text-[8px]">{res.protocol}</span>
+                        <span className="font-extrabold text-muted-foreground dark:text-slate-400">{res.id}</span>
+                        <span className="text-muted-foreground dark:text-slate-500 ml-2">{res.srcIp} → {res.destIp}</span>
+                        <span className="bg-muted dark:bg-slate-800 px-1 py-0.2 rounded font-black text-[8px] text-foreground dark:text-slate-300 ml-2">{res.protocol}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-red-400 font-black">Threat: {res.threatScore}</span>
-                        <span className="text-slate-500">{res.timestamp}</span>
+                        <span className="text-red-650 dark:text-red-400 font-black">Threat: {res.threatScore}</span>
+                        <span className="text-muted-foreground dark:text-slate-500">{res.timestamp}</span>
                       </div>
                     </div>
                   ))
@@ -413,35 +413,35 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
         </div>
 
         {/* Saved queries */}
-        <div className="lg:col-span-4 bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-4 bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="text-[10px] font-black text-slate-400 tracking-widest border-b border-slate-900 pb-1.5 mb-2 flex items-center justify-between">
+            <div className="text-[10px] font-black text-foreground/85 dark:text-slate-400 tracking-widest border-b border-border dark:border-slate-900 pb-1.5 mb-2 flex items-center justify-between">
               <span>SAVED HUNT QUERIES</span>
-              <span className="text-[8px] text-slate-500 uppercase">{savedQueries.length} Registrations</span>
+              <span className="text-[8px] text-muted-foreground dark:text-slate-500 uppercase">{savedQueries.length} Registrations</span>
             </div>
 
             <div className="space-y-1.5">
               {savedQueries.map((q) => (
                 <div 
                   key={q.id} 
-                  className="bg-slate-900/60 p-2 rounded border border-slate-850 hover:border-emerald-505/30 hover:bg-slate-900 flex items-start justify-between gap-2 group transition-all"
+                  className="bg-secondary/40 p-2 rounded border border-border dark:border-slate-850 hover:border-emerald-500/30 dark:hover:border-emerald-505/30 hover:bg-secondary/80 dark:hover:bg-slate-900 flex items-start justify-between gap-2 group transition-all"
                 >
                   <div 
                     onClick={() => handleLoadSavedQuery(q)}
                     className="flex-1 cursor-pointer"
                   >
-                    <div className="text-[10px] font-black text-slate-250 flex items-center gap-1 group-hover:text-emerald-450">
+                    <div className="text-[10px] font-black text-foreground dark:text-slate-250 flex items-center gap-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-500">
                       <ChevronRight className="w-3 h-3" />
                       {q.name}
                     </div>
-                    <code className="text-[8px] text-slate-500 leading-normal block max-h-7.5 overflow-hidden truncate mt-0.5">
+                    <code className="text-[8px] text-muted-foreground dark:text-slate-500 leading-normal block max-h-7.5 overflow-hidden truncate mt-0.5">
                       {q.query}
                     </code>
                   </div>
 
                   <button 
                     onClick={() => handleDeleteQuery(q.id)}
-                    className="text-slate-600 hover:text-red-400 p-0.5 rounded cursor-pointer self-center"
+                    className="text-muted-foreground dark:text-slate-600 hover:text-red-600 dark:hover:text-red-400 p-0.5 rounded cursor-pointer self-center"
                     title="Delete saved trigger"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -451,7 +451,7 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
             </div>
           </div>
 
-          <p className="text-[8px] text-slate-500 mt-2 text-center uppercase">
+          <p className="text-[8px] text-muted-foreground dark:text-slate-505 mt-2 text-center uppercase">
             Click target query block to execute parameter presets
           </p>
         </div>
@@ -462,17 +462,17 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* Attack stages timeline */}
-        <div className="lg:col-span-7 bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-xs flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-xs flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-3">
+            <div className="flex items-center justify-between border-b border-border dark:border-slate-900 pb-2 mb-3">
               <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-cyan-400" />
-                <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+                <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
                   ATTACK TIMELINE RECONSTRUCTION & ZOOM MATRIX
                 </h3>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[8.5px] text-slate-550 font-bold uppercase">Zoom Factor:</span>
+                <span className="text-[8.5px] text-muted-foreground dark:text-slate-500 font-bold uppercase">Zoom Factor:</span>
                 <input 
                   type="range" 
                   min="0.5" 
@@ -480,13 +480,13 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
                   step="0.5" 
                   value={timelineZoom}
                   onChange={(e) => setTimelineZoom(parseFloat(e.target.value))}
-                  className="w-16 accent-cyan-500 h-1 cursor-pointer bg-slate-900 rounded-full appearance-none"
+                  className="w-16 accent-cyan-500 h-1 cursor-pointer bg-secondary dark:bg-slate-900 rounded-full appearance-none"
                 />
-                <span className="text-[9px] text-cyan-400">{timelineZoom.toFixed(1)}x</span>
+                <span className="text-[9px] text-cyan-650 dark:text-cyan-400 font-bold">{timelineZoom.toFixed(1)}x</span>
               </div>
             </div>
 
-            <div className="relative border-l-2 border-slate-800 ml-4 pl-4 space-y-4 pt-1 pb-1">
+            <div className="relative border-l-2 border-border dark:border-slate-805 ml-4 pl-4 space-y-4 pt-1 pb-1">
               {attackSteps.map((step, idx) => (
                 <div 
                   key={idx} 
@@ -494,19 +494,19 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
                   style={{ marginBottom: `${12 * timelineZoom}px` }}
                 >
                   {/* Timeline bullet */}
-                  <span className={`absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full border border-slate-950 ${
+                  <span className={`absolute -left-5.25 top-1 w-2.5 h-2.5 rounded-full border border-border dark:border-slate-950 ${
                     step.severity === "CRITICAL" ? "bg-red-500 ring-2 ring-red-500/10" : step.severity === "HIGH" ? "bg-amber-500" : "bg-cyan-500"
                   }`} />
 
                   <div className="text-[9.5px]">
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-550 font-extrabold">{step.time}</span>
+                      <span className="text-muted-foreground/80 dark:text-slate-500 font-extrabold">{step.time}</span>
                       <span className={`text-[8px] font-black px-1 rounded ${
-                        step.severity === "CRITICAL" ? "bg-red-950/40 text-red-400" : step.severity === "HIGH" ? "bg-amber-950/20 text-amber-500" : "bg-cyan-950 text-cyan-400"
+                        step.severity === "CRITICAL" ? "bg-red-500/10 dark:bg-red-955 text-red-650 dark:text-red-400" : step.severity === "HIGH" ? "bg-amber-500/10 dark:bg-amber-955 text-amber-600 dark:text-amber-500" : "bg-cyan-500/10 dark:bg-cyan-955 text-cyan-600 dark:text-cyan-400"
                       }`}>{step.severity}</span>
-                      <strong className="text-slate-100 uppercase tracking-tight font-black">{step.event}</strong>
+                      <strong className="text-foreground dark:text-slate-100 uppercase tracking-tight font-black">{step.event}</strong>
                     </div>
-                    <p className="text-[10px] font-sans text-slate-400 mt-0.5 leading-normal max-w-120">
+                    <p className="text-[10px] font-sans text-muted-foreground dark:text-slate-300 mt-0.5 leading-normal max-w-120">
                       {step.desc}
                     </p>
                   </div>
@@ -515,35 +515,35 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
             </div>
           </div>
 
-          <div className="bg-slate-900/60 p-2 rounded text-[8.5px] text-slate-500 mt-2">
+          <div className="bg-secondary dark:bg-slate-900/60 p-2 rounded text-[8.5px] text-muted-foreground dark:text-slate-500 mt-2">
             Chronological stages mapped dynamically using multi-vector Zeek correlations.
           </div>
         </div>
 
         {/* Hour heatmap grid */}
-        <div className="lg:col-span-5 bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-xs">
-          <div className="flex items-center gap-1.5 mb-2 border-b border-slate-900 pb-1.5">
-            <Grid className="w-4 h-4 text-purple-400" />
-            <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+        <div className="lg:col-span-5 bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-xs">
+          <div className="flex items-center gap-1.5 mb-2 border-b border-border dark:border-slate-900 pb-1.5">
+            <Grid className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+            <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
               SERVICE ACTIVITY HEATMAP (HOUR VS SERVICE)
             </h3>
           </div>
-          <p className="text-[9.5px] text-slate-400 pb-2 leading-normal font-sans">
+          <p className="text-[9.5px] text-muted-foreground dark:text-slate-400 pb-2 leading-normal font-sans">
             Saturated boxes indicate heavy packet volume metrics over specific hour ranges. Uncovers midnight probes or sweep campaigns instantly.
           </p>
 
           <div className="grid grid-cols-5 gap-1 pt-1.5 font-mono text-[8.5px] font-bold">
             {/* Header row slots */}
-            <div className="text-slate-500 uppercase font-black">Service</div>
-            <div className="text-center text-slate-500">Night</div>
-            <div className="text-center text-slate-500">Morn</div>
-            <div className="text-center text-slate-500">After</div>
-            <div className="text-center text-slate-500">Even</div>
+            <div className="text-muted-foreground dark:text-slate-500 uppercase font-black">Service</div>
+            <div className="text-center text-muted-foreground dark:text-slate-500">Night</div>
+            <div className="text-center text-muted-foreground dark:text-slate-500">Morn</div>
+            <div className="text-center text-muted-foreground dark:text-slate-500">After</div>
+            <div className="text-center text-muted-foreground dark:text-slate-500">Even</div>
 
             {/* Matrix Data */}
             {serviceHeatmapGrid.map((row, id) => (
               <React.Fragment key={id}>
-                <div className="text-slate-400 py-1.5 border-b border-slate-900/40 truncate" title={row.service}>
+                <div className="text-foreground/90 dark:text-slate-400 py-1.5 border-b border-border/40 dark:border-slate-900/40 truncate" title={row.service}>
                   {row.service}
                 </div>
                 <div className={`p-1 text-center font-bold border rounded-xs transition-colors ${getHeatmapColor(row.slot0)}`}>
@@ -566,10 +566,10 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
       </div>
 
       {/* ROW 4: MITRE ATT&CK NETWORK MAPPING */}
-      <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-xs">
-        <div className="flex items-center gap-1.5 border-b border-slate-900 pb-1.5 mb-3">
+      <div className="bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-xs">
+        <div className="flex items-center gap-1.5 border-b border-border dark:border-slate-900 pb-1.5 mb-3">
           <ShieldAlert className="w-4 h-4 text-red-500 animate-pulse" />
-          <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+          <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
             MITRE ATT&CK MATRIX MAPPING REFERENCE BOARD
           </h3>
         </div>
@@ -585,15 +585,15 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
                 onClick={() => setSelectedMitre(isSelected ? null : mitre.code)}
                 className={`p-3.5 rounded border text-[10px] cursor-pointer text-center flex flex-col justify-between transition-all select-none ${
                   isSelected 
-                    ? "bg-red-500/10 border-red-500 text-red-400 shadow-md scale-[1.01]" 
-                    : "bg-slate-900/45 border-slate-900 text-slate-350 hover:bg-slate-900 hover:border-slate-800"
+                    ? "bg-red-500/10 border-red-500 text-rose-600 dark:text-red-400 shadow-md scale-[1.01]" 
+                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary dark:bg-slate-900/45 dark:border-slate-900 dark:text-slate-350 dark:hover:bg-slate-900 dark:hover:border-slate-800"
                 }`}
               >
                 <div>
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">{mitre.tier}</span>
-                  <span className="font-extrabold uppercase text-slate-200 block mt-1 tracking-tight">{mitre.mappedAttack}</span>
+                  <span className="text-[8px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest block">{mitre.tier}</span>
+                  <span className="font-extrabold uppercase text-foreground dark:text-slate-200 block mt-1 tracking-tight">{mitre.mappedAttack}</span>
                 </div>
-                <div className="mt-2 text-rose-450 font-black tracking-wider border-t border-slate-800 pt-1.5">
+                <div className="mt-2 text-rose-605 dark:text-rose-450 font-black tracking-wider border-t border-border dark:border-slate-800 pt-1.5">
                   MITRE ID: {mitre.code}
                 </div>
               </div>
@@ -603,23 +603,23 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
 
         {/* Selected Mapped Detail Drawer */}
         {activeMitreDetail && (
-          <div className="mt-4 p-4 bg-slate-900 border border-slate-850 rounded text-[10px] space-y-2 animate-fade-in line-clamp-none font-mono">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-              <span className="text-red-450 font-extrabold flex items-center gap-1">
+          <div className="mt-4 p-4 bg-muted dark:bg-slate-900 border border-border dark:border-slate-855 rounded text-[10px] space-y-2 animate-fade-in line-clamp-none font-mono">
+            <div className="flex items-center justify-between border-b border-border dark:border-slate-800 pb-1.5">
+              <span className="text-red-650 dark:text-red-455 font-extrabold flex items-center gap-1">
                 <Info size={13} /> {activeMitreDetail.code}: {activeMitreDetail.name} — ({activeMitreDetail.tier.toUpperCase()})
               </span>
               <button 
                 onClick={() => setSelectedMitre(null)}
-                className="text-[8.5px] text-slate-500 hover:text-slate-300 uppercase cursor-pointer"
+                className="text-[8.5px] text-muted-foreground dark:text-slate-505 hover:text-foreground dark:hover:text-slate-300 uppercase cursor-pointer"
               >
                 Close Box
               </button>
             </div>
             
-            <p className="text-slate-300 leading-relaxed font-sans mt-1">
+            <p className="text-foreground/90 dark:text-slate-300 leading-relaxed font-sans mt-1">
               <strong>Technical Details:</strong> {activeMitreDetail.details}
             </p>
-            <p className="text-emerald-400 font-sans leading-relaxed">
+            <p className="text-emerald-700 dark:text-emerald-400 font-sans leading-relaxed">
               <strong>Mitigation Playbook:</strong> {activeMitreDetail.mitigation}
             </p>
           </div>

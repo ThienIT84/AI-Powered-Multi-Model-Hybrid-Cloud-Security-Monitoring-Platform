@@ -341,21 +341,21 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
   };
 
   return (
-    <div className="space-y-6 text-slate-100 font-mono text-[11px]" id="attack-replay-campaign-panel-root">
+    <div className="space-y-6 text-foreground dark:text-slate-100 font-mono text-[11px]" id="attack-replay-campaign-panel-root">
       
       {/* SECTION ROW 1: CONNECTION STATE ANALYTICS & PIE DISPATCH */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* State counts pie chart */}
-        <div className="lg:col-span-4 bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center gap-1.5 border-b border-slate-900 pb-2 mb-3">
-            <Activity className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+        <div className="lg:col-span-4 bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-1.5 border-b border-border dark:border-slate-900 pb-2 mb-3">
+            <Activity className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+            <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
               ZEEK CONN_STATE ANALYTICS
             </h3>
           </div>
 
-          <p className="text-[9.5px] text-slate-400 font-sans leading-normal">
+          <p className="text-[9.5px] text-muted-foreground dark:text-slate-400 font-sans leading-normal">
             Distribution of connection flags mapping standard TCP states: <strong>SF (Normal)</strong>, <strong>S0 (SYN Probe)</strong>, <strong>REJ (Scanning)</strong>, <strong>RSTO (Reset)</strong>. Click a slice to isolate logs.
           </p>
 
@@ -393,11 +393,11 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
           </div>
 
           {/* Color Index grid */}
-          <div className="grid grid-cols-3 gap-y-1.5 text-[8.5px] font-bold text-slate-500 uppercase pb-1 justify-center max-w-sm mx-auto border-t border-slate-900/40 pt-2 text-center">
+          <div className="grid grid-cols-3 gap-y-1.5 text-[8.5px] font-bold text-muted-foreground dark:text-slate-500 uppercase pb-1 justify-center max-w-sm mx-auto border-t border-border/40 dark:border-slate-900/40 pt-2 text-center">
             {connectionStateData.map((st, idx) => (
               <div 
                 key={idx} 
-                className={`flex items-center gap-1.5 justify-center cursor-pointer py-0.5 rounded ${st.name === selectedConnState ? "bg-slate-900 text-slate-200" : ""}`}
+                className={`flex items-center gap-1.5 justify-center cursor-pointer py-0.5 rounded ${st.name === selectedConnState ? "bg-secondary dark:bg-slate-900 text-foreground dark:text-slate-200" : ""}`}
                 onClick={() => setSelectedConnState(selectedConnState === st.name ? null : st.name)}
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: st.color }} />
@@ -408,19 +408,19 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
         </div>
 
         {/* Dynamic Connected isolated Logs tables */}
-        <div className="lg:col-span-8 bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-8 bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-3">
-              <span className="text-xs font-black text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
-                <Network className="w-4 h-4 text-cyan-405" />
-                Isolated State logs Explorer: <strong className="text-cyan-400 font-mono">{selectedConnState || "ALL STACK"}</strong>
+            <div className="flex items-center justify-between border-b border-border dark:border-slate-900 pb-2 mb-3">
+              <span className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest flex items-center gap-1.5">
+                <Network className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                Isolated State logs Explorer: <strong className="text-cyan-600 dark:text-cyan-400 font-mono">{selectedConnState || "ALL STACK"}</strong>
               </span>
-              <span className="text-[8.5px] uppercase font-bold text-slate-500">Live Workspace Filters</span>
+              <span className="text-[8.5px] uppercase font-bold text-muted-foreground dark:text-slate-500">Live Workspace Filters</span>
             </div>
 
-            <div className="overflow-x-auto max-h-42.5 border border-slate-900 rounded bg-slate-950/40 custom-scrollbar pr-1">
+            <div className="overflow-x-auto max-h-42.5 border border-border dark:border-slate-900 rounded bg-muted/20 dark:bg-slate-950/40 custom-scrollbar pr-1">
               <table className="w-full text-left font-mono">
-                <thead className="bg-slate-900 sticky top-0 z-10 text-[8px] uppercase font-bold text-slate-500 border-b border-slate-900">
+                <thead className="bg-secondary dark:bg-slate-900 sticky top-0 z-10 text-[8px] uppercase font-bold text-muted-foreground dark:text-slate-500 border-b border-border dark:border-slate-900">
                   <tr>
                     <th className="px-3 py-1.5">UID</th>
                     <th className="px-3 py-1.5">Timestamp</th>
@@ -431,10 +431,10 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
                     <th className="px-3 py-1.5 text-right">Security Verdict</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-900/35 text-[9px]">
+                <tbody className="divide-y divide-border/30 dark:divide-slate-900/35 text-[9px]">
                   {(!selectedConnState ? logs.slice(0, 10) : connectionStateLogs).length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-3 py-8 text-center text-slate-500 italic">
+                      <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground dark:text-slate-500 italic">
                         No active flows stored under selected connection state. Move slider or inject packets.
                       </td>
                     </tr>
@@ -443,20 +443,20 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
                       <tr 
                         key={l.id} 
                         onClick={() => onSelectFlow && onSelectFlow(l)}
-                        className="hover:bg-slate-900/40 cursor-pointer text-slate-350"
+                        className="hover:bg-secondary/50 dark:hover:bg-slate-900/40 cursor-pointer text-muted-foreground dark:text-slate-350"
                       >
-                        <td className="px-3 py-1.5 font-extrabold text-slate-400">{l.id}</td>
+                        <td className="px-3 py-1.5 font-extrabold text-muted-foreground dark:text-slate-400">{l.id}</td>
                         <td className="px-3 py-1.5">{l.timestamp}</td>
-                        <td className="px-3 py-1.5 font-bold text-slate-200">{l.srcIp}:{l.srcPort}</td>
-                        <td className="px-3 py-1.5 text-slate-200">{l.destIp}:{l.destPort}</td>
+                        <td className="px-3 py-1.5 font-bold text-foreground dark:text-slate-200">{l.srcIp}:{l.srcPort}</td>
+                        <td className="px-3 py-1.5 text-foreground/90 dark:text-slate-200">{l.destIp}:{l.destPort}</td>
                         <td className="px-3 py-1.5">
-                          <span className="bg-slate-900 border border-slate-800 px-1 py-0.2 rounded font-black text-[8px]">
+                          <span className="bg-muted dark:bg-slate-900 border border-border dark:border-slate-800 px-1 py-0.2 rounded font-black text-[8px] text-foreground dark:text-slate-200">
                             {l.protocol}
                           </span>
                         </td>
-                        <td className="px-3 py-1.5 text-center font-bold text-slate-100">{l.threatScore}%</td>
+                        <td className="px-3 py-1.5 text-center font-bold text-foreground dark:text-slate-100">{l.threatScore}%</td>
                         <td className="px-3 py-1.5 text-right font-extrabold">
-                          <span className={l.verdict === "ANOMALY" ? "text-red-400 border border-red-500/10 px-1 py-0.2 rounded" : "text-emerald-500"}>
+                          <span className={l.verdict === "ANOMALY" ? "text-red-650 dark:text-red-400 border border-red-500/20 px-1 py-0.2 rounded" : "text-emerald-600 dark:text-emerald-400"}>
                             {l.verdict}
                           </span>
                         </td>
@@ -468,7 +468,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
             </div>
           </div>
 
-          <div className="text-[8.5px] text-slate-500 uppercase flex justify-between pt-2 border-t border-slate-900/40 mt-2">
+          <div className="text-[8.5px] text-muted-foreground dark:text-slate-500 uppercase flex justify-between pt-2 border-t border-border/40 dark:border-slate-900/40 mt-2">
             <span>Displaying {(!selectedConnState ? logs.slice(0, 10) : connectionStateLogs).length} logs</span>
             <span>Click slice in left diagram to toggle isolating state triggers</span>
           </div>
@@ -477,24 +477,24 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
       </div>
 
       {/* SECTION ROW 2: ATTACK CAMPAIGN DETECTION */}
-      <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm space-y-3.5" id="campaign-detection-subpanel">
-        <div className="flex items-center justify-between border-b border-slate-900 pb-2.5">
+      <div className="bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-sm space-y-3.5" id="campaign-detection-subpanel">
+        <div className="flex items-center justify-between border-b border-border dark:border-slate-900 pb-2.5">
           <div className="flex items-center gap-1.5">
             <Flame className="w-5 h-5 text-red-500 animate-pulse" />
             <div>
-              <span className="text-[9px] text-slate-500 font-bold block uppercase tracking-widest leading-none">MULTI-HOP ALERT CORRELATION SUMMARY</span>
-              <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+              <span className="text-[9px] text-muted-foreground dark:text-slate-500 font-bold block uppercase tracking-widest leading-none">MULTI-HOP ALERT CORRELATION SUMMARY</span>
+              <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
                 ATTACK CAMPAIGN DETECTOR
               </h3>
             </div>
           </div>
-          <span className="text-[8.5px] text-slate-550 italic uppercase font-black">Zeek ➔ AI ➔ Suricata Fusion map</span>
+          <span className="text-[8.5px] text-muted-foreground/80 dark:text-slate-400 italic uppercase font-black">Zeek ➔ AI ➔ Suricata Fusion map</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Campaigns lists columns */}
           <div className="lg:col-span-5 space-y-1.5">
-            <span className="text-[8.5px] font-bold text-slate-500 uppercase pr-1 block leading-none mb-1">REGISTERED ATTACK CAMPAIGNS</span>
+            <span className="text-[8.5px] font-bold text-muted-foreground dark:text-slate-500 uppercase pr-1 block leading-none mb-1">REGISTERED ATTACK CAMPAIGNS</span>
             
             {campaigns.map((camp) => {
               const isSelected = camp.id === selectedCampaignId;
@@ -505,18 +505,18 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
                   onClick={() => setSelectedCampaignId(isSelected ? null : camp.id)}
                   className={`p-3 border rounded-lg hover:border-red-500/35 cursor-pointer transition-all flex justify-between items-center group ${
                     isSelected 
-                      ? "bg-red-500/3 border-red-500/40 text-red-400 shadow-sm" 
-                      : "bg-slate-900/40 border-slate-900 text-slate-350"
+                      ? "bg-red-500/3 border-red-500/40 text-rose-600 dark:text-red-400 shadow-sm" 
+                      : "bg-secondary/40 dark:bg-slate-900/40 border-border dark:border-slate-900 text-muted-foreground dark:text-slate-350"
                   }`}
                 >
                   <div>
-                    <span className="text-[8.5px] font-black uppercase text-slate-500 tracking-wider">Campaign ID: {camp.id}</span>
-                    <h4 className="font-extrabold uppercase text-slate-200 group-hover:text-red-400 mt-0.5 leading-snug">{camp.name}</h4>
-                    <span className="text-[8px] text-slate-450 mt-1 block">Stages: {camp.stagesCount} • Active for: {camp.duration}</span>
+                    <span className="text-[8.5px] font-black uppercase text-muted-foreground dark:text-slate-500 tracking-wider">Campaign ID: {camp.id}</span>
+                    <h4 className="font-extrabold uppercase text-foreground dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-red-400 mt-0.5 leading-snug">{camp.name}</h4>
+                    <span className="text-[8px] text-muted-foreground/85 dark:text-slate-400 mt-1 block">Stages: {camp.stagesCount} • Active for: {camp.duration}</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-black text-rose-450 text-[11px] block">{camp.risk}/100</span>
-                    <span className="text-[8.5px] text-slate-500 font-bold">{camp.relatedFlowCount} mapped logs</span>
+                    <span className="font-black text-rose-600 dark:text-rose-400 text-[11px] block">{camp.risk}/100</span>
+                    <span className="text-[8.5px] text-muted-foreground dark:text-slate-500 font-bold">{camp.relatedFlowCount} mapped logs</span>
                   </div>
                 </div>
               );
@@ -526,42 +526,42 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
           {/* Chronological reconstruction visualizer */}
           <div className="lg:col-span-7">
             {activeCampaignDetails ? (
-              <div className="bg-slate-900/25 border border-slate-850 p-4 rounded-lg space-y-3.5 animate-fade-in line-clamp-none">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-1.5 text-[9px] uppercase font-bold text-slate-500">
+              <div className="bg-secondary/10 dark:bg-slate-900/25 border border-border dark:border-slate-850/60 p-4 rounded-lg space-y-3.5 animate-fade-in line-clamp-none">
+                <div className="flex items-center justify-between border-b border-border dark:border-slate-800 pb-2 mb-1.5 text-[9px] uppercase font-bold text-muted-foreground dark:text-slate-500">
                   <span>CHRONOLOGICAL CAMPAIGN STAGES RECONSTRUCTION</span>
-                  <span className="text-red-450 font-black">RISK SCORE: {activeCampaignDetails.risk}%</span>
+                  <span className="text-rose-600 dark:text-rose-400 font-black">RISK SCORE: {activeCampaignDetails.risk}%</span>
                 </div>
 
-                <div className="relative border-l-2 border-slate-800 ml-3 pl-5 space-y-3.5 pt-1 pb-1">
+                <div className="relative border-l-2 border-border dark:border-slate-850 ml-3 pl-5 space-y-3.5 pt-1 pb-1">
                   {activeCampaignDetails.stages.map((st) => (
                     <div key={st.stageIndex} className="relative text-[10px]">
                       {/* Stage marker bullet */}
-                      <span className={`absolute -left-6.5 top-1.5 w-2 h-2 rounded-full border border-slate-900 ${
+                      <span className={`absolute -left-6.5 top-1.5 w-2 h-2 rounded-full border border-border dark:border-slate-900 ${
                         st.severity === "CRITICAL" ? "bg-red-500 ring-2 ring-red-500/10" : st.severity === "HIGH" ? "bg-amber-500" : "bg-cyan-500"
                       }`} />
 
                       <div className="flex flex-wrap items-baseline gap-2 leading-none">
-                        <span className="text-slate-550 font-bold text-[8.5px]">{st.time}</span>
+                        <span className="text-muted-foreground/70 dark:text-slate-500 font-bold text-[8.5px]">{st.time}</span>
                         <span className={`text-[7.5px] font-black uppercase px-0.8 rounded ${
-                          st.severity === "CRITICAL" ? "bg-red-950 text-red-400" : st.severity === "HIGH" ? "bg-amber-950/20 text-amber-500" : "bg-cyan-950 text-cyan-400"
+                          st.severity === "CRITICAL" ? "bg-red-500/10 dark:bg-red-950 text-red-605 dark:text-red-400" : st.severity === "HIGH" ? "bg-amber-500/10 dark:bg-amber-955 text-amber-600 dark:text-amber-500" : "bg-cyan-500/10 dark:bg-cyan-950 text-cyan-600 dark:text-cyan-400"
                         }`}>{st.severity}</span>
-                        <strong className="text-slate-200 font-extrabold font-mono text-[10.5px]">{st.title}</strong>
+                        <strong className="text-foreground dark:text-slate-200 font-extrabold font-mono text-[10.5px]">{st.title}</strong>
                       </div>
                       
-                      <p className="text-[10px] font-sans text-slate-450 mt-1 leading-normal max-w-125">
+                      <p className="text-[10px] font-sans text-muted-foreground dark:text-slate-400 mt-1 leading-normal max-w-125">
                         {st.description}
                       </p>
 
-                      <div className="text-[8px] text-slate-550 mt-1 uppercase font-bold">
-                        Playbook Action: <span className="text-cyan-455 font-mono">{st.mitigationPlaybook}</span>
+                      <div className="text-[8px] text-muted-foreground dark:text-slate-550 mt-1 uppercase font-bold">
+                        Playbook Action: <span className="text-cyan-600 dark:text-cyan-400 font-mono">{st.mitigationPlaybook}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-900/10 border border-slate-900 border-dashed rounded-lg p-10 text-center text-slate-600 flex flex-col items-center justify-center gap-2 h-full min-h-52.5">
-                <Layers size={22} className="text-slate-800 animate-pulse" />
+              <div className="bg-secondary/15 dark:bg-slate-900/10 border border-border dark:border-slate-900 border-dashed rounded-lg p-10 text-center text-muted-foreground/80 dark:text-slate-500 flex flex-col items-center justify-center gap-2 h-full min-h-52.5">
+                <Layers size={22} className="text-muted-foreground/60 dark:text-slate-750 animate-pulse" />
                 <span>SELECT AN ATTACK CAMPAIGN TO DECONSTRUCT ITS MULTI-STAGE RECONSTRUCTION MAP & ASSOCIATED ZEEK CORRELATIONS.</span>
               </div>
             )}
@@ -570,18 +570,18 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
       </div>
 
       {/* SECTION ROW 3: SANBOXED ATTACK REPLAY PLAYBACK CONTROLLER */}
-      <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm space-y-3.5" id="sandbox-attack-replay-panel">
-        <div className="flex items-center justify-between border-b border-slate-900 pb-2.5">
+      <div className="bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-sm space-y-3.5" id="sandbox-attack-replay-panel">
+        <div className="flex items-center justify-between border-b border-border dark:border-slate-900 pb-2.5">
           <div className="flex items-center gap-1.5 ">
-            <SkipForward className="w-5 h-5 text-indigo-400" />
+            <SkipForward className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <div>
-              <span className="text-[9px] text-slate-500 font-bold block uppercase tracking-widest leading-none">FORENSIC DRILLS INTRUDER SANDBOX COCKPIT</span>
-              <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+              <span className="text-[9px] text-muted-foreground dark:text-slate-500 font-bold block uppercase tracking-widest leading-none">FORENSIC DRILLS INTRUDER SANDBOX COCKPIT</span>
+              <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
                 ATTACK REPLAY CENTER
               </h3>
             </div>
           </div>
-          <span className="text-[8.5px] text-slate-550 font-bold uppercase">Incident Playback console</span>
+          <span className="text-[8.5px] text-muted-foreground dark:text-slate-500 font-bold uppercase">Incident Playback console</span>
         </div>
 
         {/* Dashboard control selectors */}
@@ -589,7 +589,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
           {/* Select scenarios columns */}
           <div className="lg:col-span-1 space-y-1.5 flex flex-col justify-between">
             <div>
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block leading-none mb-1.5">REPLAY SCENARIO CHANNELS</span>
+              <span className="text-[8px] font-black text-muted-foreground dark:text-slate-500 uppercase tracking-widest block leading-none mb-1.5">REPLAY SCENARIO CHANNELS</span>
               <div className="space-y-1.5 text-[10px]">
                 {playbooks.map((p) => {
                   const isCur = p.id === activeReplayId;
@@ -597,12 +597,12 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
                     <div 
                       key={p.id}
                       onClick={() => handleStartReplay(p.id)}
-                      className={`p-2 rounded border border-slate-900 hover:border-slate-800 cursor-pointer text-slate-350 hover:bg-slate-900/60 transition-colors ${
-                        isCur ? "bg-slate-900/80 border-indigo-500/30 text-indigo-400" : ""
+                      className={`p-2 rounded border border-border dark:border-slate-900 hover:border-border/80 dark:hover:border-slate-800 cursor-pointer text-muted-foreground dark:text-slate-350 hover:bg-secondary/40 dark:hover:bg-slate-900/60 transition-colors ${
+                        isCur ? "bg-secondary dark:bg-slate-900/80 border-indigo-500/40 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400" : ""
                       }`}
                     >
-                      <strong className="block text-slate-200 text-[10.5px] truncate">{p.name}</strong>
-                      <span className="text-[8px] text-slate-500 uppercase block mt-0.5">{p.steps.length} sequential steps</span>
+                      <strong className="block text-foreground dark:text-slate-200 text-[10.5px] truncate">{p.name}</strong>
+                      <span className="text-[8px] text-muted-foreground dark:text-slate-500 uppercase block mt-0.5">{p.steps.length} sequential steps</span>
                     </div>
                   );
                 })}
@@ -611,22 +611,22 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
 
             {/* Playback parameters console */}
             {activePlaybook && (
-              <div className="bg-slate-900/30 border border-slate-900 p-2.5 rounded text-[10px] space-y-2 mt-2">
-                <span className="text-[8.5px] font-black text-slate-450 uppercase block tracking-wider leading-none">Console dashboard</span>
+              <div className="bg-muted/30 dark:bg-slate-900/30 border border-border dark:border-slate-900 p-2.5 rounded text-[10px] space-y-2 mt-2">
+                <span className="text-[8.5px] font-black text-muted-foreground dark:text-slate-400 uppercase block tracking-wider leading-none">Console dashboard</span>
                 
                 <div className="flex items-center justify-between gap-1.5">
-                  <span className="text-slate-500">Play/Pause:</span>
+                  <span className="text-muted-foreground dark:text-slate-500">Play/Pause:</span>
                   <div className="flex gap-1">
                     <button 
                       onClick={handleTogglePlay}
-                      className="p-1 rounded bg-slate-950 hover:bg-slate-900 text-indigo-400 border border-slate-800 cursor-pointer transition-colors"
+                      className="p-1 rounded bg-background dark:bg-slate-950 hover:bg-secondary dark:hover:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-border dark:border-slate-800 cursor-pointer transition-colors"
                       title={isPlaying ? "Pause scenario" : "Proceed scenario"}
                     >
                       {isPlaying ? <Pause size={12} /> : <Play size={12} className="fill-current" />}
                     </button>
                     <button 
                       onClick={handleResetReplay}
-                      className="p-1 rounded bg-slate-950 hover:bg-slate-900 text-slate-450 border border-slate-800 cursor-pointer transition-colors"
+                      className="p-1 rounded bg-background dark:bg-slate-950 hover:bg-secondary dark:hover:bg-slate-900 text-muted-foreground dark:text-slate-400 border border-border dark:border-slate-800 cursor-pointer transition-colors"
                       title="Reset scenario tracker"
                     >
                       <RotateCcw size={12} />
@@ -635,13 +635,13 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Playback Speed:</span>
-                  <div className="flex gap-1 text-[8px] font-extrabold uppercase text-slate-450 bg-slate-950 p-0.5 rounded border border-slate-900">
+                  <span className="text-muted-foreground dark:text-slate-500">Playback Speed:</span>
+                  <div className="flex gap-1 text-[8px] font-extrabold uppercase text-muted-foreground dark:text-slate-450 bg-background dark:bg-slate-950 p-0.5 rounded border border-border dark:border-slate-900">
                     {([1, 2, 4, 8] as const).map((spd) => (
                       <button 
                         key={spd}
                         onClick={() => setReplaySpeed(spd)}
-                        className={`px-1 py-0.2 rounded cursor-pointer ${replaySpeed === spd ? "bg-indigo-950 text-indigo-400" : "hover:text-slate-200"}`}
+                        className={`px-1 py-0.2 rounded cursor-pointer ${replaySpeed === spd ? "bg-indigo-500/10 dark:bg-indigo-955 text-indigo-600 dark:text-indigo-400" : "hover:text-foreground dark:hover:text-slate-200"}`}
                       >
                         {spd}x
                       </button>
@@ -649,7 +649,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
                   </div>
                 </div>
 
-                <div className="text-[8.5px] text-slate-500 text-center leading-none uppercase pt-1 border-t border-slate-9d0/30">
+                <div className="text-[8.5px] text-muted-foreground dark:text-slate-500 text-center leading-none uppercase pt-1 border-t border-border/30 dark:border-slate-900/30">
                   Step {currentStepIndex + 1} of {activePlaybook.steps.length} loaded
                 </div>
               </div>
@@ -657,29 +657,29 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
           </div>
 
           {/* Active play step output timeline logs */}
-          <div className="lg:col-span-3 bg-slate-900/32 border border-slate-900 p-3.5 rounded-lg flex flex-col justify-between h-47.5">
+          <div className="lg:col-span-3 bg-muted/40 dark:bg-slate-900/30 border border-border dark:border-slate-900 p-3.5 rounded-lg flex flex-col justify-between h-47.5">
             <div>
-              <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 pb-1.5 mb-1.5 flex justify-between">
+              <div className="text-[8px] font-bold text-muted-foreground dark:text-slate-500 uppercase tracking-widest border-b border-border dark:border-slate-805 pb-1.5 mb-1.5 flex justify-between">
                 <span>REPLAY OUTPUT INJECTION TIMELINE LOG</span>
-                {isPlaying && <span className="text-indigo-400 animate-pulse font-black uppercase">🌟 STREAM_REPLAYING ACTIVE ({replaySpeed}x)</span>}
+                {isPlaying && <span className="text-indigo-600 dark:text-indigo-400 animate-pulse font-black uppercase">🌟 STREAM_REPLAYING ACTIVE ({replaySpeed}x)</span>}
               </div>
 
               <div className="space-y-1.5 max-h-30 overflow-y-auto custom-scrollbar pr-1">
                 {replayHistory.length === 0 ? (
-                  <div className="text-slate-500 italic text-[9px] py-8 text-center">
+                  <div className="text-muted-foreground dark:text-slate-500 italic text-[9px] py-8 text-center">
                     Cockpit idle. Select a playbook scenario channel to left to launch dry-run simulation testing.
                   </div>
                 ) : (
                   replayHistory.map((h, id) => (
-                    <div key={id} className="bg-slate-950/70 p-1.5 rounded border border-slate-900 flex items-center justify-between text-[9px] font-mono leading-none">
+                    <div key={id} className="bg-background/80 dark:bg-slate-950/70 p-1.5 rounded border border-border dark:border-slate-900 flex items-center justify-between text-[9px] font-mono leading-none">
                       <div>
-                        <span className="font-bold text-indigo-400">{h.time}</span>
-                        <span className="text-slate-500 ml-2 font-black">{h.uid}</span>
-                        <span className="text-slate-200 ml-2">{h.payload}</span>
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">{h.time}</span>
+                        <span className="text-muted-foreground dark:text-slate-500 ml-2 font-black">{h.uid}</span>
+                        <span className="text-foreground/90 dark:text-slate-200 ml-2">{h.payload}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-red-405 font-black">{h.score}% Risk</span>
-                        <span className="bg-red-955 text-red-400 border border-red-500/10 px-1 py-0.2 rounded font-black text-[7.5px]">{h.verdict}</span>
+                        <span className="text-red-650 dark:text-red-400 font-black">{h.score}% Risk</span>
+                        <span className="bg-red-500/10 dark:bg-red-950 text-red-650 dark:text-red-400 border border-red-500/20 px-1 py-0.2 rounded font-black text-[7.5px]">{h.verdict}</span>
                       </div>
                     </div>
                   ))
@@ -687,9 +687,9 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
               </div>
             </div>
 
-            <div className="bg-slate-950 text-[8px] text-slate-500 py-1.5 px-2 border border-slate-900 rounded uppercase flex justify-between leading-none items-center mt-2">
+            <div className="bg-background dark:bg-slate-950 text-[8px] text-muted-foreground dark:text-slate-500 py-1.5 px-2 border border-border dark:border-slate-900 rounded uppercase flex justify-between leading-none items-center mt-2">
               <span>Simulated telemetry packets bypass network pipes and inject straight into AI1 models memory</span>
-              <span className="text-cyan-405 font-extrabold font-mono">Sandbox Testbed</span>
+              <span className="text-cyan-600 dark:text-cyan-400 font-extrabold font-mono">Sandbox Testbed</span>
             </div>
           </div>
         </div>

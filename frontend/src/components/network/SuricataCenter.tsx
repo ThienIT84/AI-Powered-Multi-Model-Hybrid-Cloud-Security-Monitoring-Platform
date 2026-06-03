@@ -151,34 +151,34 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
   }, [selectedRuleId, logs, activeRuleDetails]);
 
   return (
-    <div className="bg-slate-950 border border-slate-900 rounded-lg p-4 shadow-sm text-slate-100 font-mono space-y-4 text-[11px]" id="suricata-center-root">
+    <div className="bg-card dark:bg-slate-950 border border-border dark:border-slate-900 rounded-lg p-4 shadow-sm text-foreground dark:text-slate-100 font-mono space-y-4 text-[11px]" id="suricata-center-root">
       {/* Header bar */}
-      <div className="flex items-center justify-between border-b border-slate-900 pb-3">
+      <div className="flex items-center justify-between border-b border-border dark:border-slate-900 pb-3">
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-rose-500 animate-pulse" />
           <div>
-            <span className="text-[9px] text-slate-500 font-bold block uppercase tracking-widest leading-none">SIGNATURE IDS CORRELATION SYSTEM</span>
-            <h3 className="text-xs font-black text-slate-200 uppercase tracking-widest">
+            <span className="text-[9px] text-muted-foreground dark:text-slate-500 font-bold block uppercase tracking-widest leading-none">SIGNATURE IDS CORRELATION SYSTEM</span>
+            <h3 className="text-xs font-black text-foreground dark:text-slate-200 uppercase tracking-widest">
               SURICATA EVIDENCE ANALYSIS CENTER
             </h3>
           </div>
         </div>
-        <div className="text-[9.5px] text-slate-500 leading-none">
-          Rule-database references checked on <span className="text-rose-450 font-black">Zeek feeds</span>
+        <div className="text-[9.5px] text-muted-foreground dark:text-slate-500 leading-none">
+          Rule-database references checked on <span className="text-rose-600 dark:text-rose-450 font-black">Zeek feeds</span>
         </div>
       </div>
 
       {/* Filter Toolbar row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/40 p-2 rounded border border-slate-900 text-[10px]">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-secondary/40 dark:bg-slate-900/40 p-2 rounded border border-border dark:border-slate-900 text-[10px]">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-slate-600" />
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground dark:text-slate-600" />
           <input 
             type="text" 
             placeholder="Search Signature IP, Rules, Cate..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            className="pl-7 pr-2 py-1 bg-slate-950 border border-slate-800 rounded focus:outline-none focus:border-rose-500 text-slate-300 w-52 text-[10px]"
+            className="pl-7 pr-2 py-1.5 bg-background dark:bg-slate-950 border border-border dark:border-slate-800 rounded focus:outline-none focus:border-rose-500 text-foreground dark:text-slate-300 w-52 text-[10px]"
           />
         </div>
 
@@ -188,7 +188,7 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
           <select
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded py-1 px-1.5 text-slate-350 focus:outline-none focus:border-rose-500 cursor-pointer text-[10px]"
+            className="bg-background dark:bg-slate-955 border border-border dark:border-slate-800 rounded py-1.5 px-2 text-foreground dark:text-slate-300 focus:outline-none focus:border-rose-500 cursor-pointer text-[10px]"
           >
             <option value="ALL">ALL SEVERITIES</option>
             <option value="CRITICAL">CRITICAL</option>
@@ -200,7 +200,7 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded py-1 px-1.5 text-slate-350 focus:outline-none focus:border-rose-500 cursor-pointer text-[10px]"
+            className="bg-background dark:bg-slate-955 border border-border dark:border-slate-800 rounded py-1.5 px-2 text-foreground dark:text-slate-300 focus:outline-none focus:border-rose-500 cursor-pointer text-[10px]"
           >
             <option value="ALL">ALL CATEGORIES</option>
             <option value="Reconnaissance">Reconnaissance</option>
@@ -215,13 +215,13 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Signatures List Column */}
         <div className="lg:col-span-7 space-y-2">
-          <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest pl-1">
+          <div className="text-[9px] font-bold text-muted-foreground dark:text-slate-500 uppercase tracking-widest pl-1">
             DEPLOYED SIGNATURE ALERTS ({filteredRules.length} MATCHES)
           </div>
 
-          <div className="overflow-x-auto border border-slate-900 rounded bg-slate-950/40 custom-scrollbar max-h-72.5">
+          <div className="overflow-x-auto border border-border dark:border-slate-900 rounded bg-muted/20 dark:bg-slate-955/40 custom-scrollbar max-h-72.5">
             <table className="w-full text-left border-collapse truncate">
-              <thead className="bg-slate-900/80 text-[8.5px] uppercase font-bold text-slate-500 border-b border-slate-900">
+              <thead className="bg-secondary dark:bg-slate-900 text-[8.5px] uppercase font-bold text-muted-foreground dark:text-slate-500 border-b border-border dark:border-slate-900">
                 <tr>
                   <th className="px-3 py-2">Signature ID</th>
                   <th className="px-3 py-2">Rule Shorthand Name</th>
@@ -230,10 +230,10 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
                   <th className="px-3 py-2 text-right">Inferences</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-900/40 text-[9.5px]">
+              <tbody className="divide-y divide-border/30 dark:divide-slate-900/40 text-[9.5px]">
                 {filteredRules.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-slate-500 italic">
+                    <td colSpan={5} className="px-3 py-8 text-center text-muted-foreground dark:text-slate-500 italic">
                       No matching Suricata rules discovered.
                     </td>
                   </tr>
@@ -245,27 +245,27 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
                       <tr 
                         key={r.sigId}
                         onClick={() => setSelectedRuleId(isSelected ? null : r.sigId)}
-                        className={`hover:bg-slate-900/60 cursor-pointer transition-colors ${
-                          isSelected ? "bg-red-950/15" : ""
+                        className={`hover:bg-secondary/40 dark:hover:bg-slate-900/60 cursor-pointer transition-colors ${
+                          isSelected ? "bg-red-500/5 dark:bg-red-950/15" : ""
                         }`}
                       >
-                        <td className="px-3 py-2.5 text-slate-400 font-extrabold">{r.sigId}</td>
-                        <td className="px-3 py-2.5 font-bold text-slate-200 block max-w-52.5 truncate" title={r.ruleName}>
+                        <td className="px-3 py-2.5 text-muted-foreground dark:text-slate-400 font-extrabold">{r.sigId}</td>
+                        <td className="px-3 py-2.5 font-bold text-foreground dark:text-slate-200 block max-w-52.5 truncate" title={r.ruleName}>
                           {r.ruleName.replace("SURICATA ", "")}
                         </td>
-                        <td className="px-3 py-2.5 text-slate-450">{r.category}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground/80 dark:text-slate-400">{r.category}</td>
                         <td className="px-3 py-2.5 text-center">
                           <span className={`px-1 rounded text-[8.5px] font-black ${
                             r.severity === "CRITICAL" 
-                              ? "bg-red-950/40 text-red-400 border border-red-500/10 animate-pulse" 
+                              ? "bg-red-500/10 dark:bg-red-950/40 text-red-650 dark:text-red-400 border border-red-500/20 dark:border-red-500/10 animate-pulse" 
                               : r.severity === "HIGH" 
-                              ? "bg-orange-950 text-orange-400" 
-                              : "bg-blue-950 text-blue-400"
+                              ? "bg-orange-500/10 dark:bg-orange-950 text-orange-600 dark:text-orange-400" 
+                              : "bg-blue-500/10 dark:bg-blue-950 text-blue-600 dark:text-blue-400"
                           }`}>
                             {r.severity}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-right font-black text-rose-450">{r.matchedCount} triggers</td>
+                        <td className="px-3 py-2.5 text-right font-black text-rose-600 dark:text-rose-450">{r.matchedCount} triggers</td>
                       </tr>
                     );
                   })
@@ -278,56 +278,56 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
         {/* Selected Details expansion Column */}
         <div className="lg:col-span-5">
           {activeRuleDetails ? (
-            <div className="bg-slate-900/35 border border-slate-850 p-3.5 rounded-lg space-y-3.5 animate-fade-in text-[10.5px]">
+            <div className="bg-secondary/15 dark:bg-slate-900/35 border border-border dark:border-slate-850 p-3.5 rounded-lg space-y-3.5 animate-fade-in text-[10.5px]">
               <div>
-                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1 text-[9px] uppercase font-bold text-slate-500">
+                <div className="flex items-center justify-between border-b border-border dark:border-slate-800 pb-1.5 mb-1 text-[9px] uppercase font-bold text-muted-foreground dark:text-slate-500">
                   <span>SURICATA RULE DEFINITION</span>
-                  <span className="text-red-450">SIG# {activeRuleDetails.sigId}</span>
+                  <span className="text-rose-600 dark:text-red-450">SIG# {activeRuleDetails.sigId}</span>
                 </div>
-                <h4 className="font-extrabold text-slate-100 uppercase mt-1 leading-snug">{activeRuleDetails.ruleName}</h4>
+                <h4 className="font-extrabold text-foreground dark:text-slate-100 uppercase mt-1 leading-snug">{activeRuleDetails.ruleName}</h4>
               </div>
 
               <div className="space-y-1.5 text-[10px]">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Security Category:</span>
-                  <span className="font-bold text-slate-300">{activeRuleDetails.category}</span>
+                  <span className="text-muted-foreground dark:text-slate-500">Security Category:</span>
+                  <span className="font-bold text-foreground dark:text-slate-200">{activeRuleDetails.category}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Linked Incident:</span>
-                  <span className="font-bold text-amber-500">{activeRuleDetails.linkedInicident}</span>
+                  <span className="text-muted-foreground dark:text-slate-500">Linked Incident:</span>
+                  <span className="font-bold text-amber-600 dark:text-amber-500">{activeRuleDetails.linkedInicident}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">First / Last Seen:</span>
-                  <span className="font-mono text-slate-400">{activeRuleDetails.firstSeen} / {activeRuleDetails.lastSeen}</span>
+                  <span className="text-muted-foreground dark:text-slate-500">First / Last Seen:</span>
+                  <span className="font-mono text-muted-foreground dark:text-slate-400">{activeRuleDetails.firstSeen} / {activeRuleDetails.lastSeen}</span>
                 </div>
               </div>
 
               {/* Description */}
               <div className="space-y-1">
-                <span className="text-[8.5px] font-bold text-slate-500 uppercase tracking-widest block">Signature Description:</span>
-                <p className="bg-slate-950/90 p-2 border border-slate-900 rounded font-sans leading-normal text-slate-300 text-[10.5px]">
+                <span className="text-[8.5px] font-bold text-muted-foreground dark:text-slate-500 uppercase tracking-widest block">Signature Description:</span>
+                <p className="bg-background/80 dark:bg-slate-950/90 p-2 border border-border dark:border-slate-900 rounded font-sans leading-normal text-muted-foreground dark:text-slate-300 text-[10.5px]">
                   {activeRuleDetails.description}
                 </p>
               </div>
 
               {/* Rule Syntax Syntax */}
               <div className="space-y-1">
-                <span className="text-[8.5px] font-bold text-slate-500 uppercase tracking-widest block">Snort/Suricata Rule Code:</span>
-                <pre className="p-2 bg-black/80 rounded border border-slate-800 text-emerald-450 text-[9px] leading-tight select-all overflow-x-auto font-mono">
+                <span className="text-[8.5px] font-bold text-muted-foreground dark:text-slate-500 uppercase tracking-widest block">Snort/Suricata Rule Code:</span>
+                <pre className="p-2 bg-muted dark:bg-black/80 rounded border border-border dark:border-slate-800 text-emerald-650 dark:text-emerald-455 text-[9px] leading-tight select-all overflow-x-auto font-mono">
                   {activeRuleDetails.ruleSyntax}
                 </pre>
               </div>
 
               {/* MATCHED FLOWS DIRECT LIST */}
-              <div className="space-y-1.5 border-t border-slate-800 pt-3">
-                <div className="flex items-center justify-between text-[8px] font-bold text-slate-500 uppercase">
+              <div className="space-y-1.5 border-t border-border dark:border-slate-800 pt-3">
+                <div className="flex items-center justify-between text-[8px] font-bold text-muted-foreground dark:text-slate-500 uppercase">
                   <span>Matched Flows ({matchedFlows.length})</span>
                   <span>Click flow to Audit</span>
                 </div>
 
                 <div className="space-y-1 max-h-25 overflow-y-auto custom-scrollbar pr-1">
                   {matchedFlows.length === 0 ? (
-                    <span className="text-[9px] text-slate-650 italic block text-center py-2">
+                    <span className="text-[9px] text-muted-foreground dark:text-slate-500 italic block text-center py-2">
                       Injected parameters triggered signatures are not captured in active workspace logs.
                     </span>
                   ) : (
@@ -335,11 +335,11 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
                       <div 
                         key={flow.id} 
                         onClick={() => onSelectFlow && onSelectFlow(flow)}
-                        className="bg-slate-950/80 p-1.5 rounded border border-slate-900 flex justify-between items-center text-[9.5px] hover:border-red-500/30 cursor-pointer transition-colors"
+                        className="bg-background/80 dark:bg-slate-955/80 p-1.5 rounded border border-border dark:border-slate-900 flex justify-between items-center text-[9.5px] hover:border-red-500/30 cursor-pointer transition-colors"
                       >
-                        <span className="font-extrabold text-slate-400 font-mono text-[9px] truncate max-w-30">{flow.id}</span>
-                        <span className="text-slate-200 font-bold">{flow.srcIp} ➔ {flow.destIp}</span>
-                        <span className="text-red-400 font-bold font-mono">{flow.threatScore}%</span>
+                        <span className="font-extrabold text-muted-foreground dark:text-slate-400 font-mono text-[9px] truncate max-w-30">{flow.id}</span>
+                        <span className="text-foreground/90 dark:text-slate-200 font-bold">{flow.srcIp} ➔ {flow.destIp}</span>
+                        <span className="text-red-650 dark:text-red-400 font-bold font-mono">{flow.threatScore}%</span>
                       </div>
                     ))
                   )}
@@ -347,8 +347,8 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
               </div>
             </div>
           ) : (
-            <div className="bg-slate-900/10 border border-slate-900 border-dashed rounded-lg p-10 text-center text-slate-600 flex flex-col items-center justify-center gap-2 h-full min-h-72.5" id="suricata-center-fallback">
-              <TableProperties size={24} className="text-slate-800 animate-pulse" />
+            <div className="bg-secondary/15 dark:bg-slate-900/10 border border-border dark:border-slate-900 border-dashed rounded-lg p-10 text-center text-muted-foreground/80 dark:text-slate-550 flex flex-col items-center justify-center gap-2 h-full min-h-72.5" id="suricata-center-fallback">
+              <TableProperties size={24} className="text-muted-foreground/60 dark:text-slate-800 animate-pulse" />
               <span>SELECT A SURICATA SIGNATURE RULE ROW IN THE LEFT TABLE TO AUDIT ITS INTERNAL DETAILS AND MATCHED TELEMETRY FLOWS.</span>
             </div>
           )}
