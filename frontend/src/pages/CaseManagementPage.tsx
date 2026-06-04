@@ -111,6 +111,19 @@ export function CaseManagementPage() {
   const [caseTrend, setCaseTrend] = useState(CASE_TREND);
   const [resolutionTime, setResolutionTime] = useState(RESOLUTION_TIME);
   const [statusDist, setStatusDist] = useState(STATUS_DISTRIBUTION);
+  const [selectedKPI, setSelectedKPI] = useState<string | null>(null);
+
+  const handleKPIClick = (label: string) => {
+    setSelectedKPI(label === selectedKPI ? null : label);
+  };
+
+  const handleCaseClick = (caseId: string) => {
+    console.log(`Opening case details: ${caseId}`);
+  };
+
+  const handleFilterClick = () => {
+    console.log("Opening filters...");
+  };
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -200,14 +213,19 @@ export function CaseManagementPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
+              onClick={() => handleKPIClick(kpi.label)}
               className={cn(
-                "neon-card group border border-border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
+                "neon-card group border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
                 "hover:border-2 hover:scale-[1.02] cursor-pointer",
                 kpi.border.replace('border-', 'hover:border-'),
+                selectedKPI === kpi.label ? "border-2 border-opacity-100 scale-[1.02]" : "border-border",
                 neonClass
               )}
               style={{
-                boxShadow: `0 4px 12px rgba(0,0,0,0.03)`,
+                boxShadow: selectedKPI === kpi.label 
+                  ? `0 0 30px color-mix(in srgb, ${kpi.accentHex}, transparent 60%)` 
+                  : `0 4px 12px rgba(0,0,0,0.03)`,
+                borderColor: selectedKPI === kpi.label ? kpi.accentHex : undefined
               }}
               whileHover={{ 
                 boxShadow: `0 0 25px color-mix(in srgb, ${kpi.accentHex}, transparent 70%)`,
@@ -409,7 +427,10 @@ export function CaseManagementPage() {
                 className="bg-background border border-border rounded-lg pl-7 pr-3 py-1.5 text-[9px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-cyan-500/50 transition-colors uppercase tracking-wider w-40"
               />
             </div>
-            <button className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted border border-border rounded-lg text-[9px] font-mono font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-cyan-500/30 transition-all">
+            <button 
+              onClick={handleFilterClick}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted border border-border rounded-lg text-[9px] font-mono font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:border-cyan-500/30 transition-all"
+            >
               <Filter className="w-3 h-3" />
               Filter
             </button>
@@ -425,6 +446,7 @@ export function CaseManagementPage() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
+                onClick={() => handleCaseClick(c.id)}
                 className="group px-4 py-3.5 bg-background/50 border border-border rounded-xl hover:border-cyan-500/20 hover:bg-cyan-500/[0.03] transition-all duration-200 cursor-pointer"
               >
                 {/* Top row */}

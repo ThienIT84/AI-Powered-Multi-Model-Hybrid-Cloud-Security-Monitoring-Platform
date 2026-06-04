@@ -52,6 +52,15 @@ export const NetworkMonitoringPage: React.FC = () => {
   const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // PCAP Export state (from feature/cloud_threat)
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = () => {
+    if (logs.length === 0) return;
+    setIsExporting(true);
+    setTimeout(() => setIsExporting(false), 2000);
+  };
+
   // Filter for topology clicked IP or text filters
   const [selectedTopologyIP, setSelectedTopologyIP] = useState<string | null>(null);
   const [selectedAssetIP, setSelectedAssetIP] = useState<string | null>(null);
@@ -159,6 +168,22 @@ export const NetworkMonitoringPage: React.FC = () => {
         anomalousFlowsCount={anomalousFlowsCount}
         averageRiskScore={averageRiskScore}
       />
+
+      {/* PCAP DOWNLOAD UTILITY (from feature/cloud_threat) */}
+      <div className="flex items-center justify-end gap-2">
+        <button 
+          onClick={handleExport}
+          disabled={isExporting || logs.length === 0}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded border text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
+            isExporting 
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" 
+              : "bg-muted border-border text-muted-foreground hover:text-foreground disabled:opacity-30"
+          }`}
+        >
+          <Activity className={`w-3.5 h-3.5 ${isExporting ? "animate-bounce" : ""}`} />
+          {isExporting ? "EXPORTED" : "DOWNLOAD PCAP"}
+        </button>
+      </div>
 
       {/* 3. SUB-PANEL SYSTEM NAVIGATION TAB HEADERS */}
       <div className="border border-border flex flex-wrap items-center justify-between gap-3 bg-card p-1.5 rounded-lg shadow-sm">

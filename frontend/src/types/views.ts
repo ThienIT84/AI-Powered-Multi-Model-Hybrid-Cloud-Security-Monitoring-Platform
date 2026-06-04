@@ -7,7 +7,9 @@ export type AppView =
   | "playbooks"
   | "reports"
   | "settings"
+  | "cloud"
   | "ai-threat-detection"
   | "attack-surface"
   | "mitre-attack"
-  | "case-management";
+  | "case-management"
+  | "threat-intel";

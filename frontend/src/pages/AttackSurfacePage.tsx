@@ -24,10 +24,11 @@ import {
   Target,
   ShieldAlert,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import { MultiColorDonut } from "../components/common/MultiColorDonut";
 import { IncidentsFeed } from "../components/common/IncidentsFeed";
+import { FloatingPanel } from "../components/common/FloatingPanel";
 import {
   ATTACK_SURFACE_KPI,
   ASSET_DISTRIBUTION,
@@ -35,7 +36,29 @@ import {
   RISK_TREND,
   ASSET_GROUPS,
   THREAT_DETECTION_FEED,
+  AssetGroup,
 } from "../components/attackSurface/attackSurfaceConfig";
+
+// ─── Mock Assets for Detail View ──────────────────────────────────────────────
+const MOCK_GROUP_ASSETS: Record<string, any[]> = {
+  prod: [
+    { id: "srv-01", name: "prod-web-01", ip: "10.0.1.15", type: "Compute", risk: "Low", lastScan: "1h ago" },
+    { id: "srv-02", name: "prod-db-01", ip: "10.0.2.10", type: "Database", risk: "Critical", lastScan: "1h ago" },
+    { id: "srv-03", name: "prod-lb-01", ip: "10.0.1.1", type: "Load Balancer", risk: "High", lastScan: "1h ago" },
+  ],
+  dev: [
+    { id: "dev-01", name: "dev-web-01", ip: "192.168.1.10", type: "Compute", risk: "Warning", lastScan: "3h ago" },
+    { id: "dev-02", name: "dev-sandbox", ip: "192.168.1.20", type: "Sandbox", risk: "Low", lastScan: "3h ago" },
+  ],
+  cloud: [
+    { id: "aws-s3-01", name: "customer-data-bucket", ip: "s3.amazonaws.com", type: "Storage", risk: "Critical", lastScan: "2h ago" },
+    { id: "aws-ec2-01", name: "api-gateway-node", ip: "3.21.45.12", type: "Compute", risk: "High", lastScan: "2h ago" },
+  ],
+  third: [
+    { id: "ext-01", name: "stripe-api-connector", ip: "api.stripe.com", type: "SaaS API", risk: "Healthy", lastScan: "4h ago" },
+    { id: "ext-02", name: "auth0-tenant", ip: "auth.company.com", type: "Identity", risk: "Healthy", lastScan: "4h ago" },
+  ],
+};
 
 // ─── Icon map ─────────────────────────────────────────────────────────────────
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -79,8 +102,20 @@ function StatusBadge({ status }: { status: "Healthy" | "Warning" | "Critical" })
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function AttackSurfacePage() {
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<AssetGroup | null>(null);
   const [assetData, setAssetData] = useState(ASSET_DISTRIBUTION);
   const [riskTrend, setRiskTrend] = useState(RISK_TREND);
+  const [isScanning, setIsScanning] = useState(false);
+  const [selectedKPI, setSelectedKPI] = useState<string | null>(null);
+
+  const handleGroupScan = () => {
+    setIsScanning(true);
+    setTimeout(() => setIsScanning(false), 3000);
+  };
+
+  const handleKPIClick = (label: string) => {
+    setSelectedKPI(label === selectedKPI ? null : label);
+  };
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -154,14 +189,19 @@ export function AttackSurfacePage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }}
+              onClick={() => handleKPIClick(kpi.label)}
               className={cn(
-                "neon-card group relative bg-card border border-border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
+                "neon-card group relative bg-card border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
                 "hover:border-2 hover:scale-[1.02] cursor-pointer",
                 kpi.border.replace('border-', 'hover:border-'),
+                selectedKPI === kpi.label ? "border-2 border-opacity-100 scale-[1.02]" : "border-border",
                 neonClass
               )}
               style={{
-                boxShadow: `0 4px 12px rgba(0,0,0,0.03)`,
+                boxShadow: selectedKPI === kpi.label 
+                  ? `0 0 30px color-mix(in srgb, ${kpi.accentHex}, transparent 60%)` 
+                  : `0 4px 12px rgba(0,0,0,0.03)`,
+                borderColor: selectedKPI === kpi.label ? kpi.accentHex : undefined
               }}
               whileHover={{ 
                 boxShadow: `0 0 25px color-mix(in srgb, ${kpi.accentHex}, transparent 70%)`,
@@ -477,7 +517,10 @@ export function AttackSurfacePage() {
                 </div>
 
                 {/* Action */}
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-cyan-500/10 hover:border-cyan-500/30 text-foreground hover:text-cyan-400 rounded border border-border font-mono text-[9px] font-black uppercase tracking-widest transition-all duration-200 shrink-0 cursor-pointer sm:ml-4">
+                <button 
+                  onClick={() => setSelectedGroup(group)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-muted hover:bg-cyan-500/10 hover:border-cyan-500/30 text-foreground hover:text-cyan-400 rounded border border-border font-mono text-[9px] font-black uppercase tracking-widest transition-all duration-200 shrink-0 cursor-pointer sm:ml-4"
+                >
                   <Eye className="w-3 h-3" />
                   View Details
                 </button>
@@ -486,6 +529,85 @@ export function AttackSurfacePage() {
           ))}
         </div>
       </div>
+
+      {/* ── Asset Group Details Panel ─────────────────────────────────────────── */}
+      <FloatingPanel
+        isOpen={!!selectedGroup}
+        onClose={() => setSelectedGroup(null)}
+        title={selectedGroup ? `Asset Group: ${selectedGroup.name}` : "Asset Group Details"}
+        className="max-w-md"
+      >
+        <div className="p-4 space-y-6">
+          {/* Quick Stats Header */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: "Total Assets", value: selectedGroup?.assets, color: "text-foreground" },
+              { label: "Critical", value: selectedGroup?.critical, color: "text-red-400" },
+              { label: "High", value: selectedGroup?.high, color: "text-orange-400" },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-background/50 border border-border rounded-lg p-2.5 text-center">
+                <p className="text-[7px] font-mono text-muted-foreground uppercase tracking-widest mb-1">{stat.label}</p>
+                <p className={cn("text-lg font-black font-mono", stat.color)}>{stat.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Asset List */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest">Inventory Assets</h4>
+              <span className="text-[9px] font-mono text-muted-foreground uppercase">{MOCK_GROUP_ASSETS[selectedGroup?.id || ""]?.length || 0} Items</span>
+            </div>
+
+            <div className="space-y-2">
+              {MOCK_GROUP_ASSETS[selectedGroup?.id || ""]?.map((asset) => (
+                <div key={asset.id} className="bg-muted/30 border border-border/50 rounded-lg p-3 hover:border-cyan-500/30 transition-colors group">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="text-[11px] font-black text-foreground uppercase">{asset.name}</p>
+                      <p className="text-[9px] font-mono text-muted-foreground">{asset.ip}</p>
+                    </div>
+                    <span className={cn(
+                      "text-[7px] font-mono font-black uppercase px-1.5 py-0.5 rounded border",
+                      asset.risk === "Critical" ? "bg-red-500/10 text-red-500 border-red-500/30" :
+                      asset.risk === "High" ? "bg-orange-500/10 text-orange-500 border-orange-500/30" :
+                      asset.risk === "Warning" ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" :
+                      "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                    )}>
+                      {asset.risk}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                    <span className="text-[8px] font-mono text-muted-foreground uppercase">{asset.type}</span>
+                    <span className="text-[8px] font-mono text-muted-foreground uppercase italic">Last scan: {asset.lastScan}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="pt-2">
+            <button 
+              onClick={handleGroupScan}
+              disabled={isScanning}
+              className={cn(
+                "w-full py-2 rounded font-mono text-[9px] font-black uppercase tracking-widest transition-all border",
+                isScanning
+                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30 cursor-not-allowed"
+                  : "bg-xanh-accent/10 hover:bg-xanh-accent/20 text-xanh-accent border-xanh-accent/30"
+              )}
+            >
+              {isScanning ? (
+                <div className="flex items-center justify-center gap-2">
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                  SCANNING GROUP...
+                </div>
+              ) : "Initiate Full Group Scan"}
+            </button>
+          </div>
+        </div>
+      </FloatingPanel>
     </motion.div>
   );
 }
