@@ -56,6 +56,116 @@ import {
 } from "../components/endpoint/endpointFCAJData";
 import { cn } from "../lib/utils";
 
+// Real world map coordinates helper and continental path definitions
+const geoToXY = (lat: number, lng: number): { x: number; y: number } => {
+  const x = ((lng + 180) / 360) * 1000;
+  const latMin = -60;
+  const latMax = 80;
+  const clampedLat = Math.max(latMin, Math.min(latMax, lat));
+  const y = 400 - ((clampedLat - latMin) / (latMax - latMin)) * 400;
+  return { x, y };
+};
+
+// Precise continental/islands outlines using real [latitude, longitude] continuous series
+const CONTINENT_COMPONENTS = [
+  {
+    name: "North America",
+    coords: [
+      [71.3, -156.0], [70.0, -141.0], [68.0, -135.0], [74.0, -120.0], [70.0, -100.0],
+      [74.0, -85.0], [72.0, -73.0], [60.0, -64.0], [53.0, -56.0], [47.5, -53.0],
+      [44.5, -63.5], [41.0, -72.0], [35.0, -75.5], [25.0, -80.0], [29.0, -89.0],
+      [26.0, -97.0], [20.0, -97.0], [21.0, -90.0], [15.0, -88.0], [8.5, -80.0],
+      [7.2, -78.0], [15.0, -95.0], [23.0, -110.0], [30.0, -115.0], [34.0, -120.0],
+      [45.0, -124.0], [54.0, -130.0], [60.0, -140.0], [57.0, -152.0], [55.0, -163.0],
+      [65.6, -168.0]
+    ]
+  },
+  {
+    name: "South America",
+    coords: [
+      [7.2, -78.0], [12.0, -72.0], [10.0, -62.0], [2.0, -50.0], [-5.0, -35.0],
+      [-13.0, -39.0], [-23.0, -43.0], [-30.0, -50.0], [-34.8, -56.0], [-40.0, -64.0],
+      [-50.0, -68.0], [-55.0, -67.0], [-55.0, -73.0], [-45.0, -74.0], [-30.0, -71.0],
+      [-18.0, -70.0], [-6.0, -81.0], [1.0, -79.0], [6.0, -77.0]
+    ]
+  },
+  {
+    name: "Africa",
+    coords: [
+      [35.8, -5.6], [37.2, 11.0], [31.3, 31.0], [30.0, 32.5], [25.0, 36.0],
+      [15.1, 40.0], [11.8, 43.1], [11.5, 51.0], [0.0, 42.5], [-6.0, 39.0],
+      [-15.0, 40.0], [-25.0, 33.0], [-34.8, 20.0], [-34.3, 18.5], [-28.5, 16.5],
+      [-15.0, 12.0], [1.0, 9.0], [4.5, 7.0], [4.5, -5.0], [4.5, -8.0],
+      [12.0, -17.0], [14.7, -17.5], [21.0, -17.0], [24.0, -16.0], [33.0, -7.5]
+    ]
+  },
+  {
+    name: "Eurasia",
+    coords: [
+      [36.0, -5.6], [37.0, -9.0], [43.0, -9.0], [43.5, -1.0], [48.0, -4.5],
+      [50.0, 1.0], [55.0, 8.0], [58.0, 6.0], [62.0, 5.0], [70.0, 18.0],
+      [71.0, 26.0], [68.0, 40.0], [67.0, 45.0], [70.5, 58.0], [73.0, 70.0],
+      [73.5, 95.0], [72.0, 110.0], [73.0, 125.0], [70.0, 140.0], [69.0, 160.0],
+      [66.0, 170.0], [60.0, 163.0], [51.0, 156.0], [43.0, 132.0], [38.0, 128.0],
+      [35.0, 129.0], [37.0, 122.0], [30.0, 122.0], [22.0, 114.0], [20.0, 110.0],
+      [16.0, 108.0], [10.0, 105.0], [1.3, 103.8], [15.0, 96.0], [22.0, 90.0],
+      [13.0, 80.0], [8.0, 77.5], [19.0, 73.0], [23.5, 68.0], [25.0, 57.0],
+      [12.7, 43.5], [28.0, 34.0], [31.0, 34.0], [37.0, 27.0], [41.0, 29.0],
+      [38.0, 22.0], [40.0, 18.0], [41.0, 12.0], [43.0, 3.0]
+    ]
+  },
+  {
+    name: "Australia",
+    coords: [
+      [-12.0, 130.0], [-15.0, 125.0], [-20.0, 115.0], [-32.0, 115.0], [-35.0, 118.0],
+      [-33.0, 125.0], [-34.0, 135.0], [-38.0, 145.0], [-34.0, 151.0], [-28.0, 153.0],
+      [-10.0, 142.5], [-12.0, 136.0]
+    ]
+  },
+  {
+    name: "Greenland",
+    coords: [
+      [60.0, -45.0], [65.0, -35.0], [75.0, -20.0], [82.0, -12.0], [83.0, -40.0],
+      [78.0, -70.0], [65.0, -53.0]
+    ]
+  },
+  {
+    name: "Japan",
+    coords: [
+      [45.0, 142.0], [43.0, 145.0], [40.0, 142.0], [34.0, 134.5], [31.5, 130.0],
+      [34.0, 130.5], [37.0, 137.0]
+    ]
+  },
+  {
+    name: "United Kingdom",
+    coords: [
+      [58.5, -5.0], [57.0, -2.0], [54.0, -0.5], [51.5, 1.5], [50.0, -5.0],
+      [53.0, -4.5], [55.0, -5.5]
+    ]
+  },
+  {
+    name: "Iceland",
+    coords: [
+      [66.0, -18.0], [66.0, -14.0], [64.0, -14.0], [64.0, -22.0], [65.5, -23.0]
+    ]
+  },
+  {
+    name: "Madagascar",
+    coords: [
+      [-12.0, 49.0], [-16.0, 49.5], [-25.0, 47.0], [-25.0, 44.0], [-20.0, 44.0],
+      [-16.0, 45.0]
+    ]
+  }
+];
+
+const CONTINENT_PATHS = CONTINENT_COMPONENTS.map(c => {
+  const d = c.coords.map((pt, idx) => {
+    const xy = geoToXY(pt[0], pt[1]);
+    return `${idx === 0 ? "M" : "L"} ${xy.x.toFixed(1)} ${xy.y.toFixed(1)}`;
+  }).join(" ") + " Z";
+  return { name: c.name, d };
+});
+
 export function EndpointPage() {
   // 1. Core dataset loaded from FCAJ mock database engine
   const [data, setData] = useState(() => generateFCAJData());
@@ -370,7 +480,7 @@ export function EndpointPage() {
   const ATTACK_COLORS = ["#ef4444", "#f97316", "#f59e0b", "#eab308", "#10b981", "#3b82f6", "#8b5cf6"];
 
   return (
-    <div className="space-y-6 select-none bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-1 rounded-2xl min-h-screen font-sans border border-slate-200/40 dark:border-slate-800/20">
+    <div className="space-y-6 select-none bg-background text-foreground p-1 rounded-2xl min-h-screen font-sans border border-border/30">
       
       {/* Visual threat popup toast on simulation alerts */}
       {alertPopup && (
@@ -394,15 +504,15 @@ export function EndpointPage() {
       )}
 
       {/* Header and top dashboard sync information */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/55 dark:bg-slate-900/45 p-4 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/60 backdrop-blur-md p-4 rounded-xl border border-border">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Shield className="w-5 h-5 text-indigo-650 dark:text-cyan-400 animate-pulse" />
-            <h1 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest leading-none">
+            <h1 className="text-sm font-black text-foreground uppercase tracking-widest leading-none">
               Endpoint Intelligence Center
             </h1>
           </div>
-          <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+          <p className="text-[9px] text-muted-foreground uppercase tracking-[0.2em]">
             FCAJ v3.0 Compliance Console • Extreme Risk Profiling, Flow Investigation & Realtime Threat Sprints
           </p>
         </div>
@@ -415,12 +525,12 @@ export function EndpointPage() {
               FUSION SYNC: SECURE
             </span>
           </div>
-          <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
+          <div className="flex bg-muted p-1 rounded-lg border border-border">
             <button 
               onClick={() => setActiveSegment("inventory")}
               className={cn(
                 "px-2.5 py-1 text-[9px] font-black tracking-widest uppercase rounded cursor-pointer transition-all",
-                activeSegment === "inventory" ? "bg-white dark:bg-slate-950 text-indigo-600 dark:text-cyan-400 shadow-sm" : "text-slate-400"
+                activeSegment === "inventory" ? "bg-card text-indigo-600 dark:text-cyan-400 shadow-xs" : "text-muted-foreground"
               )}
             >
               Inventory
@@ -429,37 +539,37 @@ export function EndpointPage() {
               onClick={() => setActiveSegment("incidents")}
               className={cn(
                 "px-2.5 py-1 text-[9px] font-black tracking-widest uppercase rounded cursor-pointer transition-all",
-                activeSegment === "incidents" ? "bg-white dark:bg-slate-950 text-indigo-600 dark:text-cyan-400 shadow-sm" : "text-slate-400"
+                activeSegment === "incidents" ? "bg-card text-indigo-600 dark:text-cyan-400 shadow-xs" : "text-muted-foreground"
               )}
             >
               Incident Logs
             </button>
           </div>
         </div>
-      </div>
-
-      {/* 1. ENDPOINT OVERVIEW CARDS */}
+      </div>      {/* 1. ENDPOINT OVERVIEW CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         
         {/* Card 1: Total Endpoints */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-slate-350 dark:hover:border-slate-750 transition-colors">
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-indigo-500/50 dark:hover:border-cyan-400/50 transition-all duration-300">
           <div className="flex justify-between items-start">
-            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-              <Server size={14} className="text-slate-500 dark:text-slate-300" />
+            <div className="p-2 bg-muted rounded-lg">
+              <Server size={14} className="text-muted-foreground" />
             </div>
             <span className="text-[10px] text-emerald-500 font-mono font-black flex items-center gap-0.5">
               <TrendingUp size={10} /> +4%
             </span>
           </div>
-          <div>
-            <h3 className="text-[9px] text-slate-500 uppercase tracking-widest font-black">Total Assets</h3>
-            <p className="text-xl font-extrabold tracking-tight font-mono">{stats.total}</p>
-          </div>
-          {/* Sparkline visualization */}
-          <div className="h-6 w-full pt-1">
-            <svg viewBox="0 0 100 20" className="w-full h-full stroke-slate-400 dark:stroke-slate-600 stroke-2 fill-none">
-              <path d={`M ${sparks.total.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
-            </svg>
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div>
+              <h3 className="text-[9px] text-muted-foreground uppercase tracking-widest font-black">Total Assets</h3>
+              <p className="text-xl font-extrabold tracking-tight font-mono text-foreground">{stats.total}</p>
+            </div>
+            {/* Sparkline visualization */}
+            <div className="h-8 w-20 shrink-0">
+              <svg viewBox="0 0 100 20" className="w-full h-full stroke-slate-500 stroke-2 fill-none">
+                <path d={`M ${sparks.total.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
+              </svg>
+            </div>
           </div>
           {/* Tooltip */}
           <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-[8px] px-2 py-1 rounded font-mono uppercase tracking-wider z-25 transition-all">
@@ -468,23 +578,26 @@ export function EndpointPage() {
         </div>
 
         {/* Card 2: Active Endpoints */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-slate-350 dark:hover:border-slate-750 transition-colors">
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-indigo-500/50 dark:hover:border-cyan-400/50 transition-all duration-300">
           <div className="flex justify-between items-start">
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg">
-              <Activity size={14} className="text-indigo-650 dark:text-indigo-400" />
+            <div className="p-2 bg-indigo-500/10 dark:bg-indigo-955/50 rounded-lg">
+              <Activity size={14} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <span className="text-[10px] text-emerald-500 font-mono font-black flex items-center gap-0.5">
               <TrendingUp size={10} /> +12%
             </span>
           </div>
-          <div>
-            <h3 className="text-[9px] text-slate-500 uppercase tracking-widest font-black">Active Hosts</h3>
-            <p className="text-xl font-extrabold tracking-tight font-mono text-emerald-600 dark:text-emerald-400">{stats.active}</p>
-          </div>
-          <div className="h-6 w-full pt-1">
-            <svg viewBox="0 0 100 20" className="w-full h-full stroke-emerald-500/70 dark:stroke-emerald-400/40 stroke-2 fill-none">
-              <path d={`M ${sparks.active.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
-            </svg>
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div>
+              <h3 className="text-[9px] text-muted-foreground uppercase tracking-widest font-black">Active Hosts</h3>
+              <p className="text-xl font-extrabold tracking-tight font-mono text-emerald-600 dark:text-emerald-400">{stats.active}</p>
+            </div>
+            {/* Sparkline visualization */}
+            <div className="h-8 w-20 shrink-0">
+              <svg viewBox="0 0 100 20" className="w-full h-full stroke-emerald-500 stroke-2 fill-none">
+                <path d={`M ${sparks.active.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
+              </svg>
+            </div>
           </div>
           <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-[8px] px-2 py-1 rounded font-mono uppercase tracking-wider z-25 transition-all">
             Hosts streaming telemetry data
@@ -492,23 +605,26 @@ export function EndpointPage() {
         </div>
 
         {/* Card 3: Endpoints w/ Alerts */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-slate-350 dark:hover:border-slate-750 transition-colors">
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-indigo-500/50 dark:hover:border-cyan-400/50 transition-all duration-300">
           <div className="flex justify-between items-start">
-            <div className="p-2 bg-amber-50 dark:bg-amber-950/40 rounded-lg">
+            <div className="p-2 bg-amber-500/10 dark:bg-amber-955/45 rounded-lg">
               <AlertTriangle size={14} className="text-amber-500" />
             </div>
             <span className="text-[10px] text-red-500 font-mono font-black flex items-center gap-0.5">
               <TrendingUp size={10} /> +8%
             </span>
           </div>
-          <div>
-            <h3 className="text-[9px] text-slate-500 uppercase tracking-widest font-black">Host Alerts</h3>
-            <p className="text-xl font-extrabold tracking-tight font-mono text-amber-500">{stats.alertList}</p>
-          </div>
-          <div className="h-6 w-full pt-1">
-            <svg viewBox="0 0 100 20" className="w-full h-full stroke-amber-500 dark:stroke-amber-500/40 stroke-2 fill-none">
-              <path d={`M ${sparks.alerts.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
-            </svg>
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div>
+              <h3 className="text-[9px] text-muted-foreground uppercase tracking-widest font-black">Host Alerts</h3>
+              <p className="text-xl font-extrabold tracking-tight font-mono text-amber-500">{stats.alertList}</p>
+            </div>
+            {/* Sparkline visualization */}
+            <div className="h-8 w-20 shrink-0">
+              <svg viewBox="0 0 100 20" className="w-full h-full stroke-amber-500 stroke-2 fill-none">
+                <path d={`M ${sparks.alerts.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
+              </svg>
+            </div>
           </div>
           <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-[8px] px-2 py-1 rounded font-mono uppercase tracking-wider z-25 transition-all">
             Systems flagged during 24h spectrum
@@ -516,23 +632,26 @@ export function EndpointPage() {
         </div>
 
         {/* Card 4: Critical Endpoints */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-slate-350 dark:hover:border-slate-750 transition-colors">
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-indigo-500/50 dark:hover:border-cyan-400/50 transition-all duration-300">
           <div className="flex justify-between items-start">
-            <div className="p-2 bg-red-50 dark:bg-red-950/40 rounded-lg">
-              <AlertOctagon size={14} className="text-red-500" />
+            <div className="p-2 bg-red-500/10 dark:bg-red-955/45 rounded-lg">
+              <AlertOctagon size={14} className="text-red-505" />
             </div>
             <span className="text-[10px] text-emerald-500 font-mono font-black flex items-center gap-0.5">
               <TrendingDown size={10} /> -3%
             </span>
           </div>
-          <div>
-            <h3 className="text-[9px] text-slate-500 uppercase tracking-widest font-black">Critical Severity</h3>
-            <p className="text-xl font-extrabold tracking-tight font-mono text-red-500 animate-pulse">{stats.critical}</p>
-          </div>
-          <div className="h-6 w-full pt-1">
-            <svg viewBox="0 0 100 20" className="w-full h-full stroke-red-550 dark:stroke-red-500/50 stroke-2 fill-none">
-              <path d={`M ${sparks.critical.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
-            </svg>
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div>
+              <h3 className="text-[9px] text-muted-foreground uppercase tracking-widest font-black">Critical Severity</h3>
+              <p className="text-xl font-extrabold tracking-tight font-mono text-red-550 animate-pulse">{stats.critical}</p>
+            </div>
+            {/* Sparkline visualization */}
+            <div className="h-8 w-20 shrink-0">
+              <svg viewBox="0 0 100 20" className="w-full h-full stroke-red-500 stroke-2 fill-none">
+                <path d={`M ${sparks.critical.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
+              </svg>
+            </div>
           </div>
           <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-[8px] px-2 py-1 rounded font-mono uppercase tracking-wider z-25 transition-all">
             Requires immediate isolation intervention
@@ -540,563 +659,458 @@ export function EndpointPage() {
         </div>
 
         {/* Card 5: New Endpoints Today */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-slate-350 dark:hover:border-slate-750 transition-colors">
+        <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-2 relative group hover:border-indigo-500/50 dark:hover:border-cyan-400/50 transition-all duration-300">
           <div className="flex justify-between items-start">
-            <div className="p-2 bg-cyan-50 dark:bg-cyan-950/40 rounded-lg">
+            <div className="p-2 bg-cyan-500/10 dark:bg-cyan-955/45 rounded-lg">
               <Cpu size={14} className="text-cyan-600 dark:text-cyan-400" />
             </div>
             <span className="text-[10px] text-emerald-500 font-mono font-black flex items-center gap-0.5">
               <TrendingUp size={10} /> +1%
             </span>
           </div>
-          <div>
-            <h3 className="text-[9px] text-slate-500 uppercase tracking-widest font-black">Discovered Today</h3>
-            <p className="text-xl font-extrabold tracking-tight font-mono text-cyan-600 dark:text-cyan-400">{stats.newCount}</p>
-          </div>
-          <div className="h-6 w-full pt-1">
-            <svg viewBox="0 0 100 20" className="w-full h-full stroke-cyan-500 dark:stroke-cyan-500/40 stroke-2 fill-none">
-              <path d={`M ${sparks.newCount.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
-            </svg>
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <div>
+              <h3 className="text-[9px] text-muted-foreground uppercase tracking-widest font-black">Discovered Today</h3>
+              <p className="text-xl font-extrabold tracking-tight font-mono text-cyan-600 dark:text-cyan-400">{stats.newCount}</p>
+            </div>
+            {/* Sparkline visualization */}
+            <div className="h-8 w-20 shrink-0">
+              <svg viewBox="0 0 100 20" className="w-full h-full stroke-cyan-500 stroke-2 fill-none">
+                <path d={`M ${sparks.newCount.map((s, idx) => `${idx * 10} ${20 - s / 5}`).join(', ')}`} />
+              </svg>
+            </div>
           </div>
           <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-950 text-white text-[8px] px-2 py-1 rounded font-mono uppercase tracking-wider z-25 transition-all">
             New agent registrations recorded today
           </div>
         </div>
 
-      </div>
-
-      {activeSegment === "inventory" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      </div>      {activeSegment === "inventory" ? (
+        <div className="space-y-6">
           
-          {/* Main Inventory Layout Left Col (8 cols) */}
-          <div className="lg:col-span-8 space-y-6">
+          {/* Top Row: list + inline details drawer side-by-side */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            {/* 2. ENDPOINT INVENTORY TABLE */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs flex flex-col justify-between">
+            {/* Left Block: Asset Catalog Index List Table */}
+            <div className={cn(
+              "space-y-6 transition-all duration-300",
+              selectedEndpointObj && isDrawerOpen ? "lg:col-span-8" : "lg:col-span-12"
+            )}>
               
-              {/* Filter controls header */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 space-y-3">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Server size={14} className="text-slate-500" />
-                    <h2 className="text-xs font-black uppercase tracking-wider">Asset Catalog Index ({filteredEndpoints.length})</h2>
-                  </div>
+              {/* 2. ENDPOINT INVENTORY TABLE */}
+              <div className="bg-card border border-border rounded-xl  shadow-xs flex flex-col justify-between overflow-hidden">
+                
+                {/* Filter controls header */}
+                <div className="p-4 border-b border-border bg-muted/40 space-y-3">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Server size={14} className="text-slate-500" />
+                      <h2 className="text-xs font-black uppercase tracking-wider">Asset Catalog Index ({filteredEndpoints.length})</h2>
+                    </div>
 
-                  {/* Actions Area */}
-                  <div className="flex items-center gap-2 w-full md:w-auto">
-                    {/* CSV export */}
-                    <button 
-                      onClick={handleExportCSV}
-                      className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <FileSpreadsheet size={12} /> CSV
-                    </button>
-
-                    {/* Column visibility drop overlay simple toggler */}
-                    <div className="relative group">
-                      <button className="px-3 py-1.5 bg-indigo-500/10 dark:bg-cyan-500/10 text-indigo-600 dark:text-cyan-400 border border-indigo-505/20 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer">
-                        Columns Visibility
+                    {/* Actions Area */}
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                      {/* CSV export */}
+                      <button 
+                        onClick={handleExportCSV}
+                        className="px-3 py-1.5 bg-secondary hover:bg-secondary/85 border border-border text-foreground hover:border-muted-foreground/30 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <FileSpreadsheet size={12} /> CSV
                       </button>
-                      <div className="hidden group-hover:block absolute right-0 top-full mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg z-30 shadow-xl space-y-1 w-44 font-mono text-[9px]">
-                        {Object.keys(visibleCols).map(col => (
-                          <label key={col} className="flex items-center gap-2 p-1 hover:bg-slate-100 dark:hover:bg-slate-900 rounded cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={visibleCols[col as keyof typeof visibleCols]} 
-                              onChange={() => setVisibleCols(prev => ({ ...prev, [col]: !prev[col as keyof typeof visibleCols] }))}
-                              className="accent-cyan-400"
-                            />
-                            <span className="uppercase">{col.replace(/([A-Z])/g, " $1")}</span>
-                          </label>
-                        ))}
+
+                      {/* Column visibility drop overlay simple toggler */}
+                      <div className="relative group">
+                        <button className="px-3 py-1.5 bg-indigo-500/10 dark:bg-cyan-500/10 text-indigo-600 dark:text-cyan-400 border border-indigo-505/20 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer">
+                          Columns Visibility
+                        </button>
+                        <div className="hidden group-hover:block absolute right-0 top-full mt-1 bg-card border border-border p-2.5 rounded-lg z-30 shadow-xl space-y-1 w-44 font-mono text-[9px]">
+                          {Object.keys(visibleCols).map(col => (
+                            <label key={col} className="flex items-center gap-2 p-1 hover:bg-secondary rounded cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                checked={visibleCols[col as keyof typeof visibleCols]} 
+                                onChange={() => setVisibleCols(prev => ({ ...prev, [col]: !prev[col as keyof typeof visibleCols] }))}
+                                className="accent-cyan-400"
+                              />
+                              <span className="uppercase">{col.replace(/([A-Z])/g, " $1")}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Sub row: inputs for queries */}
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
-                    <input 
-                      type="text" 
-                      placeholder="Search Host / IP..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-[11px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 dark:focus:border-cyan-400 outline-none rounded-lg font-mono"
-                    />
+                  {/* Sub row: inputs for queries */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
+                      <input 
+                        type="text" 
+                        placeholder="Search Host / IP..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 text-[11px] bg-background text-foreground border border-border focus:border-indigo-500 dark:focus:border-cyan-404 outline-none rounded-lg font-mono"
+                      />
+                    </div>
+
+                    <select 
+                      value={typeFilter} 
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      className="py-1.5 px-2 bg-background border border-border text-foreground rounded-lg text-[10px] font-mono"
+                    >
+                      <option value="ALL">ALL DEVICE TYPES</option>
+                      <option value="Server">SERVER</option>
+                      <option value="Workstation">WORKSTATION</option>
+                      <option value="Firewall">FIREWALL</option>
+                      <option value="Sensor">SENSOR</option>
+                      <option value="Unknown">UNKNOWN</option>
+                    </select>
+
+                    <select 
+                      value={roleFilter} 
+                      onChange={(e) => setRoleFilter(e.target.value)}
+                      className="py-1.5 px-2 bg-background border border-border text-foreground rounded-lg text-[10px] font-mono"
+                    >
+                      <option value="ALL">ALL ROLES</option>
+                      <option value="Web Server">WEB SERVER</option>
+                      <option value="Database Server">DATABASE SERVER</option>
+                      <option value="User VM">USER VM</option>
+                      <option value="Admin VM">ADMIN VM</option>
+                      <option value="Zeek Sensor">ZEEK SENSOR</option>
+                      <option value="Suricata Sensor">SURICATA SENSOR</option>
+                      <option value="Kali Attacker">KALI ATTACKER</option>
+                    </select>
+
+                    <select 
+                      value={statusFilter} 
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="py-1.5 px-2 bg-background border border-border text-foreground rounded-lg text-[10px] font-mono"
+                    >
+                      <option value="ALL">ALL STATUSES</option>
+                      <option value="Healthy">HEALTHY</option>
+                      <option value="Warning">WARNING</option>
+                      <option value="Critical">CRITICAL</option>
+                      <option value="Offline">OFFLINE</option>
+                    </select>
                   </div>
-
-                  <select 
-                    value={typeFilter} 
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="py-1.5 px-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono"
-                  >
-                    <option value="ALL">ALL DEVICE TYPES</option>
-                    <option value="Server">SERVER</option>
-                    <option value="Workstation">WORKSTATION</option>
-                    <option value="Firewall">FIREWALL</option>
-                    <option value="Sensor">SENSOR</option>
-                    <option value="Unknown">UNKNOWN</option>
-                  </select>
-
-                  <select 
-                    value={roleFilter} 
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="py-1.5 px-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono"
-                  >
-                    <option value="ALL">ALL ROLES</option>
-                    <option value="Web Server">WEB SERVER</option>
-                    <option value="Database Server">DATABASE SERVER</option>
-                    <option value="User VM">USER VM</option>
-                    <option value="Admin VM">ADMIN VM</option>
-                    <option value="Zeek Sensor">ZEEK SENSOR</option>
-                    <option value="Suricata Sensor">SURICATA SENSOR</option>
-                    <option value="Kali Attacker">KALI ATTACKER</option>
-                  </select>
-
-                  <select 
-                    value={statusFilter} 
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="py-1.5 px-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono"
-                  >
-                    <option value="ALL">ALL STATUSES</option>
-                    <option value="Healthy">HEALTHY</option>
-                    <option value="Warning">WARNING</option>
-                    <option value="Critical">CRITICAL</option>
-                    <option value="Offline">OFFLINE</option>
-                  </select>
                 </div>
-              </div>
 
-              {/* Real Table Grid */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse font-mono text-[11px] min-w-175">
-                  <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-900 text-[10px] font-black text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
-                      {visibleCols.hostname && <th className="px-4 py-3 cursor-pointer" onClick={() => { setSortField("hostname"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>Hostname</th>}
-                      {visibleCols.ip && <th className="px-4 py-3 cursor-pointer" onClick={() => { setSortField("ip"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>IP Address</th>}
-                      {visibleCols.deviceType && <th className="px-4 py-3">Type</th>}
-                      {visibleCols.os && <th className="px-4 py-3">OS</th>}
-                      {visibleCols.role && <th className="px-4 py-3">Role</th>}
-                      {visibleCols.alertCount && <th className="px-4 py-3 text-center cursor-pointer" onClick={() => { setSortField("alertCount"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>Alerts</th>}
-                      {visibleCols.riskScore && <th className="px-4 py-3 cursor-pointer" onClick={() => { setSortField("riskScore"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>Risk Score</th>}
-                      {visibleCols.healthScore && <th className="px-2 py-3 text-center cursor-pointer" onClick={() => { setSortField("healthScore"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>Health</th>}
-                      {visibleCols.status && <th className="px-3 py-3 text-center">Status</th>}
-                      <th className="px-4 py-3 text-right">Controls</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
-                    {displayedEndpoints.map(ep => {
-                      const isSelected = selectedId === ep.id;
-                      return (
-                        <tr 
-                          key={ep.id}
-                          onClick={() => { setSelectedId(ep.id); setIsDrawerOpen(true); }}
-                          className={cn(
-                            "cursor-pointer group hover:bg-slate-100/50 dark:hover:bg-slate-800/20 transition-all",
-                            isSelected && "bg-indigo-50/40 dark:bg-cyan-950/10 border-l-2 border-l-cyan-400"
-                          )}
-                        >
-                          {visibleCols.hostname && (
-                            <td className="px-4 py-3 font-semibold dark:text-zinc-200 font-mono">
-                              {ep.hostname}
-                            </td>
-                          )}
-                          {visibleCols.ip && <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{ep.ip}</td>}
-                          {visibleCols.deviceType && (
-                            <td className="px-4 py-3">
-                              <span className="px-1.5 py-0.5 rounded text-[9px] bg-slate-100 dark:bg-slate-800 uppercase tracking-widest font-black">
-                                {ep.deviceType}
-                              </span>
-                            </td>
-                          )}
-                          {visibleCols.os && <td className="px-4 py-3 text-slate-400 font-sans text-[10px]">{ep.os}</td>}
-                          {visibleCols.role && <td className="px-4 py-3 text-slate-400 font-sans text-[10px]">{ep.role}</td>}
-                          {visibleCols.alertCount && (
-                            <td className="px-4 py-3 text-center">
-                              {ep.alertCount > 0 ? (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-red-100 dark:bg-red-950/40 text-red-500 animate-pulse">
-                                  {ep.alertCount}
+                {/* Real Table Grid */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse font-mono text-[11px] min-w-175">
+                    <thead>
+                      <tr className="bg-muted/40 text-[10px] font-black text-muted-foreground uppercase tracking-wider border-b border-border">
+                        {visibleCols.hostname && <th className="px-4 py-3 cursor-pointer" onClick={() => { setSortField("hostname"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>Hostname</th>}
+                        {visibleCols.ip && <th className="px-4 py-3 cursor-pointer" onClick={() => { setSortField("ip"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>IP Address</th>}
+                        {visibleCols.deviceType && <th className="px-4 py-3">Type</th>}
+                        {visibleCols.os && <th className="px-4 py-3">OS</th>}
+                        {visibleCols.role && <th className="px-4 py-3">Role</th>}
+                        {visibleCols.alertCount && <th className="px-4 py-3 text-center cursor-pointer" onClick={() => { setSortField("alertCount"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>Alerts</th>}
+                        {visibleCols.riskScore && <th className="px-4 py-3 cursor-pointer" onClick={() => { setSortField("riskScore"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>Risk Score</th>}
+                        {visibleCols.healthScore && <th className="px-2 py-3 text-center cursor-pointer" onClick={() => { setSortField("healthScore"); setSortOrder(prev => prev === "asc" ? "desc" : "asc"); }}>Health</th>}
+                        {visibleCols.status && <th className="px-3 py-3 text-center">Status</th>}
+                        <th className="px-4 py-3 text-right">Controls</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
+                      {displayedEndpoints.map(ep => {
+                        const isSelected = selectedId === ep.id;
+                        return (
+                          <tr 
+                            key={ep.id}
+                            onClick={() => { setSelectedId(ep.id); setIsDrawerOpen(true); }}
+                            className={cn(
+                              "cursor-pointer group hover:bg-secondary/40 transition-all border-b border-border/50",
+                              isSelected && "bg-secondary dark:bg-secondary/50 border-l-2 border-l-cyan-400"
+                            )}
+                          >
+                            {visibleCols.hostname && (
+                              <td className="px-4 py-3 font-semibold dark:text-zinc-200 font-mono">
+                                {ep.hostname}
+                              </td>
+                            )}
+                            {visibleCols.ip && <td className="px-4 py-3 text-muted-foreground">{ep.ip}</td>}
+                            {visibleCols.deviceType && (
+                              <td className="px-4 py-3">
+                                <span className="px-1.5 py-0.5 rounded text-[9px] bg-muted uppercase tracking-widest font-black text-muted-foreground">
+                                  {ep.deviceType}
                                 </span>
-                              ) : (
-                                <span className="text-slate-500">0</span>
-                              )}
-                            </td>
-                          )}
-                          {visibleCols.riskScore && (
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-1.5">
-                                <span className={cn(
-                                  "font-bold text-[10px]",
-                                  ep.riskScore > 75 ? "text-red-500" : ep.riskScore > 40 ? "text-amber-500" : "text-emerald-500"
-                                )}>
-                                  {ep.riskScore}
-                                </span>
-                                <div className="hidden sm:block w-12 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                                  <div 
-                                    className={cn(
-                                      "h-full rounded-full",
-                                      ep.riskScore > 75 ? "bg-red-500" : ep.riskScore > 40 ? "bg-amber-500" : "bg-emerald-500"
-                                    )}
-                                    style={{ width: `${ep.riskScore}%` }}
-                                  />
+                              </td>
+                            )}
+                            {visibleCols.os && <td className="px-4 py-3 text-muted-foreground font-sans text-[10px]">{ep.os}</td>}
+                            {visibleCols.role && <td className="px-4 py-3 text-muted-foreground font-sans text-[10px]">{ep.role}</td>}
+                            {visibleCols.alertCount && (
+                              <td className="px-4 py-3 text-center">
+                                {ep.alertCount > 0 ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-red-100 dark:bg-red-950/40 text-red-500 animate-pulse">
+                                    {ep.alertCount}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-500">0</span>
+                                )}
+                              </td>
+                            )}
+                            {visibleCols.riskScore && (
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={cn(
+                                    "font-bold text-[10px]",
+                                    ep.riskScore > 75 ? "text-red-500" : ep.riskScore > 40 ? "text-amber-500" : "text-emerald-500"
+                                  )}>
+                                    {ep.riskScore}
+                                  </span>
+                                  <div className="hidden sm:block w-12 h-1 bg-muted rounded-full overflow-hidden">
+                                    <div 
+                                      className={cn(
+                                        "h-full rounded-full",
+                                        ep.riskScore > 75 ? "bg-red-500" : ep.riskScore > 40 ? "bg-amber-500" : "bg-emerald-500"
+                                      )}
+                                      style={{ width: `${ep.riskScore}%` }}
+                                    />
+                                  </div>
                                 </div>
+                              </td>
+                            )}
+                            {visibleCols.healthScore && (
+                              <td className="px-2 py-3 text-center">
+                                <span className={cn(
+                                  "text-[10px] font-black font-mono px-1 py-0.5 rounded",
+                                  ep.healthScore >= 90 ? "text-emerald-500 dark:bg-emerald-950/20" :
+                                  ep.healthScore >= 70 ? "text-amber-500 dark:bg-amber-950/20" :
+                                  ep.healthScore >= 50 ? "text-orange-500 dark:bg-orange-950/20" :
+                                  "text-red-500 dark:bg-red-950/20 animate-pulse"
+                                )}>
+                                  {ep.healthScore}%
+                                </span>
+                              </td>
+                            )}
+                            {visibleCols.status && (
+                              <td className="px-3 py-3 text-center">
+                                <span className={cn(
+                                  "py-0.5 px-2 rounded-full text-[8.5px] font-black uppercase tracking-wider",
+                                  ep.status === "Healthy" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/25" :
+                                  ep.status === "Warning" ? "bg-amber-500/10 text-amber-500 border border-amber-500/25" :
+                                  ep.status === "Critical" ? "bg-red-500/10 text-red-500 border border-red-500/25 animate-pulse" :
+                                  "bg-slate-500/10 text-slate-500 border border-slate-500/25"
+                                )}>
+                                  {ep.status}
+                                </span>
+                              </td>
+                            )}
+                            <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-1">
+                                <button 
+                                  onClick={() => handleIsolate(ep)}
+                                  disabled={ep.status === "Offline"}
+                                  className={cn(
+                                    "p-1 rounded cursor-pointer transition-colors hover:bg-muted text-foreground",
+                                    ep.status === "Offline" ? "text-muted-foreground/40 cursor-not-allowed" : "text-amber-500"
+                                  )}
+                                  title="Enforce Host Isolation"
+                                >
+                                  <ZapOff size={11} />
+                                </button>
+                                <button 
+                                  onClick={() => handleBlockIp(ep)}
+                                  disabled={ep.status === "Offline"}
+                                  className={cn(
+                                    "p-1 rounded cursor-pointer transition-colors hover:bg-muted text-foreground",
+                                    ep.status === "Offline" ? "text-muted-foreground/40 cursor-not-allowed" : "text-red-500"
+                                  )}
+                                  title="Drop Target Traffic Rules"
+                                >
+                                  <Ban size={11} />
+                                </button>
                               </div>
                             </td>
-                          )}
-                          {visibleCols.healthScore && (
-                            <td className="px-2 py-3 text-center">
-                              <span className={cn(
-                                "text-[10px] font-black font-mono px-1 py-0.5 rounded",
-                                ep.healthScore >= 90 ? "text-emerald-500 dark:bg-emerald-950/20" :
-                                ep.healthScore >= 70 ? "text-amber-500 dark:bg-amber-950/20" :
-                                ep.healthScore >= 50 ? "text-orange-500 dark:bg-orange-950/20" :
-                                "text-red-500 dark:bg-red-950/20 animate-pulse"
-                              )}>
-                                {ep.healthScore}%
-                              </span>
-                            </td>
-                          )}
-                          {visibleCols.status && (
-                            <td className="px-3 py-3 text-center">
-                              <span className={cn(
-                                "py-0.5 px-2 rounded-full text-[8.5px] font-black uppercase tracking-wider",
-                                ep.status === "Healthy" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/25" :
-                                ep.status === "Warning" ? "bg-amber-500/10 text-amber-500 border border-amber-500/25" :
-                                ep.status === "Critical" ? "bg-red-500/10 text-red-500 border border-red-500/25 animate-pulse" :
-                                "bg-slate-500/10 text-slate-500 border border-slate-500/25"
-                              )}>
-                                {ep.status}
-                              </span>
-                            </td>
-                          )}
-                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-end gap-1">
-                              <button 
-                                onClick={() => handleIsolate(ep)}
-                                disabled={ep.status === "Offline"}
-                                className={cn(
-                                  "p-1 rounded cursor-pointer transition-colors hover:bg-slate-200 dark:hover:bg-slate-800",
-                                  ep.status === "Offline" ? "text-slate-400 dark:text-slate-600 cursor-not-allowed" : "text-amber-500"
-                                )}
-                                title="Enforce Host Isolation"
-                              >
-                                <ZapOff size={11} />
-                              </button>
-                              <button 
-                                onClick={() => handleBlockIp(ep)}
-                                disabled={ep.status === "Offline"}
-                                className={cn(
-                                  "p-1 rounded cursor-pointer transition-colors hover:bg-slate-200 dark:hover:bg-slate-800",
-                                  ep.status === "Offline" ? "text-slate-400 dark:text-slate-600 cursor-not-allowed" : "text-red-500"
-                                )}
-                                title="Drop Target Traffic Rules"
-                              >
-                                <Ban size={11} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Table pagination area */}
-              <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/60 font-mono text-[9px] uppercase tracking-wider text-slate-500">
-                <span className="hidden sm:block">Showing {Math.min(filteredEndpoints.length, (currentPage - 1) * itemsPerPage + 1)} - {Math.min(filteredEndpoints.length, currentPage * itemsPerPage)} of {filteredEndpoints.length} total machines</span>
-                <div className="flex items-center gap-1 w-full sm:w-auto justify-between sm:justify-end">
-                  <button 
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    className="p-1 px-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded disabled:opacity-20 cursor-pointer text-slate-700 dark:text-slate-300"
-                  >
-                    Prev
-                  </button>
-                  <span className="font-extrabold text-slate-900 dark:text-slate-100">Page {currentPage} of {totalPages || 1}</span>
-                  <button 
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    className="p-1 px-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded disabled:opacity-20 cursor-pointer text-slate-700 dark:text-slate-300"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Middle Grid containing Matrices */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              {/* 3. ENDPOINT RISK MATRIX HEATMAP */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs">
-                <div className="flex gap-2 items-center mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <Activity size={13} className="text-cyan-405" />
-                  <h3 className="text-[10px] font-black uppercase tracking-wider">Detection Spectrum Heatmatrix</h3>
-                </div>
-                <div className="overflow-x-auto select-none">
-                  <div className="min-w-[320px] space-y-1.5 font-mono text-[9px]">
-                    <div className="grid grid-cols-6 border-b border-slate-100 dark:border-slate-800 pb-1 text-slate-400">
-                      <div className="col-span-2">Endpoint</div>
-                      {riskCategories.map((c, i) => (
-                        <div key={i} className="text-center text-[8px] truncate uppercase" title={c}>{c.split(' ')[0]}</div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-1">
-                      {matrixEndPoints.map(ep => {
-                        return (
-                          <div key={ep.id} className="grid grid-cols-6 items-center hover:bg-slate-100/55 dark:hover:bg-slate-800/35 p-0.5 rounded transition-all">
-                            <div 
-                              onClick={() => { setSelectedId(ep.id); setIsDrawerOpen(true); }}
-                              className="col-span-2 truncate font-bold text-slate-705 dark:text-slate-300 cursor-pointer"
-                              title={ep.hostname}
-                            >
-                              {ep.hostname}
-                            </div>
-                            {riskCategories.map((cat, i) => {
-                              // Assign risk score ranges based on factors
-                              let val = 10;
-                              if (cat.includes("AI1") && ep.ai1.prediction !== "NORMAL") val = ep.ai1.anomalyScore;
-                              if (cat.includes("AI2A") && ep.ai2a.attackType !== "None") val = ep.ai2a.confidence;
-                              if (cat.includes("AI2B") && ep.ai2b.webAttack !== "None") val = ep.ai2b.confidence;
-                              if (cat.includes("Suricata") && ep.alertCount > 0) val = Math.min(99, ep.alertCount * 25);
-
-                              const bgClass = 
-                                val >= 80 ? "bg-red-500 border border-red-650" :
-                                val >= 55 ? "bg-orange-500 border border-orange-600" :
-                                val >= 30 ? "bg-amber-400 border border-amber-500 animate-pulse" :
-                                "bg-emerald-500/30 dark:bg-emerald-950/20 border border-emerald-500/20";
-
-                              return (
-                                <div 
-                                  key={i}
-                                  onClick={() => { setSelectedId(ep.id); setIsDrawerOpen(true); }}
-                                  className={cn("h-4 rounded mx-1.5 cursor-pointer transition-transform hover:scale-105", bgClass)}
-                                  title={`${cat} metric: ${val}% rating`}
-                                />
-                              );
-                            })}
-                          </div>
+                          </tr>
                         );
                       })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Table pagination area */}
+                <div className="p-4 border-t border-border flex items-center justify-between bg-muted/40 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
+                  <span className="hidden sm:block">Showing {Math.min(filteredEndpoints.length, (currentPage - 1) * itemsPerPage + 1)} - {Math.min(filteredEndpoints.length, currentPage * itemsPerPage)} of {filteredEndpoints.length} total machines</span>
+                  <div className="flex items-center gap-1 w-full sm:w-auto justify-between sm:justify-end">
+                    <button 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className="p-1 px-2.5 bg-background border border-border rounded disabled:opacity-20 cursor-pointer text-foreground hover:bg-muted transition-colors"
+                    >
+                      Prev
+                    </button>
+                    <span className="font-extrabold text-foreground">Page {currentPage} of {totalPages || 1}</span>
+                    <button 
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      className="p-1 px-2.5 bg-background border border-border rounded disabled:opacity-20 cursor-pointer text-foreground hover:bg-muted transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+              
+            </div>            {/* Inline Right Detail Panel / ENDPOINT DETAIL DRAWER on the right of the table list */}
+            {selectedEndpointObj && isDrawerOpen && (
+              <div className="lg:col-span-4 bg-card border border-border p-5 rounded-xl shadow-xs font-mono text-[10px] space-y-6">
+                
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <Server size={15} className="text-indigo-650" />
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black uppercase tracking-wider">{selectedEndpointObj.hostname}</span>
+                      <span className="text-[8px] text-muted-foreground font-black">{selectedEndpointObj.id}</span>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* 4. TOP RISKY ENDPOINTS */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs">
-                <div className="flex gap-2 items-center mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <Flame size={13} className="text-red-500" />
-                  <h3 className="text-[10px] font-black uppercase tracking-wider">Top 10 Risky Systems Profiler</h3>
-                </div>
-                <div className="h-45 w-full text-[9px] font-mono">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={topRiskyData} layout="vertical" margin={{ top: 0, right: 10, left: -25, bottom: 0 }}>
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="hostname" type="category" stroke="#888888" tickLine={false} axisLine={false} width={80} />
-                      <Tooltip 
-                        contentStyle={{ fontSize: 9, fontFamily: "monospace", borderRadius: 4, backgroundColor: "#020617", borderColor: "#1e293b" }}
-                        labelStyle={{ color: "#94a3b8" }}
-                      />
-                      <Bar dataKey="risk" radius={[0, 4, 4, 0]} barSize={10}>
-                        {topRiskyData.map((entry, index) => {
-                          const col = entry.risk >= 80 ? "#ef4444" : entry.risk >= 50 ? "#f59e0b" : "#10b981";
-                          return <Cell key={`cell-${index}`} fill={col} />;
-                        })}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-            </div>
-
-            {/* 12. ENDPOINT GEO ANALYTICS (MOCK GEOIP WORLD MAP GRAPHIC) */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs">
-              <div className="flex gap-2 items-center justify-between mb-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-1.5">
-                  <Globe size={13} className="text-indigo-650" />
-                  <h3 className="text-[10px] font-black uppercase tracking-wider">GeoIP Global Ingress / Egress Map</h3>
-                </div>
-                <span className="text-[8px] uppercase font-mono tracking-widest text-slate-400">{endpoints.filter(e => e.geoInfo).length} Active Channels Mapped</span>
-              </div>
-              <div className="relative h-45 bg-slate-100 dark:bg-slate-950/70 rounded-lg flex items-center justify-center overflow-hidden border border-slate-205 dark:border-slate-850">
-                {/* SVG representing visual clean continents sketch */}
-                <svg viewBox="0 0 1000 400" className="w-full h-full opacity-30 dark:opacity-20 fill-slate-500 dark:fill-zinc-700">
-                  <path d="M150,120 Q160,110 180,115 T220,130 T250,110 T300,120 T350,150 T310,220 T250,250 T200,280 T180,240 T150,120 Z" />
-                  <path d="M450,100 Q480,80 520,70 T580,90 T640,110 T720,130 T750,160 T730,220 T650,250 T580,220 T520,240 T450,100 Z" />
-                  <path d="M220,310 Q240,300 270,305 T320,330 T340,360 T310,390 T250,380 T220,310 Z" />
-                  <path d="M780,260 Q810,250 840,255 T870,280 T880,310 T850,330 T810,300 T780,260 Z" />
-                </svg>
-
-                {/* Animated Vectors on Top of the Map dynamically pulled from current highlighted item */}
-                {selectedEndpointObj && (
-                  <svg viewBox="0 0 1000 400" className="absolute inset-0 w-full h-full">
-                    {/* Src Node */}
-                    <g transform="translate(300, 150)">
-                      <circle r="6" fill="#ef4444" className="animate-ping" />
-                      <circle r="4" fill="#ef4444" />
-                      <text y="-8" textAnchor="middle" fill="#ef4444" className="text-[10px] font-mono font-black">{selectedEndpointObj.geoInfo.srcCode}</text>
-                    </g>
-                    {/* Destination node */}
-                    <g transform="translate(680, 200)">
-                      <circle r="6" fill="#3b82f6" className="animate-ping" />
-                      <circle r="4" fill="#3b82f6" />
-                      <text y="-8" textAnchor="middle" fill="#3b82f6" className="text-[10px] font-mono font-black">{selectedEndpointObj.geoInfo.destCode}</text>
-                    </g>
-                    {/* Flow link curve */}
-                    <path 
-                      d="M 300 150 Q 490 80 680 200" 
-                      fill="none" 
-                      stroke="#f59e0b" 
-                      strokeWidth="2.5" 
-                      strokeDasharray="6 3"
-                      className="origin-center"
-                    />
-                  </svg>
-                )}
-
-                {/* Map stats overlays absolute positioned */}
-                <div className="absolute top-2.5 left-2.5 bg-white/90 dark:bg-slate-950/90 p-2 border border-slate-205 dark:border-slate-805 rounded shadow-sm text-[8px] font-mono uppercase space-y-1">
-                  <div className="text-indigo-650 dark:text-cyan-400 font-extrabold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" /> Threat Src Origin
-                  </div>
-                  <div>IP: {selectedEndpointObj?.ip || "10.100.1.x"}</div>
-                  <div>Country: {selectedEndpointObj?.geoInfo.srcCountry || "Vietnam"}</div>
+                  <button 
+                    onClick={() => setIsDrawerOpen(false)}
+                    className="p-1 px-2.5 hover:bg-muted border border-border text-[9px] font-black rounded uppercase cursor-pointer text-foreground"
+                  >
+                    Close
+                  </button>
                 </div>
 
-                <div className="absolute bottom-2.5 right-2.5 bg-white/90 dark:bg-slate-950/90 p-2 border border-slate-205 dark:border-slate-805 rounded shadow-sm text-[8px] font-mono uppercase text-right space-y-1">
-                  <div className="text-blue-500 font-extrabold flex items-center justify-end gap-1">
-                     Destination Tunnel <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                  </div>
-                  <div>IP Target Range: {selectedEndpointObj?.geoInfo.destCountry || "United States"}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Middle Grid Row for Profile Distribution */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-              {/* 5. ENDPOINT TRAFFIC PROFILE CHARTS */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-4">
-                <div className="flex gap-2 items-center border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <Activity size={13} className="text-cyan-400 animate-pulse" />
-                  <h3 className="text-[10px] font-black uppercase tracking-wider">Zeek Log Traffic Spectrometers</h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Protocol Distribution pie */}
-                  <div className="space-y-1">
-                    <span className="text-[8px] uppercase tracking-wider font-extrabold text-slate-400">Protocols (conn.log)</span>
-                    <div className="h-22.5 w-full text-[9px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie 
-                            data={trafficProfile.protocols} 
-                            dataKey="value" 
-                            nameKey="name" 
-                            cx="50%" 
-                            cy="50%" 
-                            outerRadius={30} 
-                            fill="#8884d8"
-                          >
-                            <Cell fill="#10b981" />
-                            <Cell fill="#3b82f6" />
-                            <Cell fill="#eab308" />
-                          </Pie>
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Service distribution Bar */}
-                  <div className="space-y-1">
-                    <span className="text-[8px] uppercase tracking-wider font-extrabold text-slate-400">Services Index</span>
-                    <div className="h-22.5 w-full text-[9px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={trafficProfile.services}>
-                          <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="#888888" fontSize={8} />
-                          <Bar dataKey="value" fill="#818cf8" barSize={8} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                {/* ASSET INFORMATION */}
+                <div className="space-y-2 border-b border-border pb-3">
+                  <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-black uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">Asset Information</h3>
+                  <div className="grid grid-cols-2 gap-2 text-[9.5px]">
+                    <div><span className="text-slate-400">Hostname:</span> <p className="font-bold">{selectedEndpointObj.hostname}</p></div>
+                    <div><span className="text-slate-400">IP Address:</span> <p className="font-bold">{selectedEndpointObj.ip}</p></div>
+                    <div><span className="text-slate-400">MAC Address:</span> <p className="font-bold">{selectedEndpointObj.mac}</p></div>
+                    <div><span className="text-slate-400">OS Module:</span> <p className="font-bold">{selectedEndpointObj.os}</p></div>
+                    <div><span className="text-slate-400">Role Assign:</span> <p className="font-bold text-foreground">{selectedEndpointObj.role}</p></div>
+                    <div><span className="text-slate-400">Telemetry Register:</span> <p className="font-bold">{selectedEndpointObj.firstSeen}</p></div>
                   </div>
                 </div>
 
-                {/* Top Src IP lists according to schema conn.log */}
-                <div className="grid grid-cols-2 gap-3 text-[9px] font-mono pt-1">
-                  <div>
-                    <p className="border-b border-slate-100 dark:border-slate-800 pb-1 text-slate-400 font-bold uppercase">Top Inbound Src (KB)</p>
-                    {trafficProfile.topSrc.map((item, idx) => (
-                      <div key={idx} className="flex justify-between py-1 border-b border-slate-100/50 dark:border-slate-800/10">
-                        <span className="truncate max-w-22.5" title={item.ip}>{item.ip}</span>
-                        <span className="font-bold text-slate-700 dark:text-zinc-300">{item.bytes} KB</span>
+                {/* NETWORK STATS ACTIVITY */}
+                <div className="space-y-2 border-b border-border pb-3">
+                  <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-black uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">Network Analytics Spectrum</h3>
+                  <div className="grid grid-cols-2 gap-2 text-[9.5px]">
+                    <div><span className="text-slate-400">Connections (Zeek):</span> <p className="font-bold text-amber-500">{selectedEndpointObj.totalConnections} Flows</p></div>
+                    <div><span className="text-slate-400">Dispatched Payload:</span> <p className="font-bold text-indigo-500">{(selectedEndpointObj.totalBytes / (1024 * 1024)).toFixed(2)} MB</p></div>
+                  </div>
+                  <div className="pt-2">
+                    <span className="text-[8px] text-slate-400 uppercase tracking-wider font-extrabold block mb-1">Port Service Distribution Bounds</span>
+                    <div className="grid grid-cols-5 gap-1 text-[8.5px] text-center">
+                      <div className="bg-secondary/40 border border-border rounded p-1">
+                        <span className="text-slate-400 block h-3">HTTP</span>
+                        <span className="font-black text-foreground">{selectedEndpointObj.services.HTTP}</span>
                       </div>
-                    ))}
-                  </div>
-                  <div>
-                    <p className="border-b border-slate-100 dark:border-slate-800 pb-1 text-slate-400 font-bold uppercase">Top Outbound Dest (KB)</p>
-                    {trafficProfile.topDest.map((item, idx) => (
-                      <div key={idx} className="flex justify-between py-1 border-b border-slate-100/50 dark:border-slate-800/10">
-                        <span className="truncate max-w-22.5" title={item.ip}>{item.ip}</span>
-                        <span className="font-bold text-slate-700 dark:text-zinc-300">{item.bytes} KB</span>
+                      <div className="bg-secondary/40 border border-border rounded p-1">
+                        <span className="text-slate-400 block h-3">DNS</span>
+                        <span className="font-black text-foreground">{selectedEndpointObj.services.DNS}</span>
                       </div>
-                    ))}
+                      <div className="bg-secondary/40 border border-border rounded p-1">
+                        <span className="text-slate-400 block h-3">SSH</span>
+                        <span className="font-black text-foreground">{selectedEndpointObj.services.SSH}</span>
+                      </div>
+                      <div className="bg-secondary/40 border border-border rounded p-1">
+                        <span className="text-slate-400 block h-3">HTTPS</span>
+                        <span className="font-black text-foreground">{selectedEndpointObj.services.HTTPS}</span>
+                      </div>
+                      <div className="bg-secondary/40 border border-border rounded p-1">
+                        <span className="text-slate-400 block h-3">OTHER</span>
+                        <span className="font-black text-foreground">{selectedEndpointObj.services.OTHER}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* 6. ENDPOINT ALERT DISTRIBUTION DOUGHNUT */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs flex flex-col justify-between">
-                <div className="flex gap-2 items-center mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">
-                  <Flame size={13} className="text-red-500 animate-pulse" />
-                  <h3 className="text-[10px] font-black uppercase tracking-wider">Fusion Attack Categories Alerts</h3>
-                </div>
-                <div className="h-30 w-full text-[9px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie 
-                        data={doughnutData} 
-                        cx="50%" 
-                        cy="50%" 
-                        innerRadius={30} 
-                        outerRadius={50} 
-                        dataKey="value"
-                      >
-                        {doughnutData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={ATTACK_COLORS[index % ATTACK_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                {/* Custom list grid index values */}
-                <div className="grid grid-cols-4 gap-1.5 font-mono text-[8.5px] text-zinc-650 dark:text-zinc-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  {doughnutData.map((item, idx) => (
-                    <div key={idx} className="flex flex-col border-r border-slate-100 dark:border-slate-800 pr-1 last:border-none">
-                      <span className="truncate uppercase font-bold" title={item.name}>{item.name}</span>
-                      <span className="font-extrabold text-high" style={{ color: ATTACK_COLORS[idx % ATTACK_COLORS.length] }}>{item.value} Alert</span>
+                {/* AI ANALYSIS MODULE DEEP RESEARCH (AI1, AI2A, AI2B) */}
+                <div className="space-y-4 border-b border-border pb-3">
+                  <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-black uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">AI Models Cognition Insights</h3>
+                  
+                  <div className="space-y-2.5 font-sans">
+                    <div className="bg-muted/40 border border-border p-2.5 rounded-lg space-y-1">
+                      <div className="flex justify-between items-center text-[8px] font-black tracking-wider uppercase font-mono">
+                        <span className="text-indigo-600 dark:text-cyan-400 font-bold">AI1 Anomaly Estimator</span>
+                        <span className={cn(
+                          "px-1 rounded",
+                          selectedEndpointObj.ai1.prediction === "ANOMALOUS" ? "bg-red-500/10 text-red-500" : "bg-neutral-500/10 text-neutral-400"
+                        )}>{selectedEndpointObj.ai1.prediction}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="text-muted-foreground">Anomaly Prediction Index</span>
+                        <span className="font-mono font-extrabold text-foreground">{selectedEndpointObj.ai1.anomalyScore}%</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-            </div>
+                    <div className="bg-muted/40 border border-border p-2.5 rounded-lg space-y-1">
+                      <div className="flex justify-between items-center text-[8px] font-black tracking-wider uppercase font-mono">
+                        <span className="text-indigo-600 dark:text-cyan-400 font-bold">AI2A Attack Classifier</span>
+                        <span className="text-amber-500">{selectedEndpointObj.ai2a.attackType !== "None" ? "ATTACK TRIGGERED" : "CLEAR"}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="text-muted-foreground">Attack Classification: {selectedEndpointObj.ai2a.attackType}</span>
+                        <span className="font-mono font-extrabold text-foreground">{selectedEndpointObj.ai2a.confidence}% Confidence</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-muted/40 border border-border p-2.5 rounded-lg space-y-1">
+                      <div className="flex justify-between items-center text-[8px] font-black tracking-wider uppercase font-mono">
+                        <span className="text-indigo-600 dark:text-cyan-400 font-bold">AI2B HTTP API Web Parser</span>
+                        <span className="text-blue-400">{selectedEndpointObj.ai2b.webAttack !== "None" ? "PROBE SEEN" : "CLEAR"}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="text-muted-foreground">API Web payload probe: {selectedEndpointObj.ai2b.webAttack}</span>
+                        <span className="font-mono font-extrabold text-foreground">{selectedEndpointObj.ai2b.confidence}% Confidence</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SURICATA RULE EVIDENCE */}
+                <div className="space-y-2 border-b border-border pb-3">
+                  <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-black uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">Suricata IDS Evidence</h3>
+                  {selectedEndpointObj.alertCount > 0 ? (
+                    <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded text-[9.5px] space-y-1">
+                      <div className="flex justify-between font-black">
+                        <span>SIGNATURE TRIGGERED</span>
+                        <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 rounded uppercase font-bold">{selectedEndpointObj.suricata.severity}</span>
+                      </div>
+                      <p className="font-extrabold text-foreground dark:text-amber-400 italic">"{selectedEndpointObj.suricata.signature}"</p>
+                      <p className="text-slate-400 text-[8.5px] uppercase font-bold">Category: {selectedEndpointObj.suricata.category}</p>
+                    </div>
+                  ) : (
+                    <p className="text-[9.5px] text-slate-400 font-mono">No active Suricata signatures compiled for this target machine assets.</p>
+                  )}
+                </div>
+
+                {/* FUSION CORE DECISION AND MITRE MAP */}
+                <div className="space-y-3 bg-secondary/40 pb-3 pt-2.5 px-3 rounded-lg border border-border">
+                  <h3 className="text-[9px] text-red-500 font-black uppercase tracking-widest flex items-center gap-1">
+                    <GitFork size={11} /> Fusion Layer Decision
+                  </h3>
+                  {selectedEndpointObj.riskScore > 40 ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[11px] font-black">
+                        <span className="text-red-500 uppercase">{selectedEndpointObj.fusion.finalAttackType}</span>
+                        <span className="text-slate-400">{selectedEndpointObj.fusion.riskScore}% Fusion Score</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[8px] uppercase tracking-wider font-bold">MITRE ATT&CK Mitigation Action Match:</span>
+                        <p className="text-[10px] font-mono font-extrabold text-foreground dark:text-emerald-400 uppercase">{selectedEndpointObj.fusion.mitreMapping}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[9.5px] text-slate-400 font-mono">System is behaving normally under fusion audit checks.</p>
+                  )}
+                </div>
+
+              </div>
+            )}
 
           </div>
 
-          {/* Right slide panel / Detail Info Grid (4 cols) */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* 13. ENDPOINT HEALTH SCORE */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-3">
-              <div className="flex gap-2 items-center border-b border-slate-100 dark:border-slate-800 pb-2">
+          {/* Telemetry Indicator Row (Below list table and details side panel) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">            {/* 13. ENDPOINT HEALTH SCORE */}
+            <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-3">
+              <div className="flex gap-2 items-center border-b border-border pb-2">
                 <Activity size={13} className="text-indigo-650 dark:text-cyan-400" />
                 <h3 className="text-[10px] font-black uppercase tracking-wider">Telemetry Health Gauge</h3>
               </div>
@@ -1106,7 +1120,7 @@ export function EndpointPage() {
                     {/* Ring score */}
                     <div className="relative w-28 h-28 flex items-center justify-center">
                       <svg className="w-full h-full transform -rotate-90">
-                        <circle cx="56" cy="56" r="48" stroke="#1e293b" strokeWidth="8" fill="transparent" />
+                        <circle cx="56" cy="56" r="48" stroke="currentColor" className="text-muted/40" strokeWidth="8" fill="transparent" />
                         <circle 
                           cx="56" 
                           cy="56" 
@@ -1123,16 +1137,16 @@ export function EndpointPage() {
                           className="transition-all duration-500"
                         />
                       </svg>
-                      <div className="absolute text-center bg-slate-100 dark:bg-slate-950 w-20 h-20 rounded-full flex flex-col items-center justify-center shadow-inner">
-                        <span className="text-lg font-black font-mono tracking-tighter">{selectedEndpointObj.healthScore}%</span>
-                        <span className="text-[7px] text-slate-500 font-bold uppercase tracking-widest leading-none">Global Health</span>
+                      <div className="absolute text-center bg-background w-20 h-20 rounded-full flex flex-col items-center justify-center shadow-inner">
+                        <span className="text-lg font-black font-mono tracking-tighter text-foreground">{selectedEndpointObj.healthScore}%</span>
+                        <span className="text-[7px] text-muted-foreground font-bold uppercase tracking-widest leading-none">Global Health</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-center text-[9px] font-mono leading-none">
-                    <div className="bg-slate-50 dark:bg-slate-950 p-2 border border-slate-205 dark:border-slate-855 rounded-lg">
-                      <p className="text-slate-500 mb-1 uppercase text-[7px] font-bold">Severity Level</p>
+                    <div className="bg-muted p-2 border border-border rounded-lg">
+                      <p className="text-muted-foreground mb-1 uppercase text-[7px] font-bold">Severity Level</p>
                       <p className={cn(
                         "font-black uppercase tracking-wider",
                         selectedEndpointObj.healthScore >= 90 ? "text-emerald-500" :
@@ -1145,9 +1159,9 @@ export function EndpointPage() {
                          selectedEndpointObj.healthScore >= 50 ? "High Risk" : "Critical"}
                       </p>
                     </div>
-                    <div className="bg-slate-50 dark:bg-slate-950 p-2 border border-slate-205 dark:border-slate-855 rounded-lg">
-                      <p className="text-slate-500 mb-1 uppercase text-[7px] font-bold">Mitre Score</p>
-                      <p className="font-extrabold text-slate-700 dark:text-zinc-200 uppercase">{selectedEndpointObj.timeline.length} Records</p>
+                    <div className="bg-muted p-2 border border-border rounded-lg">
+                      <p className="text-muted-foreground mb-1 uppercase text-[7px] font-bold">Mitre Score</p>
+                      <p className="font-extrabold text-foreground uppercase">{selectedEndpointObj.timeline.length} Records</p>
                     </div>
                   </div>
                 </div>
@@ -1157,8 +1171,8 @@ export function EndpointPage() {
             </div>
 
             {/* 9. ATTACK PATH VISUALIZATION GRAPH */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-3">
-              <div className="flex gap-2 items-center border-b border-slate-100 dark:border-slate-800 pb-2 justify-between">
+            <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-3">
+              <div className="flex gap-2 items-center border-b border-border pb-2 justify-between">
                 <div className="flex items-center gap-1.5">
                   <GitFork size={13} className="text-indigo-650" />
                   <h3 className="text-[10px] font-black uppercase tracking-wider">Attack Tree Graph Visualization</h3>
@@ -1171,7 +1185,7 @@ export function EndpointPage() {
                 
                 {/* Node 1: Attacker Kali VM */}
                 <div className="flex flex-col items-center">
-                  <div className="p-2 border border-red-505 bg-red-100 dark:bg-red-950/40 text-red-500 rounded-lg text-center tracking-widest uppercase font-extrabold flex items-center gap-1">
+                  <div className="p-2 border border-red-500/30 bg-red-500/10 text-red-500 rounded-lg text-center tracking-widest uppercase font-extrabold flex items-center gap-1">
                     <Flame size={12} className="animate-bounce" /> Kali Attacker (192.168.1.99)
                   </div>
                 </div>
@@ -1187,9 +1201,9 @@ export function EndpointPage() {
                 <div className="flex flex-col items-center">
                   <div className={cn(
                     "p-2 border rounded-lg text-center tracking-widest uppercase font-mono flex items-center gap-1 w-5/6 justify-center",
-                    selectedEndpointObj?.status === "Critical" ? "border-red-505 bg-red-500/10 text-red-505" :
-                    selectedEndpointObj?.status === "Warning" ? "border-amber-550 bg-amber-500/10 text-amber-550" :
-                    "border-slate-350 bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-zinc-400"
+                    selectedEndpointObj?.status === "Critical" ? "border-red-500 bg-red-500/10 text-red-500" :
+                    selectedEndpointObj?.status === "Warning" ? "border-amber-500 bg-amber-500/10 text-amber-550" :
+                    "border-border bg-muted text-foreground"
                   )}>
                     <Monitor size={12} /> {selectedEndpointObj?.hostname || "Target Victim"}
                   </div>
@@ -1197,7 +1211,7 @@ export function EndpointPage() {
 
                 {/* Animated Arrow 2 */}
                 <div className="flex justify-center -my-2">
-                  <svg className="w-6 h-8 text-neutral-450 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <svg className="w-6 h-8 text-muted-foreground/50 animate-pulse" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                   </svg>
                 </div>
@@ -1209,50 +1223,52 @@ export function EndpointPage() {
                   </div>
                 </div>
 
-                <p className="text-[8px] text-center text-slate-400 uppercase leading-none">Attack sequence triggered via Drupal API route exploitation vectors.</p>
+                <p className="text-[8px] text-center text-muted-foreground uppercase leading-none">Attack sequence triggered via Drupal API route exploitation vectors.</p>
               </div>
             </div>
 
             {/* 7. ENDPOINT TIMELINE */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-2">
                 <div className="flex items-center gap-1.5">
                   <Clock size={13} className="text-cyan-405" />
                   <h3 className="text-[10px] font-black uppercase tracking-wider">Device Chronicle Timeline</h3>
                 </div>
                 {/* Zoom range controller */}
                 <div className="flex items-center gap-1">
-                  <span className="text-[7.5px] uppercase font-mono text-slate-400">Scale zoom</span>
+                  <span className="text-[7.5px] uppercase font-mono text-muted-foreground">Scale zoom</span>
                   <input 
                     type="range" 
                     min="30" 
                     max="100" 
                     value={timelineZoom}
                     onChange={(e) => setTimelineZoom(Number(e.target.value))}
-                    className="w-16 h-1 bg-slate-250 dark:bg-slate-805 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                    className="w-16 h-1 bg-secondary rounded-lg appearance-none cursor-pointer accent-cyan-400"
                   />
                 </div>
               </div>
 
               {selectedEndpointObj ? (
-                <div className="relative border-l border-slate-200 dark:border-slate-800 pl-4 space-y-3 font-mono text-[10px] overflow-y-auto max-h-47.5 pr-1">
+                <div className="relative pl-6 space-y-3 font-mono text-[10px] overflow-y-auto max-h-47.5 pr-1">
+                  {/* Timeline line shifted inwards */}
+                  <div className="absolute left-2.75 top-1.5 bottom-1.5 w-px bg-border" />
                   {selectedEndpointObj.timeline
                     .slice(0, Math.ceil(selectedEndpointObj.timeline.length * (timelineZoom / 100)))
                     .map((item, index) => (
                       <div key={item.id} className="relative group/time">
                         {/* Circle marker */}
                         <span className={cn(
-                          "absolute left-[-20.5px] top-1 w-2 h-2 rounded-full",
+                          "absolute -left-4.25 top-1 w-2 h-2 rounded-full",
                           item.severity === "Critical" ? "bg-red-500" :
-                          item.severity === "High" ? "bg-amber-500" : "bg-indigo-550"
+                          item.severity === "High" ? "bg-amber-500" : "bg-indigo-500"
                         )} />
                         <div className="space-y-0.5">
-                          <span className="text-[9px] text-slate-505 dark:text-zinc-500 font-black">{item.time}</span>
-                          <p className="font-extrabold text-[#111] dark:text-[#f8fafc] leading-snug uppercase">{item.event}</p>
+                          <span className="text-[9px] text-muted-foreground font-black">{item.time}</span>
+                          <p className="font-extrabold text-foreground leading-snug uppercase">{item.event}</p>
                           <span className={cn(
                             "text-[7px] border rounded px-1.5 py-0.2 uppercase font-black tracking-widest",
-                            item.severity === "Critical" ? "border-red-500 bg-red-500/10 text-red-550" :
-                            "border-slate-350 text-slate-450 bg-slate-100/40"
+                            item.severity === "Critical" ? "border-red-500/30 bg-red-500/10 text-red-500" :
+                            "border-border text-muted-foreground bg-muted"
                           )}>
                             {item.severity} Level
                           </span>
@@ -1261,8 +1277,350 @@ export function EndpointPage() {
                     ))}
                 </div>
               ) : (
-                <p className="text-[10px] font-mono text-slate-400 text-center py-6">Highlight target vm node below.</p>
+                <p className="text-[10px] font-mono text-muted-foreground text-center py-6">Highlight target vm node below.</p>
               )}
+            </div>
+
+          </div>
+
+          {/* Middle Grid containing Matrices */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* 3. ENDPOINT RISK MATRIX HEATMAP */}
+            <div className="bg-card border border-border p-4 rounded-xl shadow-xs">
+              <div className="flex gap-2 items-center mb-3 border-b border-border pb-2">
+                <Activity size={13} className="text-cyan-405" />
+                <h3 className="text-[10px] font-black uppercase tracking-wider">Detection Spectrum Heatmatrix</h3>
+              </div>
+              <div className="overflow-x-auto select-none">
+                <div className="min-w-[320px] space-y-1.5 font-mono text-[9px]">
+                  <div className="grid grid-cols-6 border-b border-border pb-1 text-muted-foreground">
+                    <div className="col-span-2">Endpoint</div>
+                    {riskCategories.map((c, i) => (
+                      <div key={i} className="text-center text-[8px] truncate uppercase" title={c}>{c.split(' ')[0]}</div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-1">
+                    {matrixEndPoints.map(ep => {
+                      return (
+                        <div key={ep.id} className="grid grid-cols-6 items-center hover:bg-muted p-0.5 rounded transition-all">
+                          <div 
+                            onClick={() => { setSelectedId(ep.id); setIsDrawerOpen(true); }}
+                            className="col-span-2 truncate font-bold text-foreground cursor-pointer"
+                            title={ep.hostname}
+                          >
+                            {ep.hostname}
+                          </div>
+                          {riskCategories.map((cat, i) => {
+                            // Assign risk score ranges based on factors
+                            let val = 10;
+                            if (cat.includes("AI1") && ep.ai1.prediction !== "NORMAL") val = ep.ai1.anomalyScore;
+                            if (cat.includes("AI2A") && ep.ai2a.attackType !== "None") val = ep.ai2a.confidence;
+                            if (cat.includes("AI2B") && ep.ai2b.webAttack !== "None") val = ep.ai2b.confidence;
+                            if (cat.includes("Suricata") && ep.alertCount > 0) val = Math.min(99, ep.alertCount * 25);
+
+                            const bgClass = 
+                              val >= 80 ? "bg-red-500 border border-red-650" :
+                              val >= 55 ? "bg-orange-500 border border-orange-600" :
+                              val >= 30 ? "bg-amber-400 border border-amber-500 animate-pulse" :
+                              "bg-emerald-500/30 dark:bg-emerald-950/20 border border-emerald-500/20";
+
+                            return (
+                              <div 
+                                key={i}
+                                onClick={() => { setSelectedId(ep.id); setIsDrawerOpen(true); }}
+                                className={cn("h-4 rounded mx-1.5 cursor-pointer transition-transform hover:scale-105", bgClass)}
+                                title={`${cat} metric: ${val}% rating`}
+                              />
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. TOP RISKY ENDPOINTS */}
+            <div className="bg-card border border-border p-4 rounded-xl shadow-xs">
+              <div className="flex gap-2 items-center mb-3 border-b border-border pb-2">
+                <Flame size={13} className="text-red-500" />
+                <h3 className="text-[10px] font-black uppercase tracking-wider">Top 10 Risky Systems Profiler</h3>
+              </div>
+              <div className="h-45 w-full text-[9px] font-mono">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topRiskyData} layout="vertical" margin={{ top: 0, right: 10, left: -25, bottom: 0 }}>
+                    <XAxis type="number" hide />
+                    <YAxis dataKey="hostname" type="category" stroke="#888888" tickLine={false} axisLine={false} width={80} />
+                    <Tooltip 
+                      contentStyle={{ fontSize: 9, fontFamily: "monospace", borderRadius: 4, backgroundColor: "#020617", borderColor: "#1e293b" }}
+                      labelStyle={{ color: "#94a3b8" }}
+                    />
+                    <Bar dataKey="risk" radius={[0, 4, 4, 0]} barSize={10}>
+                      {topRiskyData.map((entry, index) => {
+                        const col = entry.risk >= 80 ? "#ef4444" : entry.risk >= 50 ? "#f59e0b" : "#10b981";
+                        return <Cell key={`cell-${index}`} fill={col} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+          </div>          {/* 12. ENDPOINT GEO ANALYTICS (MOCK GEOIP WORLD MAP GRAPHIC) */}
+          <div className="bg-card border border-border p-4 rounded-xl shadow-xs">
+            <div className="flex gap-2 items-center justify-between mb-2 pb-2 border-b border-border">
+              <div className="flex items-center gap-1.5">
+                <Globe size={13} className="text-indigo-650" />
+                <h3 className="text-[10px] font-black uppercase tracking-wider">GeoIP Global Ingress / Egress Map</h3>
+              </div>
+              <span className="text-[8px] uppercase font-mono tracking-widest text-muted-foreground">{endpoints.filter(e => e.geoInfo).length} Active Channels Mapped</span>
+            </div>
+            <div className="relative h-45 bg-muted/40 rounded-lg flex items-center justify-center overflow-hidden border border-border">
+              {(() => {
+                const srcXY = selectedEndpointObj
+                  ? geoToXY(selectedEndpointObj.geoInfo.srcCoords[0], selectedEndpointObj.geoInfo.srcCoords[1])
+                  : geoToXY(14.0583, 108.2772);
+                const destXY = selectedEndpointObj
+                  ? geoToXY(selectedEndpointObj.geoInfo.destCoords[0], selectedEndpointObj.geoInfo.destCoords[1])
+                  : geoToXY(37.0902, -95.7129);
+                const midX = (srcXY.x + destXY.x) / 2;
+                const midY = Math.max(20, Math.min(srcXY.y, destXY.y) - 60);
+                const arcD = `M ${srcXY.x} ${srcXY.y} Q ${midX} ${midY} ${destXY.x} ${destXY.y}`;
+
+                return (
+                  <>
+                    {/* SVG representing real world continents with accurate shape outlines */}
+                    <svg viewBox="0 0 1000 400" className="w-full h-full fill-slate-300/80 dark:fill-blue-950/40 stroke-slate-500/80 dark:stroke-cyan-400 stroke-[1.1] transition-all duration-300">
+                      {/* Grid representation for geospatial positioning */}
+                      <g className="opacity-30 dark:opacity-40 stroke-slate-400/30 dark:stroke-cyan-500/20 stroke-[0.5]">
+                        <line x1="0" y1="50" x2="1000" y2="50" strokeDasharray="2 4" />
+                        <line x1="0" y1="100" x2="1000" y2="100" strokeDasharray="2 4" />
+                        <line x1="0" y1="150" x2="1000" y2="150" strokeDasharray="2 4" />
+                        <line x1="0" y1="200" x2="1000" y2="200" strokeDasharray="2 4" />
+                        <line x1="0" y1="250" x2="1000" y2="250" strokeDasharray="2 4" />
+                        <line x1="0" y1="300" x2="1000" y2="300" strokeDasharray="2 4" />
+                        <line x1="0" y1="350" x2="1000" y2="350" strokeDasharray="2 4" />
+                        <line x1="100" y1="0" x2="100" y2="400" strokeDasharray="2 4" />
+                        <line x1="200" y1="0" x2="200" y2="400" strokeDasharray="2 4" />
+                        <line x1="300" y1="0" x2="300" y2="400" strokeDasharray="2 4" />
+                        <line x1="400" y1="0" x2="400" y2="400" strokeDasharray="2 4" />
+                        <line x1="500" y1="0" x2="500" y2="400" strokeDasharray="2 4" />
+                        <line x1="600" y1="0" x2="600" y2="400" strokeDasharray="2 4" />
+                        <line x1="700" y1="0" x2="700" y2="400" strokeDasharray="2 4" />
+                        <line x1="800" y1="0" x2="800" y2="400" strokeDasharray="2 4" />
+                        <line x1="900" y1="0" x2="900" y2="400" strokeDasharray="2 4" />
+                      </g>
+
+                      {CONTINENT_PATHS.map((cont, i) => (
+                        <path 
+                          key={i} 
+                          d={cont.d} 
+                          className="hover:fill-slate-400/80 dark:hover:fill-cyan-800/40 transition-colors duration-300 cursor-help"
+                        >
+                          <title>{cont.name}</title>
+                        </path>
+                      ))}
+                    </svg>
+
+                    {/* Interactivity layer: All active channels faint nodes */}
+                    <svg viewBox="0 0 1000 400" className="absolute inset-0 w-full h-full">
+                      {endpoints.filter(e => e.geoInfo).map((ep) => {
+                        const isSelected = ep.id === selectedId;
+                        const s = geoToXY(ep.geoInfo.srcCoords[0], ep.geoInfo.srcCoords[1]);
+                        const d = geoToXY(ep.geoInfo.destCoords[0], ep.geoInfo.destCoords[1]);
+                        return (
+                          <g key={ep.id} className="opacity-60 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => setSelectedId(ep.id)}>
+                            <circle cx={s.x} cy={s.y} r={isSelected ? 5 : 3.5} fill={isSelected ? "#ef4444" : "#f43f5e"} className={isSelected ? "stroke-white dark:stroke-slate-900 stroke-[1.5]" : ""} />
+                            <circle cx={d.x} cy={d.y} r={isSelected ? 5 : 3.5} fill={isSelected ? "#3b82f6" : "#60a5fa"} className={isSelected ? "stroke-white dark:stroke-slate-900 stroke-[1.5]" : ""} />
+                          </g>
+                        );
+                      })}
+                    </svg>
+
+                    {/* Highlighted active vector channel curve */}
+                    {selectedEndpointObj && (
+                      <svg viewBox="0 0 1000 400" className="absolute inset-0 w-full h-full pointer-events-none">
+                        {/* Define glowing drop shadows to enhance realism */}
+                        <defs>
+                          <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                          </filter>
+                        </defs>
+
+                        {/* Src Node */}
+                        <g transform={`translate(${srcXY.x}, ${srcXY.y})`}>
+                          <circle r="8" fill="#ef4444" className="animate-ping opacity-75" />
+                          <circle r="4" fill="#ef4444" />
+                          <text y="-10" textAnchor="middle" fill="#ef4444" className="text-[10px] font-mono font-bold bg-background/80 px-1 py-0.5 rounded shadow-sm drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{selectedEndpointObj.geoInfo.srcCode}</text>
+                        </g>
+                        
+                        {/* Destination node */}
+                        <g transform={`translate(${destXY.x}, ${destXY.y})`}>
+                          <circle r="8" fill="#3b82f6" className="animate-ping opacity-75" />
+                          <circle r="4" fill="#3b82f6" />
+                          <text y="-10" textAnchor="middle" fill="#3b82f6" className="text-[10px] font-mono font-bold bg-background/80 px-1 py-0.5 rounded shadow-sm drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">{selectedEndpointObj.geoInfo.destCode}</text>
+                        </g>
+                        
+                        {/* Arc connection with custom animated quadratic bezier line */}
+                        {/* Subtle glow underneath */}
+                        <path 
+                          d={arcD} 
+                          fill="none" 
+                          stroke="#f59e0b" 
+                          strokeWidth="4" 
+                          className="opacity-25"
+                          filter="url(#glow-orange)"
+                        />
+                        <path 
+                          d={arcD} 
+                          fill="none" 
+                          stroke="#f59e0b" 
+                          strokeWidth="2.5" 
+                          strokeDasharray="8 4"
+                          className="drop-shadow-[0_0_3px_#f59e0b]"
+                        >
+                          <animate 
+                            attributeName="stroke-dashoffset" 
+                            values="100;0" 
+                            dur="2s" 
+                            repeatCount="indefinite" 
+                          />
+                        </path>
+                      </svg>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* Map stats overlays absolute positioned */}
+              <div className="absolute top-2.5 left-2.5 bg-card/90 backdrop-blur-xs p-2 border border-border rounded shadow-sm text-[8px] font-mono uppercase space-y-1">
+                <div className="text-indigo-650 dark:text-cyan-400 font-extrabold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" /> Threat Src Origin
+                </div>
+                <div className="text-foreground">IP: {selectedEndpointObj?.ip || "10.100.1.x"}</div>
+                <div className="text-foreground">Country: {selectedEndpointObj?.geoInfo.srcCountry || "Vietnam"}</div>
+              </div>
+
+              {/* Destination overlay */}
+              <div className="absolute bottom-2.5 right-2.5 bg-card/90 backdrop-blur-xs p-2 border border-border rounded shadow-sm text-[8px] font-mono uppercase text-right space-y-1">
+                <div className="text-blue-500 font-extrabold flex items-center justify-end gap-1">
+                   Destination Tunnel <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                </div>
+                <div className="text-foreground">IP Target Range: {selectedEndpointObj?.geoInfo.destCountry || "United States"}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Middle Grid Row for Profile Distribution */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* 5. ENDPOINT TRAFFIC PROFILE CHARTS */}
+            <div className="bg-card border border-border p-4 rounded-xl shadow-xs space-y-4">
+              <div className="flex gap-2 items-center border-b border-border pb-2">
+                <Activity size={13} className="text-cyan-400 animate-pulse" />
+                <h3 className="text-[10px] font-black uppercase tracking-wider">Zeek Log Traffic Spectrometers</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Protocol Distribution pie */}
+                <div className="space-y-1">
+                  <span className="text-[8px] uppercase tracking-wider font-extrabold text-muted-foreground">Protocols (conn.log)</span>
+                  <div className="h-22.5 w-full text-[9px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie 
+                          data={trafficProfile.protocols} 
+                          dataKey="value" 
+                          nameKey="name" 
+                          cx="50%" 
+                          cy="50%" 
+                          outerRadius={30} 
+                          fill="#8884d8"
+                        >
+                          <Cell fill="#10b981" />
+                          <Cell fill="#3b82f6" />
+                          <Cell fill="#eab308" />
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Service distribution Bar */}
+                <div className="space-y-1">
+                  <span className="text-[8px] uppercase tracking-wider font-extrabold text-muted-foreground">Services Index</span>
+                  <div className="h-22.5 w-full text-[9px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={trafficProfile.services}>
+                        <XAxis dataKey="name" tickLine={false} axisLine={false} stroke="#888888" fontSize={8} />
+                        <Bar dataKey="value" fill="#818cf8" barSize={8} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Src IP lists according to schema conn.log */}
+              <div className="grid grid-cols-2 gap-3 text-[9px] font-mono pt-1">
+                <div>
+                  <p className="border-b border-border pb-1 text-muted-foreground font-bold uppercase">Top Inbound Src (KB)</p>
+                  {trafficProfile.topSrc.map((item, idx) => (
+                    <div key={idx} className="flex justify-between py-1 border-b border-border/10">
+                      <span className="truncate max-w-22.5" title={item.ip}>{item.ip}</span>
+                      <span className="font-bold text-foreground">{item.bytes} KB</span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="border-b border-border pb-1 text-muted-foreground font-bold uppercase">Top Outbound Dest (KB)</p>
+                  {trafficProfile.topDest.map((item, idx) => (
+                    <div key={idx} className="flex justify-between py-1 border-b border-border/10">
+                      <span className="truncate max-w-22.5" title={item.ip}>{item.ip}</span>
+                      <span className="font-bold text-foreground">{item.bytes} KB</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 6. ENDPOINT ALERT DISTRIBUTION DOUGHNUT */}
+            <div className="bg-card border border-border p-4 rounded-xl shadow-xs flex flex-col justify-between">
+              <div className="flex gap-2 items-center mb-3 border-b border-border pb-2">
+                <Flame size={13} className="text-red-500 animate-pulse" />
+                <h3 className="text-[10px] font-black uppercase tracking-wider">Fusion Attack Categories Alerts</h3>
+              </div>
+              <div className="h-30 w-full text-[9px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie 
+                      data={doughnutData} 
+                      cx="50%" 
+                      cy="50%" 
+                      innerRadius={30} 
+                      outerRadius={50} 
+                      dataKey="value"
+                    >
+                      {doughnutData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={ATTACK_COLORS[index % ATTACK_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Custom list grid index values */}
+              <div className="grid grid-cols-4 gap-1.5 font-mono text-[8.5px] text-muted-foreground pt-2 border-t border-border">
+                {doughnutData.map((item, idx) => (
+                  <div key={idx} className="flex flex-col border-r border-border pr-1 last:border-none">
+                    <span className="truncate uppercase font-bold" title={item.name}>{item.name}</span>
+                    <span className="font-extrabold text-high" style={{ color: ATTACK_COLORS[idx % ATTACK_COLORS.length] }}>{item.value} Alert</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
           </div>
@@ -1270,13 +1628,13 @@ export function EndpointPage() {
         </div>
       ) : (
         /* 10. ENDPOINT INCIDENT HISTORY DATA GRID */
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 flex items-center justify-between">
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-xs">
+          <div className="p-4 border-b border-border bg-muted/60 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Flame size={14} className="text-red-500 animate-pulse" />
               <h2 className="text-xs font-black uppercase tracking-wider">Fusion Consensus Threats Data Grid</h2>
             </div>
-            <span className="text-[9px] font-mono uppercase bg-slate-100 dark:bg-slate-950 px-2 py-1 rounded text-red-500 font-extrabold border border-slate-250 dark:border-slate-850">
+            <span className="text-[9px] font-mono uppercase bg-secondary px-2 py-1 rounded text-red-500 font-extrabold border border-border">
               {incidents.length} Records Loaded
             </span>
           </div>
@@ -1284,7 +1642,7 @@ export function EndpointPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono border-collapse text-[11px] min-w-175">
               <thead>
-                <tr className="bg-slate-100/50 dark:bg-slate-900 text-[10px] text-slate-500 font-black border-b border-slate-200 dark:border-slate-800 uppercase tracking-widest">
+                <tr className="bg-muted text-[10px] text-muted-foreground font-black border-b border-border uppercase tracking-widest">
                   <th className="px-5 py-3">Timestamp</th>
                   <th className="px-5 py-3">Host Node</th>
                   <th className="px-5 py-3">IP Address</th>
@@ -1295,16 +1653,16 @@ export function EndpointPage() {
                   <th className="px-5 py-3 text-right">Activity</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
+              <tbody className="divide-y divide-border">
                 {incidents.map((inc, i) => (
                   <tr 
                     key={inc.id}
                     onClick={() => { setSelectedIncident(inc); setIsModalOpen(true); }}
-                    className="cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-800/10"
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     <td className="px-5 py-3 text-[10px] text-indigo-650 dark:text-cyan-404 font-extrabold">{inc.timestamp}</td>
-                    <td className="px-5 py-3 font-bold dark:text-zinc-200">{inc.hostname}</td>
-                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{inc.ip}</td>
+                    <td className="px-5 py-3 font-bold text-foreground">{inc.hostname}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{inc.ip}</td>
                     <td className="px-5 py-3">
                       <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-500 text-[9px] font-black uppercase tracking-wider">
                         {inc.attackType}
@@ -1313,17 +1671,17 @@ export function EndpointPage() {
                     <td className="px-5 py-3 text-center">
                       <span className={cn(
                         "py-0.5 px-2 rounded-full text-[8px] font-black uppercase tracking-widest",
-                        inc.severity === "Critical" ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                        inc.severity === "Critical" ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-amber-500/10 text-amber-550 border border-amber-500/20"
                       )}>
                         {inc.severity}
                       </span>
                     </td>
-                    <td className="px-5 py-3 font-extrabold text-red-550">{inc.riskScore}%</td>
-                    <td className="px-5 py-3 text-[10px] text-slate-400">{inc.aiSource}</td>
+                    <td className="px-5 py-3 font-extrabold text-red-500">{inc.riskScore}%</td>
+                    <td className="px-5 py-3 text-[10px] text-muted-foreground">{inc.aiSource}</td>
                     <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <button 
                         onClick={() => { setSelectedIncident(inc); setIsModalOpen(true); }}
-                        className="px-2.5 py-1 bg-slate-100 dark:bg-slate-850 hover:bg-slate-205 border border-slate-200 dark:border-slate-800 hover:border-slate-300 text-[8.5px] font-black uppercase tracking-wider rounded cursor-pointer transition-colors"
+                        className="px-2.5 py-1 bg-secondary hover:bg-secondary/80 text-foreground border border-border text-[8.5px] font-black uppercase tracking-wider rounded cursor-pointer transition-colors"
                       >
                         Inspect Evidence
                       </button>
@@ -1337,15 +1695,15 @@ export function EndpointPage() {
       )}
 
       {/* 8. ENDPOINT DETAIL DRAWER (RIGHT PANEL SLIDE OUT SHOWN AS COMPONENT SIDE PANEL WHEN DRAWER IS TOGGLED ON) */}
-      {selectedEndpointObj && isDrawerOpen && (
+      {false && selectedEndpointObj && isDrawerOpen && (
         <div className="fixed top-0 right-0 h-full w-90 md:w-120 bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 shadow-2xl z-40 transform transition-all p-5 font-mono text-[10px] overflow-y-auto space-y-6 animate-in slide-in-from-right duration-300">
           
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2">
               <Server size={15} className="text-indigo-650" />
               <div className="flex flex-col">
-                <span className="text-[11px] font-black uppercase tracking-wider">{selectedEndpointObj.hostname}</span>
-                <span className="text-[8px] text-slate-450 font-black">{selectedEndpointObj.id}</span>
+                <span className="text-[11px] font-black uppercase tracking-wider">{selectedEndpointObj?.hostname}</span>
+                <span className="text-[8px] text-slate-450 font-black">{selectedEndpointObj?.id}</span>
               </div>
             </div>
             <button 
@@ -1360,12 +1718,12 @@ export function EndpointPage() {
           <div className="space-y-2 border-b border-slate-200 dark:border-slate-850 pb-3">
             <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-extrabold uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">Asset Information</h3>
             <div className="grid grid-cols-2 gap-2 text-[9.5px]">
-              <div><span className="text-slate-400">Hostname:</span> <p className="font-bold">{selectedEndpointObj.hostname}</p></div>
-              <div><span className="text-slate-400">IP Address:</span> <p className="font-bold">{selectedEndpointObj.ip}</p></div>
-              <div><span className="text-slate-400">MAC Address:</span> <p className="font-bold">{selectedEndpointObj.mac}</p></div>
-              <div><span className="text-slate-400">OS Module:</span> <p className="font-bold">{selectedEndpointObj.os}</p></div>
-              <div><span className="text-slate-400">Role Assign:</span> <p className="font-bold text-slate-800 dark:text-zinc-300">{selectedEndpointObj.role}</p></div>
-              <div><span className="text-slate-400">Telemetry Register:</span> <p className="font-bold">{selectedEndpointObj.firstSeen}</p></div>
+              <div><span className="text-slate-400">Hostname:</span> <p className="font-bold">{selectedEndpointObj?.hostname}</p></div>
+              <div><span className="text-slate-400">IP Address:</span> <p className="font-bold">{selectedEndpointObj?.ip}</p></div>
+              <div><span className="text-slate-400">MAC Address:</span> <p className="font-bold">{selectedEndpointObj?.mac}</p></div>
+              <div><span className="text-slate-400">OS Module:</span> <p className="font-bold">{selectedEndpointObj?.os}</p></div>
+              <div><span className="text-slate-400">Role Assign:</span> <p className="font-bold text-slate-800 dark:text-zinc-300">{selectedEndpointObj?.role}</p></div>
+              <div><span className="text-slate-400">Telemetry Register:</span> <p className="font-bold">{selectedEndpointObj?.firstSeen}</p></div>
             </div>
           </div>
 
@@ -1373,31 +1731,31 @@ export function EndpointPage() {
           <div className="space-y-2 border-b border-slate-200 dark:border-slate-850 pb-3">
             <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-extrabold uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">Network Analytics Spectrum</h3>
             <div className="grid grid-cols-2 gap-2 text-[9.5px]">
-              <div><span className="text-slate-400">Connections (Zeek):</span> <p className="font-bold text-amber-500">{selectedEndpointObj.totalConnections} Flows</p></div>
-              <div><span className="text-slate-400">Dispatched Payload:</span> <p className="font-bold text-indigo-500">{(selectedEndpointObj.totalBytes / (1024 * 1024)).toFixed(2)} MB</p></div>
+              <div><span className="text-slate-400">Connections (Zeek):</span> <p className="font-bold text-amber-500">{selectedEndpointObj?.totalConnections} Flows</p></div>
+              <div><span className="text-slate-400">Dispatched Payload:</span> <p className="font-bold text-indigo-500">{((selectedEndpointObj?.totalBytes ?? 0) / (1024 * 1024)).toFixed(2)} MB</p></div>
             </div>
             <div className="pt-2">
               <span className="text-[8px] text-slate-400 uppercase tracking-wider font-extrabold block mb-1">Port Service Distribution Bounds</span>
               <div className="grid grid-cols-5 gap-1 text-[8.5px] text-center">
                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-205 dark:border-slate-855 rounded p-1">
                   <span className="text-slate-400 block h-3">HTTP</span>
-                  <span className="font-black">{selectedEndpointObj.services.HTTP}</span>
+                  <span className="font-black">{selectedEndpointObj?.services.HTTP}</span>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-205 dark:border-slate-855 rounded p-1">
                   <span className="text-slate-400 block h-3">DNS</span>
-                  <span className="font-black">{selectedEndpointObj.services.DNS}</span>
+                  <span className="font-black">{selectedEndpointObj?.services.DNS}</span>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-205 dark:border-slate-855 rounded p-1">
                   <span className="text-slate-400 block h-3">SSH</span>
-                  <span className="font-black">{selectedEndpointObj.services.SSH}</span>
+                  <span className="font-black">{selectedEndpointObj?.services.SSH}</span>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-205 dark:border-slate-855 rounded p-1">
                   <span className="text-slate-400 block h-3">HTTPS</span>
-                  <span className="font-black">{selectedEndpointObj.services.HTTPS}</span>
+                  <span className="font-black">{selectedEndpointObj?.services.HTTPS}</span>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-900 border border-slate-205 dark:border-slate-855 rounded p-1">
                   <span className="text-slate-400 block h-3">OTHER</span>
-                  <span className="font-black">{selectedEndpointObj.services.OTHER}</span>
+                  <span className="font-black">{selectedEndpointObj?.services.OTHER}</span>
                 </div>
               </div>
             </div>
@@ -1405,7 +1763,7 @@ export function EndpointPage() {
 
           {/* AI ANALYSIS MODULE DEEP RESEARCH (AI1, AI2A, AI2B) */}
           <div className="space-y-4 border-b border-slate-200 dark:border-slate-850 pb-3">
-            <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-extrabold uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">AI Models Cognition Insights</h3>
+            <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-black uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">AI Models Cognition Insights</h3>
             
             <div className="space-y-2.5 font-sans">
               <div className="bg-slate-100 dark:bg-slate-900 border border-slate-202 dark:border-slate-802 p-2.5 rounded-lg space-y-1">
@@ -1413,34 +1771,34 @@ export function EndpointPage() {
                   <span className="text-indigo-600 dark:text-cyan-400">AI1 Anomaly Estimator</span>
                   <span className={cn(
                     "px-1 rounded",
-                    selectedEndpointObj.ai1.prediction === "ANOMALOUS" ? "bg-red-500/10 text-red-500" : "bg-neutral-500/10 text-neutral-400"
-                  )}>{selectedEndpointObj.ai1.prediction}</span>
+                    selectedEndpointObj?.ai1.prediction === "ANOMALOUS" ? "bg-red-500/10 text-red-500" : "bg-neutral-500/10 text-neutral-400"
+                  )}>{selectedEndpointObj?.ai1.prediction}</span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-slate-500">Anomaly Prediction Index</span>
-                  <span className="font-mono font-extrabold">{selectedEndpointObj.ai1.anomalyScore}%</span>
+                  <span className="font-mono font-extrabold">{selectedEndpointObj?.ai1.anomalyScore}%</span>
                 </div>
               </div>
 
               <div className="bg-slate-100 dark:bg-slate-900 border border-slate-202 dark:border-slate-802 p-2.5 rounded-lg space-y-1">
                 <div className="flex justify-between items-center text-[8px] font-black tracking-wider uppercase font-mono">
                   <span className="text-indigo-600 dark:text-cyan-400">AI2A Attack Classifier</span>
-                  <span className="text-amber-500">{selectedEndpointObj.ai2a.attackType !== "None" ? "ATTACK TRIGGERED" : "CLEAR"}</span>
+                  <span className="text-amber-500">{selectedEndpointObj?.ai2a.attackType !== "None" ? "ATTACK TRIGGERED" : "CLEAR"}</span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-slate-500">Attack Classification: {selectedEndpointObj.ai2a.attackType}</span>
-                  <span className="font-mono font-extrabold">{selectedEndpointObj.ai2a.confidence}% Confidence</span>
+                  <span className="text-slate-500">Attack Classification: {selectedEndpointObj?.ai2a.attackType}</span>
+                  <span className="font-mono font-extrabold">{selectedEndpointObj?.ai2a.confidence}% Confidence</span>
                 </div>
               </div>
 
               <div className="bg-slate-100 dark:bg-slate-900 border border-slate-202 dark:border-slate-802 p-2.5 rounded-lg space-y-1">
                 <div className="flex justify-between items-center text-[8px] font-black tracking-wider uppercase font-mono">
                   <span className="text-indigo-600 dark:text-cyan-400">AI2B HTTP API Web Parser</span>
-                  <span className="text-blue-400">{selectedEndpointObj.ai2b.webAttack !== "None" ? "PROBE SEEN" : "CLEAR"}</span>
+                  <span className="text-blue-400">{selectedEndpointObj?.ai2b.webAttack !== "None" ? "PROBE SEEN" : "CLEAR"}</span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-slate-500">API Web payload probe: {selectedEndpointObj.ai2b.webAttack}</span>
-                  <span className="font-mono font-extrabold">{selectedEndpointObj.ai2b.confidence}% Confidence</span>
+                  <span className="text-slate-500">API Web payload probe: {selectedEndpointObj?.ai2b.webAttack}</span>
+                  <span className="font-mono font-extrabold">{selectedEndpointObj?.ai2b.confidence}% Confidence</span>
                 </div>
               </div>
             </div>
@@ -1449,14 +1807,14 @@ export function EndpointPage() {
           {/* SURICATA RULE EVIDENCE */}
           <div className="space-y-2 border-b border-slate-200 dark:border-slate-850 pb-3">
             <h3 className="text-[9px] text-indigo-650 dark:text-cyan-404 font-extrabold uppercase tracking-widest border-l-2 border-indigo-405 pl-1.5">Suricata IDS Evidence</h3>
-            {selectedEndpointObj.alertCount > 0 ? (
+            {(selectedEndpointObj?.alertCount ?? 0) > 0 ? (
               <div className="bg-amber-500/10 border border-amber-500/20 p-2 rounded text-[9.5px] space-y-1">
                 <div className="flex justify-between font-black">
                   <span>SIGNATURE TRIGGERED</span>
-                  <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 rounded uppercase font-bold">{selectedEndpointObj.suricata.severity}</span>
+                  <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1 rounded uppercase font-bold">{selectedEndpointObj?.suricata.severity}</span>
                 </div>
-                <p className="font-extrabold text-[#222] dark:text-amber-400 italic">"{selectedEndpointObj.suricata.signature}"</p>
-                <p className="text-slate-400 text-[8.5px] uppercase font-bold">Category: {selectedEndpointObj.suricata.category}</p>
+                <p className="font-extrabold text-[#222] dark:text-amber-400 italic">"{selectedEndpointObj?.suricata.signature}"</p>
+                <p className="text-slate-400 text-[8.5px] uppercase font-bold">Category: {selectedEndpointObj?.suricata.category}</p>
               </div>
             ) : (
               <p className="text-[9.5px] text-slate-400 font-mono">No active Suricata signatures compiled for this target machine assets.</p>
@@ -1468,15 +1826,15 @@ export function EndpointPage() {
             <h3 className="text-[9px] text-red-500 font-black uppercase tracking-widest flex items-center gap-1">
               <GitFork size={11} /> Fusion Layer Decision
             </h3>
-            {selectedEndpointObj.riskScore > 40 ? (
+            {(selectedEndpointObj?.riskScore ?? 0) > 40 ? (
               <div className="space-y-2">
                 <div className="flex justify-between text-[11px] font-black">
-                  <span className="text-red-500 uppercase">{selectedEndpointObj.fusion.finalAttackType}</span>
-                  <span className="text-slate-400">{selectedEndpointObj.fusion.riskScore}% Fusion Score</span>
+                  <span className="text-red-500 uppercase">{selectedEndpointObj?.fusion.finalAttackType}</span>
+                  <span className="text-slate-400">{selectedEndpointObj?.fusion.riskScore}% Fusion Score</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[8px] uppercase tracking-wider font-bold">MITRE ATT&CK Mitigation Action Match:</span>
-                  <p className="text-[10px] font-mono font-extrabold text-[#111] dark:text-emerald-400 uppercase">{selectedEndpointObj.fusion.mitreMapping}</p>
+                  <p className="text-[10px] font-mono font-extrabold text-[#111] dark:text-emerald-400 uppercase">{selectedEndpointObj?.fusion.mitreMapping}</p>
                 </div>
               </div>
             ) : (
@@ -1485,21 +1843,19 @@ export function EndpointPage() {
           </div>
 
         </div>
-      )}
-
-      {/* 11. ENDPOINT INCIDENT MODAL PREVIEW EVIDENCE (ZEEK CON LOGS, HTTP SEEN, FUSION FLOW DIAGRAM GRAPHIC) */}
+      )}      {/* 11. ENDPOINT INCIDENT MODAL PREVIEW EVIDENCE (ZEEK CON LOGS, HTTP SEEN, FUSION FLOW DIAGRAM GRAPHIC) */}
       {isModalOpen && selectedIncident && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-mono text-[10px]">
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-card rounded-xl border border-border w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
             
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/70 dark:bg-slate-900/60">
+            <div className="p-4 border-b border-border flex justify-between items-center bg-muted/65">
               <div className="flex items-center gap-2">
                 <AlertOctagon className="text-red-500 w-4 h-4 animate-pulse" />
-                <span className="text-xs font-black uppercase tracking-wider">Investigative Evidence Drawer: {selectedIncident.id}</span>
+                <span className="text-xs font-black uppercase tracking-wider text-foreground">Investigative Evidence Drawer: {selectedIncident.id}</span>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="hover:text-red-500 text-xs font-bold uppercase cursor-pointer"
+                className="text-muted-foreground hover:text-red-505 text-xs font-bold uppercase cursor-pointer"
               >
                 Close
               </button>
@@ -1508,15 +1864,15 @@ export function EndpointPage() {
             <div className="p-5 space-y-5 overflow-y-auto max-h-[80vh]">
               
               {/* Incident Context Grid */}
-              <div className="grid grid-cols-2 gap-3 text-[10px] border-b border-slate-100 dark:border-slate-800 pb-3.5">
+              <div className="grid grid-cols-2 gap-3 text-[10px] border-b border-border pb-3.5">
                 <div>
-                  <span className="text-slate-400 uppercase">Affected Machine:</span>
-                  <p className="font-extrabold text-[11px] uppercase dark:text-zinc-200">{selectedIncident.hostname}</p>
-                  <p className="text-slate-400">{selectedIncident.ip} • ID: {selectedIncident.endpointId}</p>
+                  <span className="text-muted-foreground uppercase">Affected Machine:</span>
+                  <p className="font-extrabold text-[11px] uppercase text-foreground">{selectedIncident.hostname}</p>
+                  <p className="text-muted-foreground">{selectedIncident.ip} • ID: {selectedIncident.endpointId}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-400 uppercase">Detection Time:</span>
-                  <p className="font-extrabold text-[11px] uppercase dark:text-zinc-200">{selectedIncident.timestamp}</p>
+                  <span className="text-muted-foreground uppercase">Detection Time:</span>
+                  <p className="font-extrabold text-[11px] uppercase text-foreground">{selectedIncident.timestamp}</p>
                   <span className="px-2.5 py-0.5 rounded-full text-[8px] bg-red-500/10 border border-red-500/20 text-red-500 font-bold uppercase tracking-widest">{selectedIncident.severity} Severity</span>
                 </div>
               </div>
@@ -1526,15 +1882,15 @@ export function EndpointPage() {
                 <span className="text-[9px] text-indigo-650 dark:text-cyan-404 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
                   <Server size={12} /> Zeek Ecosystem Evidence
                 </span>
-                <div className="bg-slate-100 dark:bg-slate-950 p-3 rounded-lg border border-slate-205 dark:border-slate-855 space-y-3.5 text-[9.5px]">
+                <div className="bg-muted p-3 rounded-lg border border-border space-y-3.5 text-[9.5px]">
                   
                   {/* conn.log */}
                   <div className="space-y-1">
                     <span className="text-[8px] text-amber-500 font-black block uppercase">&#187; zeek conn.log schema output</span>
-                    <div className="grid grid-cols-4 gap-2 border-b border-slate-200/50 dark:border-slate-800/40 pb-2">
-                      <div><span className="text-slate-400">Duration:</span> <p className="font-extrabold font-mono text-zinc-900 dark:text-zinc-100">{selectedIncident.zeekLogs?.conn.duration.toFixed(3)}s</p></div>
-                      <div><span className="text-slate-400">Bytes Shipped:</span> <p className="font-extrabold font-mono text-zinc-900 dark:text-zinc-100">{selectedIncident.zeekLogs?.conn.bytes.toLocaleString()} B</p></div>
-                      <div><span className="text-slate-400">Packets count:</span> <p className="font-extrabold font-mono text-zinc-900 dark:text-zinc-100">{selectedIncident.zeekLogs?.conn.packets}</p></div>
+                    <div className="grid grid-cols-4 gap-2 border-b border-border/40 pb-2">
+                      <div><span className="text-slate-400">Duration:</span> <p className="font-extrabold font-mono text-foreground">{selectedIncident.zeekLogs?.conn.duration.toFixed(3)}s</p></div>
+                      <div><span className="text-slate-400">Bytes Shipped:</span> <p className="font-extrabold font-mono text-foreground">{selectedIncident.zeekLogs?.conn.bytes.toLocaleString()} B</p></div>
+                      <div><span className="text-slate-400">Packets count:</span> <p className="font-extrabold font-mono text-foreground">{selectedIncident.zeekLogs?.conn.packets}</p></div>
                       <div><span className="text-slate-400">Conn state:</span> <p className="font-extrabold font-mono text-emerald-500 uppercase">{selectedIncident.zeekLogs?.conn.conn_state}</p></div>
                     </div>
                   </div>
@@ -1565,9 +1921,9 @@ export function EndpointPage() {
                   <span className="text-[9px] text-indigo-650 dark:text-cyan-404 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
                     <ShieldCheck size={12} fill="currentColor" className="text-transparent" /> Suricata Rule Alerts
                   </span>
-                  <div className="bg-slate-100 dark:bg-slate-950 p-3 rounded-lg border border-slate-205 dark:border-slate-855 text-[9.5px] space-y-1">
+                  <div className="bg-muted p-3 rounded-lg border border-border text-[9.5px] space-y-1">
                     <span className="text-[8.5px] bg-red-500/10 border border-red-500/20 text-red-500 px-1.5 rounded uppercase font-bold">Severity: {selectedIncident.suricataAlert.severity}</span>
-                    <p className="font-extrabold text-[#222] dark:text-red-400">SA Signature: {selectedIncident.suricataAlert.signature}</p>
+                    <p className="font-extrabold text-foreground dark:text-red-400">SA Signature: {selectedIncident.suricataAlert.signature}</p>
                     <p className="text-slate-400">Target Range: {selectedIncident.suricataAlert.src_ip}:{selectedIncident.suricataAlert.src_port} &#8594; {selectedIncident.suricataAlert.dest_ip}:{selectedIncident.suricataAlert.dest_port}</p>
                   </div>
                 </div>
@@ -1578,29 +1934,29 @@ export function EndpointPage() {
                 <span className="text-[9px] text-indigo-650 dark:text-cyan-404 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
                   <Activity size={12} className="animate-spin" /> Fusion Decision Pipeline Flowchart
                 </span>
-                <div className="bg-indigo-50/10 dark:bg-slate-950 p-4 border border-indigo-200/10 dark:border-slate-855 rounded-lg">
+                <div className="bg-secondary/40 p-4 border border-border rounded-lg">
                   <div className="flex flex-col md:flex-row justify-between items-center gap-3 font-mono text-[9px] text-center">
                     
-                    <div className="p-1 px-3 bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-805 rounded shadow-sm w-36">
-                      <span className="text-[7.5px] text-slate-400 block uppercase">Step 1: Zeek Logs</span>
+                    <div className="p-1 px-3 bg-card border border-border rounded shadow-sm w-36 text-foreground">
+                      <span className="text-[7.5px] text-muted-foreground block uppercase">Step 1: Zeek Logs</span>
                       <p className="font-extrabold uppercase">Telemetry Read</p>
                     </div>
 
-                    <span className="hidden md:inline">&#8594;</span>
+                    <span className="hidden md:inline text-muted-foreground">&#8594;</span>
 
-                    <div className="p-1 px-3 bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-805 rounded shadow-sm w-36">
-                      <span className="text-[7.5px] text-slate-400 block uppercase">Step 2: model AI1</span>
+                    <div className="p-1 px-3 bg-card border border-border rounded shadow-sm w-36 text-foreground">
+                      <span className="text-[7.5px] text-muted-foreground block uppercase">Step 2: model AI1</span>
                       <p className="font-extrabold text-red-500 uppercase">Anomaly 93%</p>
                     </div>
 
-                    <span className="hidden md:inline">&#8594;</span>
+                    <span className="hidden md:inline text-muted-foreground">&#8594;</span>
 
-                    <div className="p-1 px-3 bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-805 rounded shadow-sm w-36">
-                      <span className="text-[7.5px] text-slate-400 block uppercase">Step 3: model AI2A</span>
+                    <div className="p-1 px-3 bg-card border border-border rounded shadow-sm w-36 text-foreground">
+                      <span className="text-[7.5px] text-muted-foreground block uppercase">Step 3: model AI2A</span>
                       <p className="font-extrabold text-amber-500 uppercase">{selectedIncident.attackType} 91%</p>
                     </div>
 
-                    <span className="hidden md:inline">&#8594;</span>
+                    <span className="hidden md:inline text-muted-foreground">&#8594;</span>
 
                     <div className="p-1.5 px-3 bg-indigo-500 text-white rounded shadow-sm w-36">
                       <span className="text-[7.5px] text-indigo-200 block uppercase font-mono">Consensus</span>
@@ -1613,17 +1969,17 @@ export function EndpointPage() {
 
             </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 text-right bg-slate-50/70 dark:bg-slate-900/60">
+            <div className="p-4 border-t border-border text-right bg-muted/65">
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900 text-white hover:text-white uppercase font-black text-[9px] tracking-widest rounded-lg cursor-pointer"
+                className="px-4 py-1.5 bg-foreground hover:opacity-95 text-background uppercase font-black text-[9px] tracking-widest rounded-lg cursor-pointer transition-colors"
               >
                 Dismiss Audit
               </button>
             </div>
 
           </div>
-        </div>
+          </div>
       )}
 
     </div>

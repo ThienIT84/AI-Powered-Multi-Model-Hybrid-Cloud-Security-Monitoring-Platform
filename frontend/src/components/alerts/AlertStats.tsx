@@ -181,7 +181,6 @@ export function AlertStats({ alerts }: { alerts: Alert[] }) {
           <Sparkline points={campaignTrendPoints} color="rgb(239, 68, 68)" />
         </div>
       </div>
-
     </div>
   );
 }

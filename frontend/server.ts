@@ -6,7 +6,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { createServer as createViteServer } from "vite";
 import { generateMockAlertDTO, generateMockTrafficPoint } from "./src/mocks/securityData";
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3001", 10);
 
 async function startServer() {
   const app = express();

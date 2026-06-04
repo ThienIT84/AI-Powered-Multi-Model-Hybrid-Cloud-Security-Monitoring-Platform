@@ -53,18 +53,23 @@ import { AttackScenarioPanel } from "./components/dashboard/AttackScenarioPanel"
 import { DemoModeWidget } from "./components/dashboard/DemoModeWidget";
 import { SystemCompliancePanel } from "./components/dashboard/SystemCompliancePanel";
 
+import { AIThreatDetectionPage } from "./pages/AIThreatDetectionPage";
+import { AttackSurfacePage } from "./pages/AttackSurfacePage";
+import { MitreAttackPage } from "./pages/MitreAttackPage";
+import { CaseManagementPage } from "./pages/CaseManagementPage";
 import { useSocket } from "./useSocket";
 import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "./lib/utils";
 import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/securityData";
+import { AppView } from "./types/views";
 
 export default function App() {
   const { isConnected, alerts, traffic, error, dataMode } = useSocket();
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState<"dashboard" | "alerts" | "network" | "endpoints" | "integrations" | "playbooks" | "reports" | "settings">("dashboard");
+  const [currentView, setCurrentView] = useState<AppView>("dashboard");
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [disabledAttackTypes, setDisabledAttackTypes] = useState<string[]>([]);
   
@@ -303,6 +308,14 @@ export default function App() {
               </motion.div>
             ) : currentView === "alerts" ? (
               <AlertsPage key="alerts" />
+            ) : currentView === "ai-threat-detection" ? (
+              <AIThreatDetectionPage key="ai-threat-detection" />
+            ) : currentView === "attack-surface" ? (
+              <AttackSurfacePage key="attack-surface" />
+            ) : currentView === "mitre-attack" ? (
+              <MitreAttackPage key="mitre-attack" />
+            ) : currentView === "case-management" ? (
+              <CaseManagementPage key="case-management" />
             ) : currentView === "network" ? (
               <NetworkMonitoringPage key="network" />
             ) : currentView === "endpoints" ? (

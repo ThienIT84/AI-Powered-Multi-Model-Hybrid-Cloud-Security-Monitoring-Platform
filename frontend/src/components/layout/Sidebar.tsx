@@ -1,4 +1,5 @@
 import React from "react";
+import { AppView } from "../../types/views";
 import { 
   ShieldAlert, 
   Activity, 
@@ -68,8 +69,8 @@ export function Sidebar({
   currentView, 
   onViewChange 
 }: { 
-  currentView: "dashboard" | "alerts" | "network" | "endpoints" | "integrations" | "playbooks" | "reports" | "settings"; 
-  onViewChange: (view: "dashboard" | "alerts" | "network" | "endpoints" | "integrations" | "playbooks" | "reports" | "settings") => void;
+  currentView: AppView; 
+  onViewChange: (view: AppView) => void;
 }) {
   return (
     <aside className="w-55 h-full bg-card border-r border-border flex flex-col overflow-y-auto custom-scrollbar select-none transition-colors duration-300">
@@ -135,13 +136,21 @@ export function Sidebar({
               const isPlaybooks = item.label === "Playbooks";
               const isReports = item.label === "Reports";
               const isSettings = item.label === "Settings";
+              const isAIThreatDetection = item.label === "AI Threat Detection";
+              const isAttackSurface = item.label === "Attack Surface";
+              const isMitreAttack = item.label === "MITRE ATT&CK";
+              const isCaseManagement = item.label === "Case Management";
               const isActive = (isAlerts && currentView === 'alerts') ||
                                (isNetwork && currentView === 'network') ||
                                (isEndpoints && currentView === 'endpoints') ||
                                (isIntegrations && currentView === 'integrations') ||
                                (isPlaybooks && currentView === 'playbooks') ||
                                (isReports && currentView === 'reports') ||
-                               (isSettings && currentView === 'settings');
+                               (isSettings && currentView === 'settings') ||
+                               (isAIThreatDetection && currentView === 'ai-threat-detection') ||
+                               (isAttackSurface && currentView === 'attack-surface') ||
+                               (isMitreAttack && currentView === 'mitre-attack') ||
+                               (isCaseManagement && currentView === 'case-management');
               
               return (
                 <button
@@ -154,6 +163,10 @@ export function Sidebar({
                     else if (isPlaybooks) onViewChange('playbooks');
                     else if (isReports) onViewChange('reports');
                     else if (isSettings) onViewChange('settings');
+                    else if (isAIThreatDetection) onViewChange('ai-threat-detection');
+                    else if (isAttackSurface) onViewChange('attack-surface');
+                    else if (isMitreAttack) onViewChange('mitre-attack');
+                    else if (isCaseManagement) onViewChange('case-management');
                   }}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-200 group",
