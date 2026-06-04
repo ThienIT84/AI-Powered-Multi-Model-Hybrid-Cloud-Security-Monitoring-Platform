@@ -211,7 +211,7 @@ export function AttackSurfacePage() {
               Asset Distribution by Type
             </h3>
           </div>
-          <div className="w-full h-[300px]">
+          <div className="w-full h-75">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={assetData} margin={{ top: 10, right: 10, left: -25, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#64748b" opacity={0.2} vertical={false} />

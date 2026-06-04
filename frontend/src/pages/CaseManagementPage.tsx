@@ -249,7 +249,7 @@ export function CaseManagementPage() {
               Case Trend (5 Weeks)
             </h3>
           </div>
-          <div className="w-full h-[240px]">
+          <div className="w-full h-60">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={caseTrend} margin={{ top: 10, right: 10, left: -25, bottom: 0 }} barGap={2}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
@@ -346,7 +346,7 @@ export function CaseManagementPage() {
             Avg Resolution Time by Priority
           </h3>
         </div>
-        <div className="w-full h-[200px]">
+        <div className="w-full h-50">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={resolutionTime} margin={{ top: 10, right: 20, left: -25, bottom: 0 }} barSize={120}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} vertical={false} />
@@ -425,7 +425,7 @@ export function CaseManagementPage() {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className="group px-4 py-3.5 bg-background/50 border border-border rounded-xl hover:border-cyan-500/20 hover:bg-cyan-500/[0.03] transition-all duration-200 cursor-pointer"
+                className="group px-4 py-3.5 bg-background/50 border border-border rounded-xl hover:border-cyan-500/20 hover:bg-cyan-500/3 transition-all duration-200 cursor-pointer"
               >
                 {/* Top row */}
                 <div className="flex items-start justify-between gap-3 mb-2">

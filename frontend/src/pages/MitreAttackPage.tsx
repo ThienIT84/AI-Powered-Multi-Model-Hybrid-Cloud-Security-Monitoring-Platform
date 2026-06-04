@@ -488,7 +488,7 @@ export function MitreAttackPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="border-b border-border/50 hover:bg-white/[0.02] transition-colors group"
+                  className="border-b border-border/50 hover:bg-white/2 transition-colors group"
                 >
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">

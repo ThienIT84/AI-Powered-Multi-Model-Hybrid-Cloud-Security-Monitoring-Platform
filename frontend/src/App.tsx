@@ -308,6 +308,10 @@ export default function App() {
               </motion.div>
             ) : currentView === "alerts" ? (
               <AlertsPage key="alerts" />
+            ) : currentView === "network" ? (
+              <NetworkMonitoringPage key="network" />
+            ) : currentView === "endpoints" ? (
+              <EndpointPage key="endpoints" />
             ) : currentView === "ai-threat-detection" ? (
               <AIThreatDetectionPage key="ai-threat-detection" />
             ) : currentView === "attack-surface" ? (
@@ -316,10 +320,6 @@ export default function App() {
               <MitreAttackPage key="mitre-attack" />
             ) : currentView === "case-management" ? (
               <CaseManagementPage key="case-management" />
-            ) : currentView === "network" ? (
-              <NetworkMonitoringPage key="network" />
-            ) : currentView === "endpoints" ? (
-              <EndpointPage key="endpoints" />
             ) : currentView === "integrations" ? (
               <IntegrationsPage key="integrations" />
             ) : currentView === "playbooks" ? (
