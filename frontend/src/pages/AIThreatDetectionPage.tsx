@@ -100,6 +100,16 @@ export function AIThreatDetectionPage() {
   const [accuracyData, setAccuracyData] = useState(ACCURACY_TREND);
   const [healthData, setHealthData] = useState(SYSTEM_HEALTH);
   const [activeDetectionId, setActiveDetectionId] = useState<string | null>(null);
+  const [selectedKPI, setSelectedKPI] = useState<string | null>(null);
+
+  const handleKPIAction = (label: string) => {
+    setSelectedKPI(label === selectedKPI ? null : label);
+  };
+
+  const handleModelRestart = (modelId: string) => {
+    // Logic for restarting model
+    console.log(`Restarting model: ${modelId}`);
+  };
 
   // Simulate live feed ticking
   useEffect(() => {
@@ -186,14 +196,19 @@ export function AIThreatDetectionPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
+              onClick={() => handleKPIAction(kpi.label)}
               className={cn(
-                "neon-card group relative bg-card border border-border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
+                "neon-card group relative bg-card border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
                 "hover:border-2 hover:scale-[1.02] cursor-pointer",
                 kpi.border.replace('border-', 'hover:border-'),
+                selectedKPI === kpi.label ? "border-2 border-opacity-100 scale-[1.02]" : "border-border",
                 neonClass
               )}
               style={{
-                boxShadow: `0 4px 12px rgba(0,0,0,0.03)`,
+                boxShadow: selectedKPI === kpi.label 
+                  ? `0 0 30px color-mix(in srgb, ${kpi.accentHex}, transparent 60%)` 
+                  : `0 4px 12px rgba(0,0,0,0.03)`,
+                borderColor: selectedKPI === kpi.label ? kpi.accentHex : undefined
               }}
               whileHover={{ 
                 boxShadow: `0 0 25px color-mix(in srgb, ${kpi.accentHex}, transparent 70%)`,

@@ -57,6 +57,8 @@ import { AIThreatDetectionPage } from "./pages/AIThreatDetectionPage";
 import { AttackSurfacePage } from "./pages/AttackSurfacePage";
 import { MitreAttackPage } from "./pages/MitreAttackPage";
 import { CaseManagementPage } from "./pages/CaseManagementPage";
+import { CloudPage } from "./pages/CloudPage";
+import { ThreatIntelPage } from "./pages/ThreatIntelPage";
 import { useSocket } from "./useSocket";
 import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
@@ -326,6 +328,10 @@ export default function App() {
               <PlaybooksPage key="playbooks" />
             ) : currentView === "reports" ? (
               <ReportsPage key="reports" />
+            ) : currentView === "cloud" ? (
+              <CloudPage key="cloud" />
+            ) : currentView === "threat-intel" ? (
+              <ThreatIntelPage key="threat-intel" />
             ) : (
               <SettingsPage key="settings" />
             )}

@@ -88,6 +88,19 @@ export function MitreAttackPage() {
   const [search, setSearch] = useState("");
   const [tacticCoverage, setTacticCoverage] = useState(TACTIC_COVERAGE);
   const [detectionTrend, setDetectionTrend] = useState(DETECTION_TREND);
+  const [selectedKPI, setSelectedKPI] = useState<string | null>(null);
+
+  const handleKPIClick = (label: string) => {
+    setSelectedKPI(label === selectedKPI ? null : label);
+  };
+
+  const handleActorClick = (actorId: string) => {
+    console.log(`Opening details for actor: ${actorId}`);
+  };
+
+  const handleTechniqueClick = (techniqueId: string) => {
+    console.log(`Opening details for technique: ${techniqueId}`);
+  };
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -167,14 +180,19 @@ export function MitreAttackPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }}
+              onClick={() => handleKPIClick(kpi.label)}
               className={cn(
-                "neon-card group border border-border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
+                "neon-card group border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300", 
                 "hover:border-2 hover:scale-[1.02] cursor-pointer",
                 kpi.border.replace('border-', 'hover:border-'),
+                selectedKPI === kpi.label ? "border-2 border-opacity-100 scale-[1.02]" : "border-border",
                 neonClass
               )}
               style={{
-                boxShadow: `0 4px 12px rgba(0,0,0,0.03)`,
+                boxShadow: selectedKPI === kpi.label 
+                  ? `0 0 30px color-mix(in srgb, ${kpi.accentHex}, transparent 60%)` 
+                  : `0 4px 12px rgba(0,0,0,0.03)`,
+                borderColor: selectedKPI === kpi.label ? kpi.accentHex : undefined
               }}
               whileHover={{ 
                 boxShadow: `0 0 25px color-mix(in srgb, ${kpi.accentHex}, transparent 70%)`,
@@ -364,8 +382,9 @@ export function MitreAttackPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
+                onClick={() => handleActorClick(actor.id)}
                 className={cn(
-                  "bg-card border rounded-xl p-5 shadow-sm hover:scale-[1.01] transition-all duration-200 cursor-pointer",
+                  "bg-card border rounded-xl p-5 shadow-sm hover:scale-[1.01] transition-all duration-200 cursor-pointer group/actor",
                   borderColor
                 )}
                 style={{ boxShadow: `0 4px 20px color-mix(in srgb, ${glowColor}, transparent 95%)` }}
@@ -377,12 +396,12 @@ export function MitreAttackPage() {
                       className="w-2 h-2 rounded-full animate-pulse"
                       style={{ backgroundColor: accentColor, boxShadow: `0 0 8px ${accentColor}` }}
                     />
-                    <span className="text-[12px] font-black text-foreground uppercase tracking-wide">
+                    <span className="text-[12px] font-black text-foreground uppercase tracking-wide group-hover/actor:text-xanh-accent transition-colors">
                       {actor.name}
                     </span>
                     <SeverityBadge severity={actor.severity} />
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40" />
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover/actor:translate-x-1 transition-all" />
                 </div>
 
                 <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest mb-4">
@@ -459,7 +478,7 @@ export function MitreAttackPage() {
             placeholder="Search techniques..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-background border border-border rounded-lg pl-9 pr-4 py-2 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-cyan-500/50 transition-colors uppercase tracking-wider"
+            className="w-full bg-background border border-border rounded-lg pl-9 p  r-4 py-2 text-[10px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-cyan-500/50 transition-colors uppercase tracking-wider"
           />
         </div>
 
@@ -488,12 +507,13 @@ export function MitreAttackPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className="border-b border-border/50 hover:bg-white/[0.02] transition-colors group"
+                  onClick={() => handleTechniqueClick(row.id)}
+                  className="border-b border-border/50 hover:bg-white/[0.02] transition-colors group cursor-pointer"
                 >
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xanh-accent font-black text-[9px] shrink-0">{row.id}</span>
-                      <span className="text-foreground/80 group-hover:text-foreground transition-colors truncate">
+                      <span className="text-xanh-accent font-black text-[9px] shrink-0 group-hover:underline">{row.id}</span>
+                      <span className="text-foreground/80 group-hover:text-xanh-accent transition-colors truncate">
                         {row.name}
                       </span>
                     </div>
