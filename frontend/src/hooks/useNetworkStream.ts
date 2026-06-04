@@ -188,6 +188,10 @@ export function useNetworkStream() {
     setLogs([]);
   }, []);
 
+  const injectCustomLog = useCallback((customLog: NetworkLog) => {
+    queueEvent(customLog);
+  }, [queueEvent]);
+
   return {
     isRunning,
     setIsRunning,
@@ -196,6 +200,7 @@ export function useNetworkStream() {
     injectPortScan,
     injectMassiveExfiltration,
     injectTorDnsTunnel,
-    clearLogs
+    clearLogs,
+    injectCustomLog
   };
 }

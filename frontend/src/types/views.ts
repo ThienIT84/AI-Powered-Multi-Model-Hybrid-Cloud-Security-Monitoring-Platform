@@ -2,6 +2,7 @@ export type AppView =
   | "dashboard"
   | "alerts"
   | "network"
+  | "endpoints"
   | "integrations"
   | "playbooks"
   | "reports"

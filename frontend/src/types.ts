@@ -166,17 +166,21 @@ export interface Alert {
   timestamp: string;
   sourceIp: string;
   destinationIp: string;
+  destIp?: string; // Backwards compatibility
   sourcePort?: number;
   destinationPort: number;
+  destPort?: number; // Backwards compatibility
   attackType: string;
   protocol: string;
   direction: string;
   severity: Severity;
   riskScore: number;
   confidenceScore: number;
+  confidence?: number; // Backwards compatibility
   detectedBy: string[];
   mitre: MitreTechnique;
   rawPayload?: string;
+  payload?: string; // Backwards compatibility
   zeekData: ZeekData;
   suricataData: SuricataData;
   aiDecision: AiDecision;
@@ -221,4 +225,64 @@ export interface TrafficData {
   outbound: number;
   isAnomaly?: boolean;
   isPeak?: boolean;
+}
+
+export type FusionAlert = {
+  ai1: string;
+  ai2a: string;
+  ai2b: string;
+  suricata: boolean;
+  fusionDecision: string;
+  confidence: number;
+  riskScore: number;
+};
+
+export interface FusionAlertMeta {
+  ai1Result: "ANOMALY" | "NORMAL";
+  ai2aClass: "PortScan" | "DoS" | "BruteForce" | "Normal";
+  ai2bWeb: "XSS" | "SQLi" | "NONE";
+  suricataEvidence: string;
+  fusionDecision: string;
+}
+
+export function getAlertFusionMeta(alert: Alert): FusionAlertMeta {
+  const isAnomaly = alert.riskScore > 35;
+  const ai1Result = isAnomaly ? "ANOMALY" : "NORMAL";
+
+  let ai2aClass: "PortScan" | "DoS" | "BruteForce" | "Normal" = "Normal";
+  const attackLower = (alert.attackType || "").toLowerCase();
+  if (attackLower.includes("scan")) {
+    ai2aClass = "PortScan";
+  } else if (attackLower.includes("ddos") || attackLower.includes("botnet") || attackLower.includes("beacon")) {
+    ai2aClass = "DoS";
+  } else if (attackLower.includes("brute") || attackLower.includes("credential") || attackLower.includes("stuffing")) {
+    ai2aClass = "BruteForce";
+  }
+
+  let ai2bWeb: "XSS" | "SQLi" | "NONE" = "NONE";
+  if (attackLower.includes("xss")) {
+    ai2bWeb = "XSS";
+  } else if (attackLower.includes("sql") || attackLower.includes("injection") || attackLower.includes("lfi") || attackLower.includes("command")) {
+    ai2bWeb = "SQLi";
+  }
+
+  let suricataEvidence = "NO MATCH";
+  if (alert.suricataData?.signatureId) {
+    suricataEvidence = alert.suricataData.signatureId;
+  } else if (isAnomaly && (ai2aClass !== "Normal" || ai2bWeb !== "NONE")) {
+    const baseSid = 2000000 + (alert.id.match(/\d+/) ? parseInt(alert.id.match(/\d+/)![0]) : 110);
+    suricataEvidence = `SID: ${baseSid}`;
+  }
+
+  const sevUpper = String(alert.severity).toUpperCase();
+  const attackName = alert.attackType || "Unknown Threat";
+  const fusionDecision = `${sevUpper}: ${attackName}`;
+
+  return {
+    ai1Result,
+    ai2aClass,
+    ai2bWeb,
+    suricataEvidence,
+    fusionDecision
+  };
 }

@@ -131,6 +131,7 @@ export function Sidebar({
             {group.items.map((item, idy) => {
               const isAlerts = item.label === "Alerts";
               const isNetwork = item.label === "Network";
+              const isEndpoints = item.label === "Endpoints";
               const isIntegrations = item.label === "Integrations";
               const isPlaybooks = item.label === "Playbooks";
               const isReports = item.label === "Reports";
@@ -141,6 +142,7 @@ export function Sidebar({
               const isCaseManagement = item.label === "Case Management";
               const isActive = (isAlerts && currentView === 'alerts') ||
                                (isNetwork && currentView === 'network') ||
+                               (isEndpoints && currentView === 'endpoints') ||
                                (isIntegrations && currentView === 'integrations') ||
                                (isPlaybooks && currentView === 'playbooks') ||
                                (isReports && currentView === 'reports') ||
@@ -156,6 +158,7 @@ export function Sidebar({
                   onClick={() => {
                     if (isAlerts) onViewChange('alerts');
                     else if (isNetwork) onViewChange('network');
+                    else if (isEndpoints) onViewChange('endpoints');
                     else if (isIntegrations) onViewChange('integrations');
                     else if (isPlaybooks) onViewChange('playbooks');
                     else if (isReports) onViewChange('reports');
