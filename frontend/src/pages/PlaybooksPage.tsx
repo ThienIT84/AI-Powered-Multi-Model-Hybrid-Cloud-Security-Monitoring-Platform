@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion } from "motion/react";
 import { Playbook } from "../components/playbooks/playbooksConfig";
 import { 
   initialPlaybooks, 
@@ -74,7 +75,15 @@ export function PlaybooksPage({ isDarkMode = true }: { isDarkMode?: boolean; key
   };
 
   return (
-    <div className="space-y-6 pb-20 select-none relative" id="playbooks-page-container">
+    <motion.div
+      key="playbooks"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="space-y-6 pb-20 select-none relative"
+      id="playbooks-page-container"
+    >
       
       {/* TOP SCRAWLER TITLE & LIVE COORDINATES CLOCK */}
       <HeaderSection 
@@ -137,6 +146,6 @@ export function PlaybooksPage({ isDarkMode = true }: { isDarkMode?: boolean; key
         setModalActiveTab={setModalActiveTab}
       />
 
-    </div>
+    </motion.div>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useMemo, useCallback } from "react";
+import { motion } from "motion/react";
 import { useEndpointState } from "../hooks/useEndpointState";
 import { EndpointPageHeader } from "../components/endpoint/EndpointPageHeader";
 import { EndpointOverviewCards } from "../components/endpoint/EndpointOverviewCards";
@@ -190,7 +191,14 @@ export function EndpointPage() {
   }, [setSelectedIncident, setIsModalOpen]);
 
   return (
-    <div className="w-full min-h-screen bg-background p-4 md:p-6 space-y-6">
+    <motion.div
+      key="endpoint-page"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="w-full min-h-screen bg-background p-4 md:p-6 space-y-6"
+    >
       {/* 1. Header and Swapping controls */}
       <EndpointPageHeader 
         activeSegment={activeSegment} 
@@ -335,7 +343,7 @@ export function EndpointPage() {
         alertPopup={alertPopup} 
         onClose={() => setAlertPopup(null)} 
       />
-    </div>
+    </motion.div>
   );
 }
 export default EndpointPage;

@@ -25,7 +25,7 @@ interface AlertTableProps {
 
 export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert }: AlertTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
-  const pageSize = 15; 
+  const pageSize = 18; 
 
   // Table-level filters
   const [severityFilter, setSeverityFilter] = React.useState<string>("ALL");
@@ -196,7 +196,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
       </div>
 
       {/* Events Table details with Vertical Scroll and Sticky Headers */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar bg-card min-h-35 max-h-145">
+      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto custom-scrollbar bg-card">
         <table className="w-full text-left border-collapse table-fixed min-w-355">
           <thead>
             <tr className="border-b border-border bg-secondary/15 h-9">

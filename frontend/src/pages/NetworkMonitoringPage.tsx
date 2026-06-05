@@ -147,7 +147,15 @@ export const NetworkMonitoringPage: React.FC = () => {
   }, [clearLogs]);
 
   return (
-    <div className="space-y-6 pt-2 select-none font-mono text-slate-800 dark:text-slate-100 pb-12" id="network-monitoring-page-layout">
+    <motion.div
+      key="network-monitoring"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="space-y-6 pt-2 select-none font-mono text-slate-800 dark:text-slate-100 pb-12"
+      id="network-monitoring-page-layout"
+    >
       
       {/* 1. GLOBAL SOC HEADER TELEMETRY AND STATUS PANEL */}
       <NetworkMonitoringHeader isRunning={isRunning} livePacketRate={livePacketRate} />
@@ -383,7 +391,7 @@ export const NetworkMonitoringPage: React.FC = () => {
         }}
       />
 
-    </div>
+    </motion.div>
   );
 };
 

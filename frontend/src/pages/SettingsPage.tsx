@@ -81,7 +81,14 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="flex bg-background h-screen overflow-hidden select-none">
+    <motion.div
+      key="settings"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="flex bg-background h-screen overflow-hidden select-none w-full"
+    >
       {/* Settings Side Nav */}
       <SettingsSidebar />
 
@@ -179,6 +186,6 @@ export function SettingsPage() {
           )}
         </AnimatePresence>
       </main>
-    </div>
+    </motion.div>
   );
 }

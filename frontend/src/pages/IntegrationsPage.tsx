@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { motion } from "motion/react";
 import { cn } from "../lib/utils";
 
 // Subcomponents
@@ -483,7 +484,14 @@ export function IntegrationsPage({ isDarkMode = true }: IntegrationsPageProps) {
   }, []);
 
   return (
-    <div className="space-y-6 select-none min-h-screen p-5 rounded-2xl border border-border/80 bg-background text-foreground transition-colors duration-300 font-sans">
+    <motion.div
+      key="integrations"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="space-y-6 select-none min-h-screen p-5 rounded-2xl border border-border/80 bg-background text-foreground transition-colors duration-300 font-sans"
+    >
       
       {/* HEADER CONTROL AREA (DARK/LIGHT SWAP INCLUDED) */}
       <HeaderSection 
@@ -617,6 +625,6 @@ export function IntegrationsPage({ isDarkMode = true }: IntegrationsPageProps) {
         onClose={() => setSelectedIntegration(null)} 
       />
 
-    </div>
+    </motion.div>
   );
 }

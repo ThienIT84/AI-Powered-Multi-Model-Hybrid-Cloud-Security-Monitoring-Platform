@@ -390,7 +390,14 @@ export function AlertsPage() {
   };
 
   return (
-    <div className="space-y-6 pb-20 select-none relative">
+    <motion.div
+      key="alerts"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="space-y-6 pb-20 select-none relative"
+    >
       {/* Toast notification banner */}
       <AnimatePresence>
         {toastNotification && (
@@ -796,6 +803,6 @@ export function AlertsPage() {
           />
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
