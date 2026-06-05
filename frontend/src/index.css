@@ -168,3 +168,47 @@
 .animate-spin-slow {
   animation: spin-slow 8s linear infinite;
 }
+
+/* Custom settings typography contrast & weight values for maximum readability (Light/Dark mode) */
+.settings-page-container {
+  font-weight: 600 !important;
+}
+.settings-page-container *,
+.settings-page-container span,
+.settings-page-container button,
+.settings-page-container input,
+.settings-page-container select,
+.settings-page-container textarea {
+  font-weight: 600;
+}
+.settings-page-container label {
+  color: #18181b !important; /* zinc-900 */
+  font-weight: 800 !important; /* Extra bold label text in light mode */
+}
+.dark .settings-page-container label {
+  color: #e4e4e7 !important; /* zinc-200 */
+  font-weight: 900 !important;
+}
+.settings-page-container p {
+  color: #27272a !important; /* zinc-800 */
+  font-weight: 600 !important; /* Richer description text in light mode */
+}
+.dark .settings-page-container p {
+  color: #cbd5e1 !important; /* slate-350 */
+  font-weight: 500 !important;
+}
+.settings-page-container h1,
+.settings-page-container h2,
+.settings-page-container h3, 
+.settings-page-container h4 {
+  color: #09090b !important; /* zinc-950 */
+  font-weight: 900 !important;
+}
+.dark .settings-page-container h1,
+.dark .settings-page-container h2,
+.dark .settings-page-container h3, 
+.dark .settings-page-container h4 {
+  color: #f4f4f5 !important; /* zinc-100 */
+  font-weight: 950 !important;
+}
+

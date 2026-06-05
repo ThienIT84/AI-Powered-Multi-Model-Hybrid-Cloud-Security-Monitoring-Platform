@@ -15,7 +15,7 @@ import { LibraryTab } from "../components/playbooks/LibraryTab";
 import { AnalyticsTab } from "../components/playbooks/AnalyticsTab";
 import { InspectorDialog } from "../components/playbooks/InspectorDialog";
 
-export function PlaybooksPage({ isDarkMode = true }: { isDarkMode?: boolean; key?: string }) {
+export function PlaybooksPage() {
   // Navigation Tabs state: overview, workspace, analytics
   const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "analytics">("workspace");
 

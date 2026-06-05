@@ -143,7 +143,10 @@ export default function App() {
           onClosePanels={closePanel}
         />
         
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+        <div className={cn(
+          "flex-1 overflow-y-auto custom-scrollbar",
+          currentView === "settings" ? "p-0 overflow-hidden flex flex-col" : "p-4 space-y-4"
+        )}>
           <AnimatePresence mode="wait">
             {currentView === "dashboard" ? (
               <motion.div
@@ -327,7 +330,21 @@ export default function App() {
             ) : currentView === "reports" ? (
               <ReportsPage key="reports" />
             ) : (
-              <SettingsPage key="settings" />
+              <SettingsPage 
+                key="settings" 
+                isDarkMode={isDarkMode} 
+                onThemeToggle={() => setIsDarkMode(!isDarkMode)} 
+                onThemeChange={(themeVal) => {
+                  if (themeVal === "Light") {
+                    setIsDarkMode(false);
+                  } else if (themeVal === "Dark") {
+                    setIsDarkMode(true);
+                  } else {
+                    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                    setIsDarkMode(systemPrefersDark);
+                  }
+                }}
+              />
             )}
           </AnimatePresence>
         </div>

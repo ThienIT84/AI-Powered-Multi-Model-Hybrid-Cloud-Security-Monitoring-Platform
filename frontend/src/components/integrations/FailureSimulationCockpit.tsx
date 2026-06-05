@@ -3,17 +3,14 @@ import { Flame, PowerOff, Database, Activity } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface FailureSimulationCockpitProps {
-  isDarkMode: boolean;
+  isDarkMode?: boolean;
   simulatedFailures: Record<string, boolean>;
   onToggleFailure: (key: string) => void;
 }
 
 export function FailureSimulationCockpit({ isDarkMode, simulatedFailures, onToggleFailure }: FailureSimulationCockpitProps) {
   return (
-    <div className={cn(
-      "p-5 rounded-xl border relative font-mono",
-      isDarkMode ? "bg-red-950/10 border-red-500/20" : "bg-red-50/50 border-red-200"
-    )}>
+    <div className="p-5 rounded-xl border relative font-mono bg-red-50/50 border-red-200 dark:bg-red-950/10 dark:border-red-500/20">
       <div className="flex gap-2 items-center mb-3 text-red-500 pb-2 border-b border-border/60">
         <Flame size={14} className="animate-pulse" />
         <h3 className="text-xs font-black uppercase tracking-wider">FCAJ Outage Simulations Cockpit</h3>

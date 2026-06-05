@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "../../lib/utils";
 
 interface PlatformHealthScoreProps {
-  isDarkMode: boolean;
+  isDarkMode?: boolean;
   pipelineHealthScore: number;
 }
 
@@ -17,7 +17,7 @@ export function PlatformHealthScore({ isDarkMode, pipelineHealthScore }: Platfor
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
           <circle 
             cx="50" cy="50" r="40" 
-            stroke={isDarkMode ? "#1e293b" : "#e2e8f0"} 
+            className="stroke-slate-200 dark:stroke-slate-800" 
             strokeWidth="8" fill="transparent" 
           />
           <circle 

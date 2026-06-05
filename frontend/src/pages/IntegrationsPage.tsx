@@ -490,7 +490,7 @@ export function IntegrationsPage({ isDarkMode = true }: IntegrationsPageProps) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 10 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="space-y-6 select-none min-h-screen p-5 rounded-2xl border border-border/80 bg-background text-foreground transition-colors duration-300 font-sans"
+      className="space-y-6 pb-20 select-none min-h-screen font-sans text-foreground animate-fadeIn"
     >
       
       {/* HEADER CONTROL AREA (DARK/LIGHT SWAP INCLUDED) */}
