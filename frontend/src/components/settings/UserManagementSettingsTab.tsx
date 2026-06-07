@@ -1,7 +1,7 @@
 import React from "react";
-import { Users2, Shield } from "lucide-react";
+import { Users2, Shield, User } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { SettingsStateData } from "./settingsConfig";
+import { SettingsStateData } from "../settings/settingsConfig";
 
 interface UserManagementSettingsTabProps {
   data: SettingsStateData;
@@ -25,8 +25,9 @@ export function UserManagementSettingsTab({ data, onChange, onToast }: UserManag
       {/* USERS TABLE */}
       <div className="bg-card/40 border border-border/80 rounded-xl overflow-hidden shadow-sm">
         <div className="px-5 py-3 border-b border-border bg-muted/20">
-          <span className="text-[9px] font-mono font-black text-muted-foreground tracking-[0.22em] uppercase">
-            👤 Active Operator Accounts
+          <span className="text-[9px] font-mono font-black text-muted-foreground tracking-[0.22em] uppercase flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
+            <span>Active Operator Accounts</span>
           </span>
         </div>
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { useSettingsStore } from "../../store/useSettingsStore";
 import { cn } from "../../lib/utils";
-import { Shield, Key, Laptop, Smartphone, AlertCircle, Plus, Trash2 } from "lucide-react";
+import { Shield, Key, Laptop, Smartphone, AlertCircle, Plus, Trash2, ShieldCheck, Lock, Globe, User, AlertTriangle } from "lucide-react";
 
 export function SecuritySettings() {
   const { draftSettings, updateDraft } = useSettingsStore();
@@ -23,7 +23,10 @@ export function SecuritySettings() {
         {/* Platform Score */}
         <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/25 rounded-xl px-4 py-2.5 shrink-0 select-none">
           <div className="text-left font-mono">
-            <span className="text-[8px] font-black text-emerald-500/80 uppercase tracking-widest block leading-none">🛡️ PLATFORM SCORE</span>
+            <span className="text-[8px] font-black text-emerald-500/80 uppercase tracking-widest leading-none flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>PLATFORM SCORE</span>
+            </span>
             <span className="text-[11px] font-black text-emerald-500 uppercase tracking-widest block mt-0.5">5/5 HIGH TRUST</span>
           </div>
           <div className="flex gap-1">
@@ -39,8 +42,9 @@ export function SecuritySettings() {
         
         {/* Left column config */}
         <div className="space-y-6">
-          <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-            🔐 CORE SETTINGS
+          <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-cyan-500" />
+            <span>CORE SETTINGS</span>
           </label>
           
           <div className="bg-card border border-border rounded-xl p-5 space-y-6 shadow-sm">
@@ -96,8 +100,9 @@ export function SecuritySettings() {
 
           {/* IP Allowlist settings */}
           <div className="space-y-3">
-            <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-              🌐 IP ALLOWLIST (IPS COMPLIANCE UNIT)
+            <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-cyan-500" />
+              <span>IP ALLOWLIST (IPS COMPLIANCE UNIT)</span>
             </label>
             
             <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-sm">
@@ -144,8 +149,9 @@ export function SecuritySettings() {
 
         {/* Right column audits */}
         <div className="space-y-6">
-          <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-            👤 ACTIVE SESSIONS
+          <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-cyan-500" />
+            <span>ACTIVE SESSIONS</span>
           </label>
           
           <div className="space-y-3">
@@ -190,8 +196,9 @@ export function SecuritySettings() {
           <div className="p-5 bg-orange-500/5 dark:bg-orange-500/5 border border-orange-500/25 rounded-xl flex gap-4 shadow-sm animate-pulse">
             <AlertCircle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <span className="text-[10px] font-mono font-black text-orange-500 uppercase tracking-widest block leading-none">
-                ⚠️ SECURITY WARNING PANEL
+              <span className="text-[10px] font-mono font-black text-orange-500 uppercase tracking-widest leading-none flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>SECURITY WARNING PANEL</span>
               </span>
               <p className="text-[9px] font-mono text-muted-foreground leading-relaxed uppercase tracking-wide">
                 Suspicious logins detected: <strong className="text-orange-500">3 attempts (24h)</strong> from unverified geolocations. Suggestion: rotate API keys and audit allowlist CIDRs.
