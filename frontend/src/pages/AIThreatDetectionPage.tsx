@@ -1,226 +1,115 @@
 import React, { useState } from "react";
-import { LayoutGrid, Activity, Scale, Database } from "lucide-react";
+import { useThreatSimulation } from "../components/aiThreatDetection/useThreatSimulation";
+import { SOCHeaderKPI } from "../components/aiThreatDetection/SOCHeaderKPI";
+import { SOCThreatStream } from "../components/aiThreatDetection/SOCThreatStream";
+import { FusionInsightPanel } from "../components/aiThreatDetection/FusionInsightPanel";
+import { SystemHealthPanel } from "../components/aiThreatDetection/SystemHealthPanel";
+import { SOCThreatDetailDrawer } from "../components/aiThreatDetection/SOCThreatDetailDrawer";
+import { ThreatEvent } from "../components/aiThreatDetection/types";
+import { Shield, Sparkles, Terminal } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "../lib/utils";
 
-// Domain specific component refactored modules
-import { useThreatSimulation } from "../components/aiThreatDetection/useThreatSimulation";
-import { TopKPIs } from "../components/aiThreatDetection/TopKPIs";
-import { PipelineVisual } from "../components/aiThreatDetection/PipelineVisual";
-import { RealtimeFeed } from "../components/aiThreatDetection/RealtimeFeed";
-import { ModelHealthGrid } from "../components/aiThreatDetection/ModelHealthGrid";
-import { ModelAnomalyTab } from "../components/aiThreatDetection/ModelAnomalyTab";
-import { ModelClassifierTab } from "../components/aiThreatDetection/ModelClassifierTab";
-import { ModelSemanticTab } from "../components/aiThreatDetection/ModelSemanticTab";
-import { FusionTab } from "../components/aiThreatDetection/FusionTab";
-import { DatasetsDriftTab } from "../components/aiThreatDetection/DatasetsDriftTab";
-import { ThreatEventModal } from "../components/aiThreatDetection/ThreatEventModal";
-import { ThreatEvent } from "../components/aiThreatDetection/types";
-
 export function AIThreatDetectionPage() {
-  const [activeTab, setActiveTab] = useState<"overview" | "models" | "fusion" | "datasets">(
-    "overview"
-  );
   const [selectedEvent, setSelectedEvent] = useState<ThreatEvent | null>(null);
 
-  // Destructure real-time simulation tickers and theme variables
+  // Consume our simulated SOC stream feed and metrics
   const {
     liveInferences,
-    liveNormalFlows,
-    liveAnomalyFlows,
     liveDetections,
     liveFusionAlerts,
     liveLatency,
+    liveFpReduction,
+    throughput,
     alertFeed,
-    graphColors
   } = useThreatSimulation();
 
   return (
-    <div className="space-y-6 pb-20 select-none text-foreground font-sans animate-fadeIn">
-      {/* ── 1. HEADER & SYSTEM OVERVIEW TITLE ───────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-border/85 gap-4">
-        <div className="space-y-1.5 sm:max-w-xl">
+    <div className="w-full min-h-screen bg-background p-4 md:p-6 space-y-6 flex flex-col font-mono text-slate-800 dark:text-slate-100 animate-in fade-in">
+      {/* ── 1. Page Title Header Area ──────────────────────────────── */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 border-b border-border/80 gap-3">
+        <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_#06b6d4]" />
-            <span className="text-[10px] font-mono font-black tracking-widest text-cyan-600 dark:text-cyan-400 uppercase">
-              COGNITIVE DETECTION DOMAIN
+            <span className="text-[10px] font-bold tracking-widest text-cyan-600 dark:text-cyan-400 uppercase">
+              Consensus Security Operation (SOC) Domain
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase leading-none text-slate-900 dark:text-slate-100">
-            AI Threat Detection
+          <h2 className="text-xl sm:text-2xl font-black uppercase text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Shield className="w-6 h-6 text-cyan-400" />
+            SOC AI Threat Detection Engine
           </h2>
-          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-normal uppercase font-mono tracking-wider">
-            AI-Powered Multi-Model Hybrid Cloud Security Monitoring Platform
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal uppercase tracking-wide">
+            Real-Time Inference Consensus Validation Stream (Zeek-First Fusion Output)
           </p>
         </div>
 
-        {/* WORKSPACE MODE NAVIGATION */}
-        <div className="flex items-center flex-wrap gap-1 bg-zinc-100 dark:bg-zinc-900/60 p-1 border border-border rounded-xl">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={cn(
-              "px-3 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all duration-200 border-none flex items-center gap-1.5 cursor-pointer",
-              activeTab === "overview"
-                ? "bg-cyan-500 text-slate-950 shadow"
-                : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
-            )}
-          >
-            <LayoutGrid size={12} />
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("models")}
-            className={cn(
-              "px-3 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all duration-200 border-none flex items-center gap-1.5 cursor-pointer",
-              activeTab === "models"
-                ? "bg-cyan-500 text-slate-950 shadow"
-                : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
-            )}
-          >
-            <Activity size={12} />
-            Model Deep-Dives
-          </button>
-          <button
-            onClick={() => setActiveTab("fusion")}
-            className={cn(
-              "px-3 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all duration-200 border-none flex items-center gap-1.5 cursor-pointer",
-              activeTab === "fusion"
-                ? "bg-cyan-500 text-slate-950 shadow"
-                : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
-            )}
-          >
-            <Scale size={12} />
-            Fusion &amp; explain
-          </button>
-          <button
-            onClick={() => setActiveTab("datasets")}
-            className={cn(
-              "px-3 py-2 rounded-lg text-[10px] uppercase font-black tracking-widest transition-all duration-200 border-none flex items-center gap-1.5 cursor-pointer",
-              activeTab === "datasets"
-                ? "bg-cyan-500 text-slate-950 shadow"
-                : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
-            )}
-          >
-            <Database size={12} />
-            Datasets &amp; Drift
-          </button>
+        {/* Live Ticker Feed System Counter */}
+        <div className="flex items-center gap-2.5 bg-secondary/35 border border-border/60 px-3 py-1.5 rounded-lg text-[9.5px]">
+          <Terminal size={12} className="text-cyan-400 animate-pulse" />
+          <span className="uppercase text-muted-foreground font-semibold">FEED RESOLVER STATUS:</span>
+          <span className="font-bold text-emerald-400">ONLINE</span>
         </div>
       </div>
 
-      {/* ── 2. TOP KPI SECTION ────────────────────────────────────────────────── */}
-      <TopKPIs
+      {/* ── 2. Top KPI Metrics bar ────────────────────────────────── */}
+      <SOCHeaderKPI
         liveInferences={liveInferences}
         liveDetections={liveDetections}
         liveFusionAlerts={liveFusionAlerts}
         liveLatency={liveLatency}
+        liveFpReduction={liveFpReduction}
       />
 
-      {/* ── 3. INTUITIVE WORKSPACE TABS SWITCHER ───────────────────────────────── */}
-      <AnimatePresence mode="wait">
-        {activeTab === "overview" && (
-          <motion.div
-            key="overview-tab"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            {/* ── AI PIPELINE VISUALIZATION (MAIN FLOW DIAGRAM) ── */}
-            <PipelineVisual setActiveTab={setActiveTab} graphColors={graphColors} />
+      {/* ── 3. Main Center Layout (Grid containing Real-Time Stream + Forensic Detail / Slide-in Panel) ────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        {/* Left & Center: Real-Time stream + Insights Grid (takes up full width if no event is selected, or 8 columns if selected) */}
+        <div className={cn(
+          "space-y-5 transition-all duration-300 min-w-0 flex flex-col justify-start",
+          selectedEvent ? "lg:col-span-8" : "lg:col-span-12"
+        )}>
+          {/* Main threat stream list */}
+          <SOCThreatStream
+            alertFeed={alertFeed}
+            selectedEventId={selectedEvent?.id}
+            onSelectEvent={setSelectedEvent}
+          />
 
-            {/* ── REALTIME DETECTION FEED & SPEC DETAIL PANEL SPLIT ── */}
-            <div className="flex flex-col lg:flex-row gap-5 items-stretch relative overflow-hidden">
-              <motion.div 
-                layout
-                className={cn("transition-all duration-500", selectedEvent ? "w-full lg:w-[58%]" : "w-full")}
-                transition={{ type: "spring", damping: 28, stiffness: 180 }}
-              >
-                <RealtimeFeed
-                  alertFeed={alertFeed}
-                  setSelectedEvent={setSelectedEvent}
-                  selectedEventId={selectedEvent?.id}
-                  graphColors={graphColors}
-                />
-              </motion.div>
+          {/* Fusion Decision, Threat Distribution, and Drift Index directly underneath stream */}
+          <FusionInsightPanel
+            alertFeed={alertFeed}
+            liveFusionAlerts={liveFusionAlerts}
+            liveFpReduction={liveFpReduction}
+          />
+        </div>
 
-              <AnimatePresence mode="popLayout">
-                {selectedEvent && (
-                  <motion.div
-                    key="threat-details-panel"
-                    layout
-                    initial={{ x: "100%", opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: "100%", opacity: 0 }}
-                    transition={{ type: "spring", damping: 28, stiffness: 180 }}
-                    className="w-full lg:w-[42%] shrink-0"
-                  >
-                    <ThreatEventModal
-                      selectedEvent={selectedEvent}
-                      onClose={() => setSelectedEvent(null)}
-                      graphColors={graphColors}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+        {/* Dynamic Detail slide-in if an incident is selected */}
+        <AnimatePresence>
+          {selectedEvent && (
+            <motion.div
+              initial={{ opacity: 0, x: 40, scale: 0.96 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 40, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 420, damping: 30 }}
+              className="lg:col-span-4 h-fit flex flex-col"
+            >
+              <SOCThreatDetailDrawer
+                event={selectedEvent}
+                onClose={() => setSelectedEvent(null)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            {/* ── AI COMPILATION MODEL HEALTH (GRID) ── */}
-            <ModelHealthGrid />
-          </motion.div>
-        )}
+      </div>
 
-        {/* ── Tab 2: Models Detailed Analytics ── */}
-        {activeTab === "models" && (
-          <motion.div
-            key="models-tab"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            {/* AI1: ISOLATION FOREST SECTION */}
-            <ModelAnomalyTab
-              liveNormalFlows={liveNormalFlows}
-              liveAnomalyFlows={liveAnomalyFlows}
-              graphColors={graphColors}
-            />
+      {/* ── 4. Bottom System Health Diagnostic panel ──────────────── */}
+      <SystemHealthPanel
+        throughput={throughput}
+        liveDetections={liveDetections}
+      />
 
-            {/* AI2A: NETWORK ATTACK CLASSIFIER */}
-            <ModelClassifierTab graphColors={graphColors} />
-
-            {/* AI2B: HTTP SEMANTIC DETECTOR */}
-            <ModelSemanticTab graphColors={graphColors} />
-          </motion.div>
-        )}
-
-        {/* ── Tab 3: Fusion and Explainability ── */}
-        {activeTab === "fusion" && (
-          <motion.div
-            key="fusion-tab"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            <FusionTab graphColors={graphColors} />
-          </motion.div>
-        )}
-
-        {/* ── Tab 4: Datasets and stability indices ── */}
-        {activeTab === "datasets" && (
-          <motion.div
-            key="datasets-tab"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            <DatasetsDriftTab />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Details panel fully integrated side-by-side above */}
     </div>
   );
 }

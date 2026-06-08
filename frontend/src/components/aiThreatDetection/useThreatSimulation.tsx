@@ -4,12 +4,13 @@ import { PRESEEDED_THREAT_EVENTS } from "./mockData";
 
 export function useThreatSimulation() {
   const [ticker, setTicker] = useState(0);
-  const [liveInferences, setLiveInferences] = useState(152347);
-  const [liveNormalFlows, setLiveNormalFlows] = useState(45188);
-  const [liveAnomalyFlows, setLiveAnomalyFlows] = useState(4812);
-  const [liveDetections, setLiveDetections] = useState(8412);
-  const [liveFusionAlerts, setLiveFusionAlerts] = useState(2134);
-  const [liveLatency, setLiveLatency] = useState(27);
+  const [liveInferences, setLiveInferences] = useState(384912);
+  const [liveDetections, setLiveDetections] = useState(8429);
+  const [liveFusionAlerts, setLiveFusionAlerts] = useState(2145);
+  const [liveLatency, setLiveLatency] = useState(14.8);
+  const [liveFpReduction, setLiveFpReduction] = useState(42.6);
+  const [throughput, setThroughput] = useState(1280); // events per second
+
   const [alertFeed, setAlertFeed] = useState<ThreatEvent[]>(PRESEEDED_THREAT_EVENTS);
 
   // Monitor Light/Dark Theme to update Recharts colors cleanly
@@ -58,38 +59,86 @@ export function useThreatSimulation() {
   useEffect(() => {
     const interval = setInterval(() => {
       setTicker((t) => t + 1);
+
       // Increment live stats slightly
-      const infStep = Math.floor(Math.random() * 3) + 1;
+      const infStep = Math.floor(Math.random() * 8) + 3;
       setLiveInferences((prev) => prev + infStep);
-      setLiveNormalFlows((prev) => prev + (Math.random() > 0.3 ? infStep : 0));
-      setLiveAnomalyFlows((prev) => prev + (Math.random() > 0.85 ? 1 : 0));
-      
-      if (Math.random() > 0.8) {
+
+      // Random throughput fluctuation
+      setThroughput((prev) => {
+        const diff = Math.floor(Math.random() * 80) - 40;
+        const target = prev + diff;
+        return target >= 1100 && target <= 1450 ? target : prev;
+      });
+
+      // Occasional alert injection
+      if (Math.random() > 0.6) {
         setLiveDetections((prev) => prev + 1);
-        if (Math.random() > 0.6) {
+
+        if (Math.random() > 0.5) {
           setLiveFusionAlerts((prev) => prev + 1);
-          
-          // Prepend a dynamic live threat from pool to alert feed
-          const randomBase = PRESEEDED_THREAT_EVENTS[Math.floor(Math.random() * PRESEEDED_THREAT_EVENTS.length)];
+
+          // Prepend a dynamic live threat from mock templates to the alert stream
+          const srcIPs = [
+            "195.154.122.9", "185.220.101.5", "109.202.107.13", 
+            "77.247.110.12", "193.106.191.1", "45.143.203.4"
+          ];
+          const dstIPs = [
+            "10.0.1.25", "10.0.2.14", "10.0.4.10", "10.0.5.21"
+          ];
+          const attackPool: Array<{
+            attack_type: "XSS" | "SQLi" | "DoS" | "Port Scan" | "Brute Force" | "Botnet";
+            severity: "Critical" | "High" | "Medium";
+            mitre: string;
+            ai2a: string;
+            ai2b?: string;
+          }> = [
+            { attack_type: "SQLi", severity: "Critical", mitre: "T1190", ai2a: "SQL Injection Scripting", ai2b: "High Suspected SQL payload" },
+            { attack_type: "XSS", severity: "High", mitre: "T1190", ai2a: "Cross-Site Scripting Probe", ai2b: "Malicious iframe tag payload" },
+            { attack_type: "DoS", severity: "Critical", mitre: "T1498", ai2a: "TCP Connection DoS", ai2b: "Clean" },
+            { attack_type: "Port Scan", severity: "Medium", mitre: "T1595", ai2a: "IP Port Discovery Scan", ai2b: "Clean" },
+            { attack_type: "Brute Force", severity: "High", mitre: "T1110", ai2a: "Direct login credential flood", ai2b: "Clean" },
+            { attack_type: "Botnet", severity: "High", mitre: "T1071", ai2a: "External C2 Beacon detected", ai2b: "Custom HTTP User-Agent seen" }
+          ];
+
+          const chosen = attackPool[Math.floor(Math.random() * attackPool.length)];
           const now = new Date();
           const timestamp = now.toTimeString().split(" ")[0];
+
           const newEvent: ThreatEvent = {
-            ...randomBase,
             id: `evt-${Math.floor(Math.random() * 900000) + 100000}`,
             timestamp,
-            source: `${Math.floor(Math.random() * 180) + 20}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-            riskScore: randomBase.riskScore + Math.floor(Math.random() * 5) - 2
+            src_ip: srcIPs[Math.floor(Math.random() * srcIPs.length)],
+            dst_ip: dstIPs[Math.floor(Math.random() * dstIPs.length)],
+            attack_type: chosen.attack_type,
+            severity: chosen.severity,
+            confidence: Math.floor(Math.random() * 15) + 84, // 84 to 98%
+            pipeline: {
+              zeek: true,
+              ai1: Math.floor(Math.random() * 30) + 70, // 70 to 99
+              ai2a: chosen.ai2a,
+              ai2b: chosen.ai2b,
+              fusion_score: Math.floor(Math.random() * 15) + 84
+            },
+            mitre: chosen.mitre
           };
-          setAlertFeed((prev) => [newEvent, ...prev.slice(0, 9)]);
+
+          setAlertFeed((prev) => [newEvent, ...prev.slice(0, 50)]); // keep a max of 50 in state memory
         }
       }
 
       setLiveLatency((prev) => {
-        const variance = Math.random() > 0.5 ? 1 : -1;
-        const target = prev + variance;
-        return target >= 25 && target <= 29 ? target : prev;
+        const diff = (Math.random() * 0.8 - 0.4);
+        const target = parseFloat((prev + diff).toFixed(1));
+        return target >= 12 && target <= 18 ? target : prev;
       });
-    }, 4500);
+
+      setLiveFpReduction((prev) => {
+        const diff = (Math.random() * 0.4 - 0.2);
+        const target = parseFloat((prev + diff).toFixed(1));
+        return target >= 41 && target <= 45 ? target : prev;
+      });
+    }, 4000);
 
     return () => clearInterval(interval);
   }, []);
@@ -97,11 +146,11 @@ export function useThreatSimulation() {
   return {
     ticker,
     liveInferences,
-    liveNormalFlows,
-    liveAnomalyFlows,
     liveDetections,
     liveFusionAlerts,
     liveLatency,
+    liveFpReduction,
+    throughput,
     alertFeed,
     isDark,
     graphColors

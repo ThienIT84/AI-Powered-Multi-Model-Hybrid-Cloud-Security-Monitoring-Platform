@@ -76,7 +76,7 @@ export const EndpointInventoryTable: React.FC<EndpointInventoryTableProps> = ({
   onBlockIp,
   onExportCSV,
 }) => {
-  const itemsPerPage = 15;
+  const itemsPerPage = 8;
   const totalPages = Math.ceil(filteredEndpoints.length / itemsPerPage);
 
   const displayedEndpoints = useMemo(() => {
@@ -203,7 +203,7 @@ export const EndpointInventoryTable: React.FC<EndpointInventoryTableProps> = ({
       </div>
 
       {/* Real Table Grid */}
-      <div className="flex-1 overflow-x-auto">
+      <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse font-mono text-[11px] min-w-175">
           <thead>
             <tr className="bg-muted/40 text-[10px] font-black text-muted-foreground uppercase tracking-wider border-b border-border">
@@ -245,7 +245,15 @@ export const EndpointInventoryTable: React.FC<EndpointInventoryTableProps> = ({
               return (
                 <tr 
                   key={ep.id}
-                  onClick={() => { setSelectedId(ep.id); setIsDrawerOpen(true); }}
+                  onClick={() => { 
+                    if (selectedId === ep.id) {
+                      setSelectedId(null);
+                      setIsDrawerOpen(false);
+                    } else {
+                      setSelectedId(ep.id);
+                      setIsDrawerOpen(true);
+                    }
+                  }}
                   className={cn(
                     "cursor-pointer group hover:bg-secondary/40 transition-all border-b border-border/50",
                     isSelected && "bg-secondary dark:bg-secondary/50 border-l-2 border-l-cyan-400"

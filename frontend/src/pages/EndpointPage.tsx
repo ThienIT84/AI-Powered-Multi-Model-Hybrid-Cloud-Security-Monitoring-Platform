@@ -1,18 +1,12 @@
 import React, { useMemo, useCallback } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useEndpointState } from "../hooks/useEndpointState";
-import { EndpointPageHeader } from "../components/endpoint/EndpointPageHeader";
-import { EndpointOverviewCards } from "../components/endpoint/EndpointOverviewCards";
 import { EndpointInventoryTable } from "../components/endpoint/EndpointInventoryTable";
-import { EndpointDetailDrawer } from "../components/endpoint/EndpointDetailDrawer";
-import { EndpointTelemetryRow } from "../components/endpoint/EndpointTelemetryRow";
-import { EndpointDetectorRow } from "../components/endpoint/EndpointDetectorRow";
-import { EndpointGeoMap } from "../components/endpoint/EndpointGeoMap";
-import { EndpointTrafficProfileCharts } from "../components/endpoint/EndpointTrafficProfileCharts";
-import { EndpointIncidentsTable } from "../components/endpoint/EndpointIncidentsTable";
-import { EndpointIncidentEvidenceModal } from "../components/endpoint/EndpointIncidentEvidenceModal";
+import { EndpointOverviewTab } from "../components/endpoint/EndpointOverviewTab";
+import { EndpointDetailPanel } from "../components/endpoint/EndpointDetailPanel";
 import { EndpointAlertToast } from "../components/endpoint/EndpointAlertToast";
-import { ATTACK_COLORS } from "../components/endpoint/EndpointConstants";
+import { Shield, Sparkles } from "lucide-react";
+import { cn } from "../lib/utils";
 
 export function EndpointPage() {
   const {
@@ -21,12 +15,6 @@ export function EndpointPage() {
     setSelectedId,
     isDrawerOpen,
     setIsDrawerOpen,
-    selectedIncident,
-    setSelectedIncident,
-    isModalOpen,
-    setIsModalOpen,
-    activeSegment,
-    setActiveSegment,
     searchQuery,
     setSearchQuery,
     typeFilter,
@@ -41,124 +29,21 @@ export function EndpointPage() {
     setSortOrder,
     visibleCols,
     setVisibleCols,
-    timelineZoom,
-    setTimelineZoom,
-    alertPopup,
-    setAlertPopup,
     handleIsolate,
     handleBlockIp,
-    stats,
     filteredEndpoints,
     currentPage,
     setCurrentPage,
+    alertPopup,
+    setAlertPopup,
   } = useEndpointState();
 
+  // Selected Endpoint object computed from the endpoints state array
   const selectedEndpointObj = useMemo(() => {
-    return endpoints.find(e => e.id === selectedId);
+    return endpoints.find(e => e.id === selectedId) || null;
   }, [endpoints, selectedId]);
 
-  // Derived datasets for Heatmatrix and Top Risky systems
-  const matrixEndPoints = useMemo(() => {
-    // Show top 18 endpoints in matrix heatmap to keep density readable
-    return endpoints.slice(0, 18);
-  }, [endpoints]);
-
-  const topRiskyData = useMemo(() => {
-    return [...endpoints]
-      .filter(e => e.status !== "Offline")
-      .sort((a, b) => b.riskScore - a.riskScore)
-      .slice(0, 10)
-      .map(e => ({ hostname: e.hostname, riskScore: e.riskScore }));
-  }, [endpoints]);
-
-  // Compiled values for Zeek Log Traffic charts
-  const trafficProfile = useMemo(() => {
-    if (!selectedEndpointObj) return [{ name: "TCP", value: 45 }, { name: "UDP", value: 15 }, { name: "ICMP", value: 5 }];
-    return [
-      { name: "TCP", value: selectedEndpointObj.protocols.TCP },
-      { name: "UDP", value: selectedEndpointObj.protocols.UDP },
-      { name: "ICMP", value: selectedEndpointObj.protocols.ICMP }
-    ];
-  }, [selectedEndpointObj]);
-
-  const serviceIndex = useMemo(() => {
-    if (!selectedEndpointObj) return [
-      { name: "HTTP", value: 12 }, { name: "DNS", value: 35 }, { name: "SSH", value: 4 },
-      { name: "FTP", value: 1 }, { name: "HTTPS", value: 50 }, { name: "OTHER", value: 18 }
-    ];
-    return [
-      { name: "HTTP", value: selectedEndpointObj.services.HTTP },
-      { name: "DNS", value: selectedEndpointObj.services.DNS },
-      { name: "SSH", value: selectedEndpointObj.services.SSH },
-      { name: "FTP", value: selectedEndpointObj.services.FTP },
-      { name: "HTTPS", value: selectedEndpointObj.services.HTTPS },
-      { name: "OTHER", value: selectedEndpointObj.services.OTHER }
-    ];
-  }, [selectedEndpointObj]);
-
-  const topSourceHosts = useMemo(() => {
-    if (!selectedEndpointObj || selectedEndpointObj.status === "Offline") {
-      // fallback generic stats
-      return [
-        { ip: "10.100.1.15", count: 42, bytes: 512204 },
-        { ip: "10.100.2.22", count: 28, bytes: 210450 },
-        { ip: "10.100.1.99", count: 19, bytes: 14209 }
-      ];
-    }
-    return selectedEndpointObj.zeekConnLogs.slice(0, 3).map(l => ({
-      ip: l.src_ip,
-      count: Math.round(l.packets * 1.5 + 2),
-      bytes: l.bytes
-    }));
-  }, [selectedEndpointObj]);
-
-  const topDestHosts = useMemo(() => {
-    if (!selectedEndpointObj || selectedEndpointObj.status === "Offline") {
-      return [
-        { ip: "203.0.113.88", count: 34, bytes: 412095 },
-        { ip: "34.120.45.192", count: 21, bytes: 30204 },
-        { ip: "192.168.1.99", count: 12, bytes: 9140 }
-      ];
-    }
-    return selectedEndpointObj.zeekConnLogs.slice(2, 5).map(l => ({
-      ip: l.dest_ip,
-      count: Math.round(l.packets * 1.2 + 1),
-      bytes: l.bytes
-    }));
-  }, [selectedEndpointObj]);
-
-  // Doughnut compiled statistics for Alert Distribution
-  const doughnutData = useMemo(() => {
-    const counts: { [key: string]: number } = {
-      "XSS Injection Web Payload": 0,
-      "SQLi URI Database Probe": 0,
-      "Cryptomining Activity Alerts": 0,
-      "Cobalt Strike Active Beacon": 0,
-      "SSH Brute Force External IP": 0,
-      "Malicious Landing Redirect": 0,
-    };
-
-    endpoints.forEach(ep => {
-      if (ep.status !== "Offline" && ep.alertCount > 0) {
-        const sig = ep.suricata.signature;
-        if (sig.includes("Drupal XML-RPC")) counts["XSS Injection Web Payload"] += ep.alertCount;
-        else if (sig.includes("SQL Injection")) counts["SQLi URI Database Probe"] += ep.alertCount;
-        else if (sig.includes("Cryptomining")) counts["Cryptomining Activity Alerts"] += ep.alertCount;
-        else if (sig.includes("Cobalt Strike")) counts["Cobalt Strike Active Beacon"] += ep.alertCount;
-        else if (sig.includes("SSH brute force")) counts["SSH Brute Force External IP"] += ep.alertCount;
-        else counts["Malicious Landing Redirect"] += ep.alertCount;
-      }
-    });
-
-    const categories = Object.keys(counts);
-    return categories.map((cat, idx) => ({
-      name: cat,
-      value: counts[cat] || (idx * 5 + 4), // fallback baseline mock count
-      color: ATTACK_COLORS[idx % ATTACK_COLORS.length]
-    }));
-  }, [endpoints]);
-
-  // Export CSV files
+  // Export CSV format for local asset inventory
   const handleExportCSV = useCallback(() => {
     const headers = ["ID", "Hostname", "IP Address", "Device Type", "OS", "Role", "Risk Score", "Health Score", "Status"];
     const rows = filteredEndpoints.map(e => [
@@ -179,171 +64,136 @@ export function EndpointPage() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `fcaj_endpoint_export_${Date.now()}.csv`);
+    link.setAttribute("download", `edr_asset_index_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }, [filteredEndpoints]);
 
-  const handleSelectIncident = useCallback((inc: any) => {
-    setSelectedIncident(inc);
-    setIsModalOpen(true);
-  }, [setSelectedIncident, setIsModalOpen]);
-
   return (
     <motion.div
-      key="endpoint-page"
+      key="endpoint-edr-console"
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 10 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="w-full min-h-screen bg-background p-4 md:p-6 space-y-6"
+      className="w-full min-h-screen bg-background p-4 md:p-6 space-y-5 flex flex-col font-mono text-slate-800 dark:text-slate-100 animate-in fade-in"
     >
-      {/* 1. Header and Swapping controls */}
-      <EndpointPageHeader 
-        activeSegment={activeSegment} 
-        setActiveSegment={setActiveSegment} 
-      />
-
-      {/* 2. Overview status metrics widgets */}
-      <EndpointOverviewCards stats={stats} />
-
-      {/* Conditional Segment Switching block */}
-      {activeSegment === "inventory" ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className={isDrawerOpen && selectedEndpointObj ? "lg:col-span-8" : "lg:col-span-12"}>
-              <EndpointInventoryTable
-                filteredEndpoints={filteredEndpoints}
-                selectedId={selectedId}
-                setSelectedId={setSelectedId}
-                isDrawerOpen={isDrawerOpen}
-                setIsDrawerOpen={setIsDrawerOpen}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                typeFilter={typeFilter}
-                setTypeFilter={setTypeFilter}
-                roleFilter={roleFilter}
-                setRoleFilter={setRoleFilter}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                sortField={sortField}
-                setSortField={setSortField}
-                sortOrder={sortOrder}
-                setSortOrder={setSortOrder}
-                visibleCols={visibleCols}
-                setVisibleCols={setVisibleCols}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                onIsolate={handleIsolate}
-                onBlockIp={handleBlockIp}
-                onExportCSV={handleExportCSV}
-              />
-            </div>
-
-            <EndpointDetailDrawer
-              selectedEndpointObj={selectedEndpointObj}
-              isDrawerOpen={isDrawerOpen}
-              setIsDrawerOpen={setIsDrawerOpen}
-            />
+      {/* 1. Header (CrowdStrike / EDR-centric style) */}
+      <div 
+        id="endpoint-page-header"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/60 backdrop-blur-md p-4 rounded-xl border border-border"
+      >
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Shield className="w-5 h-5 text-indigo-650 dark:text-cyan-400 animate-pulse" />
+            <h1 className="text-sm font-black text-foreground uppercase tracking-widest leading-none">
+              Endpoint Security Console
+            </h1>
           </div>
-
-          {/* 3. Indicators: Health Score Gauge, Attack Path Tree, Device Chronicle Timeline */}
-          <EndpointTelemetryRow 
-            selectedEndpointObj={selectedEndpointObj} 
-            timelineZoom={timelineZoom} 
-            setTimelineZoom={setTimelineZoom} 
-          />
-
-          {/* 4. Incident / Threat Heatmap & Horizontal bar charts */}
-          <EndpointDetectorRow 
-            matrixEndPoints={matrixEndPoints} 
-            topRiskyData={topRiskyData} 
-            setSelectedId={setSelectedId} 
-            setIsDrawerOpen={setIsDrawerOpen} 
-          />
-
-          {/* 5. SVG continental world map tracking */}
-          <EndpointGeoMap 
-            endpoints={endpoints}
-            selectedEndpointObj={selectedEndpointObj} 
-            onSelectEndpoint={(id) => {
-              setSelectedId(id);
-              setIsDrawerOpen(true);
-            }}
-          />
-
-          {/* 6. Zeek connection logs flow spectrometers & Suricata taxonomy doughnut */}
-          <EndpointTrafficProfileCharts
-            trafficProfile={trafficProfile}
-            serviceIndex={serviceIndex}
-            topSourceHosts={topSourceHosts}
-            topDestHosts={topDestHosts}
-            doughnutData={doughnutData}
-          />
+          <p className="text-[9px] text-muted-foreground uppercase tracking-[0.2em] font-mono">
+            Autonomous EDR Agent Investigation & Forensic Surveillance Panel
+          </p>
         </div>
-      ) : (
-        <EndpointIncidentsTable 
-          incidents={endpoints.flatMap(e => 
-            e.timeline
-              .filter(t => t.severity === "Critical" || t.severity === "High")
-              .map(t => ({
-                id: `INC-${t.id}`,
-                timestamp: `2026-05-31T${t.time}:00Z`,
-                endpointId: e.id,
-                hostname: e.hostname,
-                ip: e.ip,
-                attackType: t.event.split(" ").slice(0, 2).join(" "),
-                severity: t.severity,
-                riskScore: e.riskScore,
-                aiSource: "FCAJ Engine Consensus v3",
-                zeekLogs: {
-                  conn: e.zeekConnLogs[0] || {
-                    id: `conn-${t.id}`,
-                    timestamp: `2026-05-31T${t.time}:00Z`,
-                    duration: 4.8,
-                    bytes: 84102,
-                    packets: 75,
-                    conn_state: "SF",
-                    proto: "TCP" as const,
-                    service: "HTTPS" as const,
-                    src_ip: e.ip,
-                    dest_ip: "34.120.45.192",
-                    src_port: 50401,
-                    dest_port: 443
-                  },
-                  http: e.zeekHttpLogs[0]
-                },
-                suricataAlert: e.alertCount > 0 ? {
-                  id: `alert-${t.id}`,
-                  timestamp: `2026-05-31T${t.time}:00Z`,
-                  signature: e.suricata.signature,
-                  category: e.suricata.category,
-                  severity: e.suricata.severity,
-                  src_ip: e.ip,
-                  dest_ip: "34.120.45.192",
-                  src_port: 50401,
-                  dest_port: 443
-                } : undefined
-              }))
+
+        {/* Sync status element */}
+        <div className="flex items-center gap-2 bg-indigo-500/10 dark:bg-cyan-500/10 border border-indigo-500/20 dark:border-cyan-500/20 px-3 py-1.5 rounded-lg select-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-550 dark:bg-cyan-400 animate-ping" />
+          <span className="text-[9px] font-black text-indigo-600 dark:text-cyan-400 tracking-wider uppercase font-mono">
+            EDR Pipeline: Active
+          </span>
+        </div>
+      </div>
+
+      {/* 2. Structured Two-Column EDR Panel Layout (Stacked Table + Overview & Forensic Slide-in/Toggle panel) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:items-start items-start">
+        
+        {/* 🟦 Left Area: ASSET LIST + OVERVIEW STACK */}
+        <div className={cn(
+          "space-y-5 transition-all duration-300 flex flex-col justify-between min-w-0",
+          selectedId ? "lg:col-span-8" : "lg:col-span-12"
+        )}>
+          {/* Asset Catalog Index Table */}
+          <EndpointInventoryTable
+            filteredEndpoints={filteredEndpoints}
+            selectedId={selectedId}
+            setSelectedId={setSelectedId}
+            isDrawerOpen={isDrawerOpen}
+            setIsDrawerOpen={setIsDrawerOpen}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            typeFilter={typeFilter}
+            setTypeFilter={setTypeFilter}
+            roleFilter={roleFilter}
+            setRoleFilter={setRoleFilter}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            sortField={sortField}
+            setSortField={setSortField}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            visibleCols={visibleCols}
+            setVisibleCols={setVisibleCols}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            onIsolate={handleIsolate}
+            onBlockIp={handleBlockIp}
+            onExportCSV={handleExportCSV}
+          />
+
+          {/* 🟨 Host Overview & AI Detection Panel underneath Table */}
+          <div className="border border-border bg-card rounded-xl p-4.5 shadow-xs">
+            <div className="border-b border-border pb-3 mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-555 dark:text-cyan-455 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-foreground">
+                  Host Overview & AI Detection
+                </span>
+              </div>
+              {selectedEndpointObj && (
+                <span className="text-[9px] font-mono font-black text-indigo-650 dark:text-cyan-400 bg-indigo-500/10 dark:bg-cyan-500/10 border border-indigo-500/20 dark:border-cyan-500/20 px-2 py-0.5 rounded tracking-wide">
+                  SYS: {selectedEndpointObj.hostname}
+                </span>
+              )}
+            </div>
+            <EndpointOverviewTab endpoint={selectedEndpointObj} />
+          </div>
+        </div>
+
+        {/* 🟥 Right Area: DETAILED FORENSIC PANEL (Shown & hidden dynamically with premium spring transition when selected) */}
+        <AnimatePresence>
+          {selectedId && (
+            <motion.div
+              layout
+              initial={{ opacity: 0, x: 50, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 50, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              className="lg:col-span-4 h-fit flex flex-col"
+            >
+              <EndpointDetailPanel
+                endpoint={selectedEndpointObj}
+                onBlockIp={handleBlockIp}
+                onIsolate={handleIsolate}
+                onClose={() => {
+                  setSelectedId(null);
+                  setIsDrawerOpen(false);
+                }}
+              />
+            </motion.div>
           )}
-          onSelectIncident={handleSelectIncident}
-        />
-      )}
+        </AnimatePresence>
 
-      {/* Consensus Evidence dialog */}
-      <EndpointIncidentEvidenceModal 
-        selectedIncident={selectedIncident} 
-        isModalOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-      />
+      </div>
 
-      {/* Real-time Toast Threat updates popup */}
+      {/* 3. Global Toast System for real-time simulation updates */}
       <EndpointAlertToast 
         alertPopup={alertPopup} 
         onClose={() => setAlertPopup(null)} 
       />
+
     </motion.div>
   );
 }
+
 export default EndpointPage;

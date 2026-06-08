@@ -1,253 +1,297 @@
-import React, { useState } from "react";
-import { EndpointAsset, getStatusBadgeColor } from "./endpointConfig";
-import { EndpointOverviewTab } from "./EndpointOverviewTab";
-import { EndpointNetworkTab } from "./EndpointNetworkTab";
-import { EndpointSecurityTab } from "./EndpointSecurityTab";
-import { EndpointAgentTab } from "./EndpointAgentTab";
+import React from "react";
+import { EndpointFCAJItem, ZeekConnLog } from "./endpointFCAJData";
+import { 
+  Server, 
+  GitFork, 
+  History, 
+  AlertTriangle, 
+  ShieldAlert, 
+  FileCode, 
+  Ban, 
+  ZapOff,
+  X
+} from "lucide-react";
 import { cn } from "../../lib/utils";
-import { X, Shield, Terminal, ZapOff, Ban, Download, ChevronRight } from "lucide-react";
 
 interface EndpointDetailPanelProps {
-  endpoint: EndpointAsset | null;
-  onClose: () => void;
-  onIsolateNode: (endpoint: EndpointAsset) => void;
-  onBlockIp: (endpoint: EndpointAsset) => void;
-  onExportReport: (endpoint: EndpointAsset) => void;
+  endpoint: EndpointFCAJItem | null;
+  onIsolate: (ep: EndpointFCAJItem) => void;
+  onBlockIp: (ep: EndpointFCAJItem) => void;
+  onClose?: () => void;
 }
 
-type TabType = "OVERVIEW" | "NETWORK" | "SECURITY" | "AGENT" | "LOGS";
-
-export function EndpointDetailPanel({
+export const EndpointDetailPanel: React.FC<EndpointDetailPanelProps> = ({ 
   endpoint,
-  onClose,
-  onIsolateNode,
+  onIsolate,
   onBlockIp,
-  onExportReport,
-}: EndpointDetailPanelProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("OVERVIEW");
-
+  onClose
+}) => {
   if (!endpoint) {
     return (
       <div className="bg-card border border-border rounded-xl p-8 text-center flex flex-col items-center justify-center min-h-125 text-muted-foreground select-none relative overflow-hidden h-full">
-        {/* Animated radar rings check */}
-        <div className="absolute inset-0 bg-linear-to-b from-cyan-500/5 to-transparent blur-2xl pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-b from-indigo-500/5 to-transparent blur-2xl pointer-events-none" />
         <div className="relative mb-4">
-          <div className="absolute inset-0 rounded-full border border-cyan-500/10 animate-ping duration-3000" />
+          <div className="absolute inset-0 rounded-full border border-indigo-500/10 animate-ping duration-3000" />
           <div className="w-12 h-12 rounded-xl border border-border bg-muted/30 flex items-center justify-center text-muted-foreground">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="2" />
-              <path d="M9 9h6M9 13h6M9 17h3" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            <ShieldAlert size={20} className="text-muted-foreground" />
           </div>
         </div>
-        <h4 className="text-[11px] font-mono font-black text-foreground uppercase tracking-widest leading-none mb-1.5">
-          NO ASSET SELECTED
+        <h4 className="text-[11px] font-mono font-black text-foreground uppercase tracking-widest mb-1.5 animate-pulse">
+          AWAITING SELECT ROW
         </h4>
         <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider max-w-52.5 leading-relaxed">
-          Select any asset row in the SEC-INDEX database to view compiled real-time host forensic telemetry.
+          Select any system row in the left-side index to compile forensic logs, raw packet digests, and mitigation profiles.
         </p>
       </div>
     );
   }
 
-  const badge = getStatusBadgeColor(endpoint.status);
-
-  // Risk circle gauge computation values
-  const riskColor = endpoint.riskScore >= 80 ? "text-red-500" : endpoint.riskScore >= 50 ? "text-amber-500" : "text-emerald-500";
-  const circleDashArray = 2 * Math.PI * 26; // radius 26
-  const circleProgressOffset = circleDashArray - (endpoint.riskScore / 100) * circleDashArray;
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "OVERVIEW":
-        return <EndpointOverviewTab endpoint={endpoint} />;
-      case "NETWORK":
-        return <EndpointNetworkTab endpoint={endpoint} />;
-      case "SECURITY":
-        return <EndpointSecurityTab endpoint={endpoint} />;
-      case "AGENT":
-        return <EndpointAgentTab endpoint={endpoint} />;
-      case "LOGS":
-        return (
-          <div className="space-y-3 animate-in fade-in duration-300">
-            <span className="text-[9px] font-mono font-black text-muted-foreground uppercase tracking-widest block px-1">
-              Raw Syslog Stream (Real-Time Ingestion)
-            </span>
-            <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl font-mono text-[9px] text-zinc-400 overflow-y-auto max-h-80 space-y-2 select-text custom-scrollbar custom-terminal flex flex-col">
-              {endpoint.rawLogs.length === 0 ? (
-                <span className="text-zinc-600 text-center py-4">NO COMPLED SYSLOG PACKETS EXTRACTED</span>
-              ) : (
-                endpoint.rawLogs.map((log, i) => (
-                  <div key={i} className="flex gap-2 items-start leading-relaxed group hover:bg-zinc-900/40 p-1 rounded">
-                    <span className="text-zinc-600 select-none shrink-0">{i + 1} &gt;</span>
-                    <span className="text-zinc-300 truncate lowercase select-text selection:bg-cyan-500 selection:text-black">
-                      {log}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="flex items-center justify-between text-[8px] font-mono text-zinc-600 uppercase tracking-widest px-1">
-              <span>SOCKET STREAM: ATTACHED</span>
-              <span>256-bit hash check verified</span>
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  const isOffline = endpoint.status === "Offline";
 
   return (
-    <div id="endpoint-detail-panel" className="bg-card border border-border rounded-xl overflow-hidden flex flex-col justify-between select-none shadow-md h-full relative">
-      <div>
-        
-        {/* Detail Panel Header */}
-        <div className="p-5 border-b border-border bg-card/65 flex items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            
-            {/* SVG circular gauge */}
-            <div className="relative w-16 h-16 shrink-0 bg-background/50 rounded-full border border-border flex items-center justify-center select-none shadow-inner">
-              <svg className="absolute w-full h-full -rotate-90">
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="26"
-                  className="stroke-muted-foreground/10"
-                  strokeWidth="3.5"
-                  fill="transparent"
-                />
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="26"
-                  className={cn("transition-all duration-1000", riskColor)}
-                  strokeWidth="3.5"
-                  fill="transparent"
-                  strokeDasharray={circleDashArray}
-                  strokeDashoffset={circleProgressOffset}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="z-10 text-center flex flex-col font-mono">
-                <span className={cn("text-[13px] font-black leading-none", riskColor)}>
-                  {endpoint.riskScore}%
-                </span>
-                <span className="text-[6.5px] text-muted-foreground uppercase font-semibold scale-90 mt-0.5">
-                  RISK
-                </span>
-              </div>
-            </div>
-
-            {/* Asset quick details */}
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h4 className="text-xs font-mono font-black text-foreground uppercase tracking-wide truncate max-w-32.5" title={endpoint.hostname}>
-                  {endpoint.hostname}
-                </h4>
-                
-                {/* Status indicator */}
-                <span className={cn(
-                  "px-2 py-0.5 rounded-full border text-[7.5px] font-black uppercase tracking-widest",
-                  badge.bg, badge.text, badge.border
-                )}>
-                  {endpoint.status}
-                </span>
-              </div>
-              
-              <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">
-                <span>ID: </span>
-                <span className="text-cyan-500 font-extrabold">{endpoint.id}</span>
-                <span className="mx-1.5 text-border">|</span>
-                <span>IP: </span>
-                <span className="text-foreground font-bold">{endpoint.ip}</span>
-              </div>
-              
-              <p className="text-[8.5px] font-mono text-muted-foreground uppercase tracking-wider truncate max-w-42.5" title={endpoint.os}>
-                {endpoint.os}
-              </p>
+    <div id="endpoint-detail-panel" className="bg-card border border-border rounded-xl flex flex-col justify-between overflow-hidden select-none shadow-sm relative h-fit max-h-[85vh] font-mono text-[10px]">
+      
+      {/* 1. Header Area Info */}
+      <div className="p-4 border-b border-border bg-muted/10 space-y-3">
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <Server size={15} className="text-slate-500" />
+            <div className="flex flex-col">
+              <span className="text-[11px] font-black uppercase tracking-wider text-foreground">{endpoint.hostname}</span>
+              <span className="text-[8.5px] text-muted-foreground">{endpoint.id} | IP: {endpoint.ip}</span>
             </div>
           </div>
-
-          <button
-            onClick={onClose}
-            className="p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-all cursor-pointer"
-          >
-            <X size={14} />
-          </button>
-        </div>
-
-        {/* Small tabs switch bar */}
-        <div className="px-3 bg-muted/40 border-b border-border flex items-center gap-1 font-mono text-[9px] overflow-x-auto select-none custom-scrollbar">
-          {(["OVERVIEW", "NETWORK", "SECURITY", "AGENT", "LOGS"] as TabType[]).map((tab) => {
-            const isActive = activeTab === tab;
-            return (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={cn(
+              "py-0.5 px-2 rounded-full text-[8px] font-black uppercase tracking-wider border shrink-0",
+              endpoint.status === "Healthy" && "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+              endpoint.status === "Warning" && "bg-amber-500/10 text-amber-500 border-amber-500/20",
+              endpoint.status === "Critical" && "bg-red-500/10 text-red-500 border-red-500/20 animate-pulse",
+              endpoint.status === "Offline" && "bg-slate-500/10 text-slate-500 border-slate-500/20"
+            )}>
+              {endpoint.status}
+            </span>
+            {onClose && (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "px-3 py-3 border-b-2 font-black uppercase tracking-wider transition-all cursor-pointer shrink-0",
-                  isActive 
-                    ? "border-b-cyan-500 text-cyan-500 font-bold" 
-                    : "border-b-transparent text-muted-foreground hover:text-foreground hover:border-b-border/60"
-                )}
+                onClick={onClose}
+                className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Dismiss panel"
               >
-                {tab}
+                <X size={13} />
               </button>
-            );
-          })}
+            )}
+          </div>
         </div>
 
-        {/* Dynamic Tab Body surface */}
-        <div className="p-5 overflow-y-auto max-h-115 custom-scrollbar">
-          {renderTabContent()}
+        {/* Basic Asset info list */}
+        <div className="grid grid-cols-2 gap-2 text-[9px] bg-secondary/30 p-2.5 rounded-lg border border-border/60">
+          <div>
+            <span className="text-slate-400 block pb-0.5">MAC ADDRESS:</span>
+            <span className="font-extrabold text-foreground">{endpoint.mac}</span>
+          </div>
+          <div>
+            <span className="text-slate-400 block pb-0.5">OPERATING SYSTEM:</span>
+            <span className="font-extrabold text-foreground">{endpoint.os}</span>
+          </div>
+          <div className="col-span-2 pt-1 border-t border-border/40">
+            <span className="text-slate-400 block pb-0.5">ROLE ASSIGN:</span>
+            <span className="font-black text-foreground dark:text-indigo-404">{endpoint.role}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Scrollable Evidence Panels */}
+      <div className="p-4 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+        
+        {/* Zeek Evidence */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <FileCode size={13} className="text-indigo-505 dark:text-cyan-404" />
+            <span className="font-black text-muted-foreground uppercase tracking-widest text-[9px]">
+              Zeek Network Evidence (conn.log)
+            </span>
+          </div>
+          
+          {isOffline ? (
+            <div className="bg-secondary/20 p-2.5 border border-border border-dashed text-center text-muted-foreground uppercase text-[8.5px]">
+              Terminal offline &bull; Telemetry socket detached
+            </div>
+          ) : endpoint.zeekConnLogs.length === 0 ? (
+            <span className="text-slate-500 text-center block py-2">NO RECENT PACKETS CAPTURED</span>
+          ) : (
+            <div className="border border-border/60 rounded-xl overflow-hidden">
+              <table className="w-full text-left text-[8.5px] border-collapse font-mono bg-card">
+                <thead>
+                  <tr className="bg-muted/40 uppercase text-slate-400 border-b border-border/60 font-black">
+                    <th className="p-1.5">Proto</th>
+                    <th className="p-1.5">Service</th>
+                    <th className="p-1.5">Dst IP</th>
+                    <th className="p-1.5">Bytes</th>
+                    <th className="p-1.5 text-right">Packets</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40 text-muted-foreground uppercase">
+                  {endpoint.zeekConnLogs.slice(0, 4).map((log: ZeekConnLog) => (
+                    <tr key={log.id} className="hover:bg-secondary/40 font-mono">
+                      <td className="p-1.5 text-foreground font-black">{log.proto}</td>
+                      <td className="p-1.5">
+                        <span className={cn(
+                          "px-1 py-0.5 rounded text-[7.5px]",
+                          log.service === "HTTPS" && "text-emerald-500 bg-emerald-500/10",
+                          log.service === "HTTP" && "text-indigo-500 bg-indigo-500/10",
+                          log.service === "DNS" && "text-amber-500 bg-amber-500/10",
+                          log.service === "SSH" && "text-red-500 bg-red-500/10"
+                        )}>
+                          {log.service}
+                        </span>
+                      </td>
+                      <td className="p-1.5 select-all truncate max-w-20" title={log.dest_ip}>{log.dest_ip}</td>
+                      <td className="p-1.5 font-bold text-foreground">{(log.bytes / 1024).toFixed(1)}K</td>
+                      <td className="p-1.5 text-right font-black">{log.packets}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="px-2 py-1 bg-muted/65 text-[7.5px] border-t border-border/60 flex justify-between font-bold text-slate-400">
+                <span>ACTIVE LISTENERS: TCP / UDP</span>
+                <span>SHA-256 CHECK: PASSED</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Suricata Alert signatures */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle size={13} className="text-amber-500" />
+            <span className="font-black text-muted-foreground uppercase tracking-widest text-[9px]">
+              Suricata Signature Alerts (IDS-Evidence)
+            </span>
+          </div>
+
+          {endpoint.alertCount > 0 ? (
+            <div className="bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-lg text-[9px] space-y-1.5">
+              <div className="flex justify-between font-black uppercase text-amber-500">
+                <span>Alert Signature Triggered</span>
+                <span className="text-[7.5px] bg-amber-500/20 px-1.5 rounded font-black tracking-widest">{endpoint.suricata.severity}</span>
+              </div>
+              <p className="font-extrabold text-foreground dark:text-amber-400 italic">
+                "{endpoint.suricata.signature}"
+              </p>
+              <div className="text-[8px] text-slate-400 font-extrabold uppercase">
+                Category: {endpoint.suricata.category}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-secondary/20 p-2.5 border border-border/60 border-dashed text-center text-muted-foreground uppercase text-[8.5px]">
+              No active suricata matches registered
+            </div>
+          )}
+        </div>
+
+        {/* Fusion decision */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <GitFork size={13} className="text-red-500" />
+            <span className="font-black text-muted-foreground uppercase tracking-widest text-[9px]">
+              Fusion Layer Decision Engine
+            </span>
+          </div>
+
+          {endpoint.riskScore >= 40 ? (
+            <div className="bg-secondary/40 border border-border p-3 rounded-lg space-y-2">
+              <div className="flex justify-between items-center text-[10px] font-black">
+                <span className="text-red-500 uppercase">{endpoint.fusion.finalAttackType}</span>
+                <span className="text-foreground">{endpoint.fusion.riskScore}% Threat Risk</span>
+              </div>
+              <div className="pt-1.5 border-t border-border/40 space-y-1">
+                <span className="text-slate-400 block text-[7.5px] uppercase tracking-wider font-extrabold pb-0.5">MITRE Technique Match:</span>
+                <p className="text-[9.5px] font-mono font-black text-emerald-500 uppercase leading-snug">
+                  {endpoint.fusion.mitreMapping}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-secondary/20 p-2.5 border border-border/60 border-dashed text-center text-muted-foreground uppercase text-[8.5px]">
+              Normal system state &bull; Fusion consensus clean
+            </div>
+          )}
+        </div>
+
+        {/* Host Investigative Timeline */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <History size={13} className="text-indigo-505 dark:text-cyan-404" />
+            <span className="font-black text-muted-foreground uppercase tracking-widest text-[9px]">
+              Host Forensic Investigative Timeline
+            </span>
+          </div>
+
+          <div className="pl-2.5 border-l border-border relative space-y-4 py-1" id="forensic-timeline-container">
+            {endpoint.timeline.map((item) => (
+              <div key={item.id} className="relative group">
+                {/* Visual marker dot */}
+                <div className={cn(
+                  "absolute left-[-14.5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-card",
+                  item.severity === "Critical" && "bg-red-500",
+                  item.severity === "High" && "bg-orange-500",
+                  item.severity === "Medium" && "bg-amber-500",
+                  item.severity === "Low" && "bg-indigo-550 dark:bg-cyan-405"
+                )} />
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[8px] font-black font-mono text-slate-400 uppercase">
+                    <span>{item.time}</span>
+                    <span className={cn(
+                      "font-black tracking-widest",
+                      item.severity === "Critical" && "text-red-500",
+                      item.severity === "High" && "text-orange-500",
+                      item.severity === "Medium" && "text-amber-500",
+                      item.severity === "Low" && "text-indigo-650 dark:text-cyan-400"
+                    )}>{item.severity} severity</span>
+                  </div>
+                  <p className="text-[9.5px] font-semibold text-foreground uppercase tracking-wide leading-relaxed pr-1">
+                    {item.event}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>
 
-      {/* Mitigation Action buttons at the bottom */}
-      <div className="p-4 border-t border-border bg-card/65 flex items-center justify-between gap-3 flex-wrap">
-        
-        {/* Export Node details */}
+      {/* 3. Action Buttons & Mitigation Controllers */}
+      <div className="p-3 border-t border-border bg-muted/20 flex gap-2">
         <button
-          onClick={() => onExportReport(endpoint)}
-          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-muted hover:bg-border text-muted-foreground hover:text-foreground border border-border rounded-xl text-[9px] font-mono font-black uppercase tracking-widest transition-all cursor-pointer shrink-0"
-        >
-          <Download size={11} /> Config PDF
-        </button>
-
-        {/* BLOCK NETWORK IP */}
-        <button
-          disabled={endpoint.status === "OFFLINE"}
           onClick={() => onBlockIp(endpoint)}
+          disabled={isOffline}
           className={cn(
-            "flex-1 flex items-center justify-center gap-1 px-3 py-2 border rounded-xl text-[9px] font-mono font-black uppercase tracking-widest transition-all cursor-pointer shrink-0",
-            endpoint.status === "OFFLINE"
-              ? "opacity-30 cursor-not-allowed bg-muted border-border text-zinc-600"
-              : "bg-muted hover:bg-red-500/10 text-muted-foreground hover:text-red-500 border-border"
+            "flex-1 p-2 border rounded-lg text-[8.5px] font-black uppercase tracking-widest flex items-center justify-center gap-1 cursor-pointer transition-colors border-border bg-card",
+            isOffline ? "opacity-35 cursor-not-allowed text-muted-foreground" : "text-muted-foreground hover:text-red-500 hover:bg-red-500/5 hover:border-red-500/20"
           )}
+          title="Dropping dynamic router routing bindings"
         >
-          <Ban size={11} /> Block IP
+          <Ban size={11} /> Drop Router IP
         </button>
 
-        {/* ISOLATE NODE OUT */}
         <button
-          disabled={endpoint.status === "OFFLINE"}
-          onClick={() => onIsolateNode(endpoint)}
+          onClick={() => onIsolate(endpoint)}
+          disabled={isOffline}
           className={cn(
-            "flex-1 flex items-center justify-center gap-1 px-3 py-2 border rounded-xl text-[9px] font-mono font-black uppercase tracking-widest transition-all cursor-pointer shrink-0",
-            endpoint.status === "OFFLINE"
-              ? "opacity-30 cursor-not-allowed bg-muted border-border text-zinc-600"
-              : endpoint.status === "CRITICAL"
-              ? "bg-red-600 hover:bg-red-500 text-white border-red-700 shadow-lg shadow-red-500/15"
-              : "bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-500/30"
+            "flex-1 p-2 border rounded-lg text-[8.5px] font-black uppercase tracking-widest flex items-center justify-center gap-1 cursor-pointer transition-all",
+            isOffline 
+              ? "opacity-35 cursor-not-allowed border-border bg-card text-muted-foreground" 
+              : endpoint.riskScore >= 75
+              ? "bg-red-500 hover:bg-red-650 text-white border-red-650 font-black"
+              : "bg-indigo-600 dark:bg-cyan-600 hover:bg-indigo-500 dark:hover:bg-cyan-500 text-white border-transparent"
           )}
+          title="Dispatching immediate VPC endpoint containment"
         >
-          <ZapOff size={11} /> Isolate HOST
+          <ZapOff size={11} /> Isolate HOST VPC
         </button>
-
       </div>
 
     </div>
   );
-}
+};

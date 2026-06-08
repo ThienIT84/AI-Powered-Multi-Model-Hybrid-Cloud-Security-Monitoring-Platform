@@ -1,33 +1,21 @@
 export interface ThreatEvent {
   id: string;
   timestamp: string;
-  attackType: string;
-  source: string;
-  destination: string;
-  detectionPath: string;
-  riskScore: number;
-  severity: "Critical" | "High" | "Medium" | "Low";
-  zeekEvidence: {
-    logType: string;
-    fields: Record<string, any>;
+  src_ip: string;
+  dst_ip: string;
+  attack_type: "XSS" | "SQLi" | "DoS" | "Port Scan" | "Brute Force" | "Botnet";
+  severity: "Critical" | "High" | "Medium";
+  confidence: number;
+
+  pipeline: {
+    zeek: boolean;
+    ai1: number; // Anomaly score or index
+    ai2a?: string; // Attack classification
+    ai2b?: string; // Web payload scanner decision
+    fusion_score: number; // Final fusion probability or score
   };
-  aiResults: {
-    ai1AnomalyScore: number;
-    ai2aClassifier: { label: string; prob: number };
-    ai2bHttpSemantic: { label: string; prob: number };
-  };
-  suricataEvidence: {
-    alert: string;
-    sid: number;
-    matched: boolean;
-  };
-  fusionDecision: {
-    consensusConfidence: number;
-    classificationOverride: boolean;
-    mitreTechnique: string;
-    mitreId: string;
-    remediationAction: string;
-  };
+
+  mitre: string;
 }
 
 export interface GraphColors {
