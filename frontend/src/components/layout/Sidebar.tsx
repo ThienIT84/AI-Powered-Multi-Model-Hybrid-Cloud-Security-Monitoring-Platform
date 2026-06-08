@@ -132,6 +132,8 @@ export function Sidebar({
               const isAlerts = item.label === "Alerts";
               const isNetwork = item.label === "Network";
               const isEndpoints = item.label === "Endpoints";
+              const isCloud = item.label === "Cloud";
+              const isThreatIntel = item.label === "Threat Intel";
               const isIntegrations = item.label === "Integrations";
               const isPlaybooks = item.label === "Playbooks";
               const isReports = item.label === "Reports";
@@ -143,6 +145,8 @@ export function Sidebar({
               const isActive = (isAlerts && currentView === 'alerts') ||
                                (isNetwork && currentView === 'network') ||
                                (isEndpoints && currentView === 'endpoints') ||
+                               (isCloud && currentView === 'cloud') ||
+                               (isThreatIntel && currentView === 'threat-intel') ||
                                (isIntegrations && currentView === 'integrations') ||
                                (isPlaybooks && currentView === 'playbooks') ||
                                (isReports && currentView === 'reports') ||
@@ -159,6 +163,8 @@ export function Sidebar({
                     if (isAlerts) onViewChange('alerts');
                     else if (isNetwork) onViewChange('network');
                     else if (isEndpoints) onViewChange('endpoints');
+                    else if (isCloud) onViewChange('cloud');
+                    else if (isThreatIntel) onViewChange('threat-intel');
                     else if (isIntegrations) onViewChange('integrations');
                     else if (isPlaybooks) onViewChange('playbooks');
                     else if (isReports) onViewChange('reports');

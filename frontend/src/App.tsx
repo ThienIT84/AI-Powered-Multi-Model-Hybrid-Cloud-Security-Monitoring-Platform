@@ -12,6 +12,12 @@ import { IncidentDetail } from "./components/alerts/IncidentDetail";
 import { AlertsPage } from "./pages/AlertsPage";
 import { NetworkMonitoringPage } from "./pages/NetworkMonitoringPage";
 import { EndpointPage } from "./pages/EndpointPage";
+import { CloudPage } from "./pages/CloudPage";
+import { ThreatIntelPage } from "./pages/ThreatIntelPage";
+import { AIThreatDetectionPage } from "./pages/AIThreatDetectionPage";
+import { AttackSurfacePage } from "./pages/AttackSurfacePage";
+import { MitreAttackPage } from "./pages/MitreAttackPage";
+import { CaseManagementPage } from "./pages/CaseManagementPage";
 import {IntegrationsPage} from "./pages/IntegrationsPage";
 import { PlaybooksPage } from "./pages/PlaybooksPage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -53,10 +59,6 @@ import { AttackScenarioPanel } from "./components/dashboard/AttackScenarioPanel"
 import { DemoModeWidget } from "./components/dashboard/DemoModeWidget";
 import { SystemCompliancePanel } from "./components/dashboard/SystemCompliancePanel";
 
-import { AIThreatDetectionPage } from "./pages/AIThreatDetectionPage";
-import { AttackSurfacePage } from "./pages/AttackSurfacePage";
-import { MitreAttackPage } from "./pages/MitreAttackPage";
-import { CaseManagementPage } from "./pages/CaseManagementPage";
 import { useSocket } from "./useSocket";
 import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
@@ -315,6 +317,10 @@ export default function App() {
               <NetworkMonitoringPage key="network" />
             ) : currentView === "endpoints" ? (
               <EndpointPage key="endpoints" />
+            ) : currentView === "cloud" ? (
+              <CloudPage key="cloud" />
+            ) : currentView === "threat-intel" ? (
+              <ThreatIntelPage key="threat-intel" />
             ) : currentView === "ai-threat-detection" ? (
               <AIThreatDetectionPage key="ai-threat-detection" />
             ) : currentView === "attack-surface" ? (
