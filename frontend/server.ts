@@ -13,6 +13,10 @@ async function startServer() {
   const server = createServer(app);
   const wss = new WebSocketServer({ server });
 
+  // Middleware
+  app.use(express.json());
+  const clients: Set<WebSocket> = new Set();
+
   const attackTypes = ["DDoS", "SQL Injection", "XSS", "Brute Force", "Port Scan", "LFI", "Command Injection", "Beaconing", "Botnet Activity", "Credential Stuffing"];
   const severities = ["Critical", "High", "Medium", "Low"];
   const protocols = ["HTTP", "HTTPS", "TCP", "UDP", "SSH", "SMB", "DNS", "LDAP"];
@@ -111,6 +115,7 @@ async function startServer() {
 
   wss.on("connection", (ws) => {
     console.log("Client connected to WebSocket");
+    clients.add(ws);
 
     const initialLogs = Array.from({ length: 35 }, () => generateAlert());
     ws.send(JSON.stringify({ type: "INITIAL_DATA", data: initialLogs }));
@@ -139,7 +144,36 @@ async function startServer() {
       }
     }, 2000);
 
-    ws.on("close", () => clearInterval(interval));
+    ws.on("close", () => {
+      clearInterval(interval);
+      clients.delete(ws);
+    });
+  });
+
+  // 🔥 API ENDPOINT để nhận dữ liệu từ Python script
+  app.post("/api/soc-logs", (req: any, res: any) => {
+    const logData = req.body;
+    
+    // Debug: in ra toàn bộ dữ liệu
+    console.log(`📨 Raw Data: ${JSON.stringify(logData)}`);
+    
+    // Lấy field names đúng (camelCase từ Python)
+    const sourceIp = logData.sourceIp || logData.source_ip || 'unknown';
+    const destIp = logData.destIp || logData.dest_ip || 'unknown';
+    
+    console.log(`📨 Nhận log từ API: ${sourceIp} -> ${destIp}`);
+
+    // Broadcast dữ liệu tới tất cả WebSocket clients
+    clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: "NEW_ALERT",
+          data: logData,
+        }));
+      }
+    });
+
+    res.json({ success: true, message: "Log received successfully" });
   });
 
   if (process.env.NODE_ENV !== "production") {

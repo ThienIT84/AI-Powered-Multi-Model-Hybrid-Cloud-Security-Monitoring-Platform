@@ -12,9 +12,9 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR configuration for proper WebSocket HMR over localhost
+      // HMR configuration: detect host automatically
       hmr: process.env.DISABLE_HMR === 'true' ? false : {
-        host: 'localhost',
+        host: undefined, // Auto-detect from client request
         protocol: 'ws',
       },
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.

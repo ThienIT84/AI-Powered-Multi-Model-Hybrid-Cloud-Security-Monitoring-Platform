@@ -110,16 +110,16 @@ export default function App() {
     const q = searchQuery.toLowerCase();
     
     // Toggle attack type filtering from Donut Chart Legend
-    if (disabledAttackTypes.includes(alert.attackType)) {
+    if (alert.attackType && disabledAttackTypes.includes(alert.attackType)) {
       return false;
     }
     
     return (
-      alert.sourceIp.toLowerCase().includes(q) ||
-      alert.destinationIp.toLowerCase().includes(q) ||
-      alert.attackType.toLowerCase().includes(q) ||
+      alert.sourceIp?.toLowerCase().includes(q) ||
+      alert.destinationIp?.toLowerCase().includes(q) ||
+      alert.attackType?.toLowerCase().includes(q) ||
       alert.rawPayload?.toLowerCase().includes(q) ||
-      alert.severity.toLowerCase().includes(q)
+      alert.severity?.toLowerCase().includes(q)
     );
   });
 
