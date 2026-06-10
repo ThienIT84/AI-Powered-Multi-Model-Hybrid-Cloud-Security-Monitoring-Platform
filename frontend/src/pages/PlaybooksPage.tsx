@@ -1,151 +1,429 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "motion/react";
-import { Playbook } from "../components/playbooks/playbooksConfig";
-import { 
-  initialPlaybooks, 
-  mockIncidents as initialIncidents, 
-  MockIncident 
-} from "../components/playbooks/playbookMockData";
+import React, { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { PlusCircle, X, ShieldCheck } from "lucide-react";
+import { Playbook, PlaybookCategory, PlaybookUsageEvent } from "../components/playbooks/types";
+import { MOCK_PLAYBOOKS, MOCK_USAGES } from "../components/playbooks/playbookMockData";
 
-// Modular Sub-sections imports in FCAJ playbooks page
-import { HeaderSection } from "../components/playbooks/HeaderSection";
-import { HeroStatsGrid } from "../components/playbooks/HeroStatsGrid";
-import { WorkspaceTab } from "../components/playbooks/WorkspaceTab";
-import { LibraryTab } from "../components/playbooks/LibraryTab";
-import { AnalyticsTab } from "../components/playbooks/AnalyticsTab";
-import { InspectorDialog } from "../components/playbooks/InspectorDialog";
+// NIST-aligned FCAJ Cloud Internship 2025 v3.0 Playbook Modules
+import { PlaybooksHeader } from "../components/playbooks/PlaybooksHeader";
+import { PlaybooksKPIs } from "../components/playbooks/PlaybooksKPIs";
+import { ResponseProcedureLibrary } from "../components/playbooks/ResponseProcedureLibrary";
+import { IncidentResponseWorkflow } from "../components/playbooks/IncidentResponseWorkflow";
+import { PlaybookCoverageMatrix } from "../components/playbooks/PlaybookCoverageMatrix";
+import { PlaybookEffectivenessCards } from "../components/playbooks/PlaybookEffectivenessCards";
+import { PlaybookAdvisorPanel } from "../components/playbooks/PlaybookAdvisorPanel";
+import { EvidencePackageSummary } from "../components/playbooks/EvidencePackageSummary";
+import { PlaybookDetailDrawer } from "../components/playbooks/PlaybookDetailDrawer";
 
 export function PlaybooksPage() {
-  // Navigation Tabs state: overview, workspace, analytics
-  const [activeTab, setActiveTab] = useState<"overview" | "workspace" | "analytics">("workspace");
+  // Master procedure database list state
+  const [playbooks, setPlaybooks] = useState<Playbook[]>(MOCK_PLAYBOOKS);
 
-  // Playbook Library state
-  const [playbooks, setPlaybooks] = useState<Playbook[]>(initialPlaybooks);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [severityFilter, setSeverityFilter] = useState("all");
-  const [layoutStyle, setLayoutStyle] = useState<"grid" | "table">("grid");
-  
-  // MITRE Matrix State - technique filter matching
-  const [selectedMitreId, setSelectedMitreId] = useState<string | null>(null);
+  // Chronological usage log state
+  const [usages, setUsages] = useState<PlaybookUsageEvent[]>(MOCK_USAGES);
 
-  // SOC Workspace state
-  const [incidents, setIncidents] = useState<MockIncident[]>(initialIncidents);
-  const [selectedIncidentId, setSelectedIncidentId] = useState(initialIncidents[0]?.id || "INC-9011");
-  const [terminalLogs, setTerminalLogs] = useState<{ [incidentId: string]: string[] }>({
-    "INC-9011": [
-      "[10:20:15] [ALERT_INGRESS] Detected raw packet payload targeting authentication gateway.",
-      "[10:20:15] [AI_ENGINE] Deep evaluation: XSS confidence 98.2%. Severity level set to Critical.",
-      "[10:20:16] [FUSION_LAYER] Aggregating Zeek http.log and Suricata Alert. Consensus achieved.",
-      "[10:20:16] [STANDBY] Ready for SOC Analyst investigation protocols."
-    ]
-  });
+  // Selection inspection target for standard detail drawer
+  const [inspectedPlaybookId, setInspectedPlaybookId] = useState<string | null>("pb-sqli");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Playbook detail modal state
-  const [selectedPlaybook, setSelectedPlaybook] = useState<Playbook | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalActiveTab, setModalActiveTab] = useState<"general" | "detection" | "steps" | "history">("general");
+  // Creation overlay dialog visibility state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Attack Campaign selected
-  const [campaignId, setCampaignId] = useState("camp-1");
+  // Create Form interactive inputs state
+  const [newName, setNewName] = useState("");
+  const [newCategory, setNewCategory] = useState<PlaybookCategory>("Web Attacks");
+  const [newSeverity, setNewSeverity] = useState<Playbook["severity"]>("medium");
+  const [newStatus, setNewStatus] = useState<Playbook["status"]>("Published");
+  const [newPurpose, setNewPurpose] = useState("");
+  const [newEstTime, setNewEstTime] = useState("20m");
+  const [newOwner, setNewOwner] = useState("SOC Core Team");
 
-  // UTC master clock time tracker ticker state
+  // UTC system time ticker
   const [utcTime, setUtcTime] = useState("");
   useEffect(() => {
     const tick = () => {
       const now = new Date();
-      const year = now.getUTCFullYear();
-      const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-      const day = String(now.getUTCDate()).padStart(2, "0");
-      const hours = String(now.getUTCHours()).padStart(2, "0");
-      const mins = String(now.getUTCMinutes()).padStart(2, "0");
-      const secs = String(now.getUTCSeconds()).padStart(2, "0");
-      setUtcTime(`${year}-${month}-${day} ${hours}:${mins}:${secs} UTC`);
+      const yr = now.getUTCFullYear();
+      const mo = String(now.getUTCMonth() + 1).padStart(2, "0");
+      const dy = String(now.getUTCDate()).padStart(2, "0");
+      const hr = String(now.getUTCHours()).padStart(2, "0");
+      const mi = String(now.getUTCMinutes()).padStart(2, "0");
+      const se = String(now.getUTCSeconds()).padStart(2, "0");
+      setUtcTime(`${yr}-${mo}-${dy} ${hr}:${mi}:${se} UTC`);
     };
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Open detailed playbook workbook modal dialog
-  const inspectPlaybook = (playbook: Playbook) => {
-    setSelectedPlaybook(playbook);
-    setModalActiveTab("general");
-    setIsModalOpen(true);
+  // Handler for inspecting a playbook document from any element
+  const handleInspectPlaybook = (id: string) => {
+    setInspectedPlaybookId(id);
+    setIsDrawerOpen(true);
   };
+
+  // Handler for custom playbooks file import
+  const handleImportPlaybook = (importedData: any) => {
+    if (!importedData || typeof importedData !== "object") {
+      alert("Invalid JSON data parsed during procedure import.");
+      return;
+    }
+
+    // Check basic parameters mapping schema
+    const requiredFields = ["name", "category", "severity", "purpose"];
+    const missing = requiredFields.filter((f) => !importedData[f]);
+    if (missing.length > 0) {
+      alert(`Invalid Playbook schema. Missing key properties: ${missing.join(", ")}`);
+      return;
+    }
+
+    const newId = `imported-${Date.now()}`;
+    const importedPlaybook: Playbook = {
+      id: newId,
+      name: String(importedData.name),
+      category: (importedData.category as PlaybookCategory) || "Web Attacks",
+      severity: (importedData.severity as Playbook["severity"]) || "medium",
+      version: String(importedData.version || "v1.0"),
+      lastUpdated: new Date().toISOString().split("T")[0],
+      status: (importedData.status as Playbook["status"]) || "Published",
+      purpose: String(importedData.purpose),
+      estimatedTime: String(importedData.estimatedTime || "20m"),
+      owner: String(importedData.owner || "Imported Analyst Role"),
+      detectionSources: Array.isArray(importedData.detectionSources) ? importedData.detectionSources : ["Imported Log Hook"],
+      triageSteps: Array.isArray(importedData.triageSteps) ? importedData.triageSteps : ["Verify inbound vectors."],
+      investigationSteps: Array.isArray(importedData.investigationSteps) ? importedData.investigationSteps : ["Check database transactions."],
+      containmentProcedures: Array.isArray(importedData.containmentProcedures) ? importedData.containmentProcedures : ["Block source subnets."],
+      eradicationProcedures: Array.isArray(importedData.eradicationProcedures) ? importedData.eradicationProcedures : ["Reset passwords."],
+      recoveryProcedures: Array.isArray(importedData.recoveryProcedures) ? importedData.recoveryProcedures : ["Confirm system baselines."],
+      lessonsLearnedTemplate: Array.isArray(importedData.lessonsLearnedTemplate) ? importedData.lessonsLearnedTemplate : ["Compile post-mortem logs."],
+    };
+
+    setPlaybooks((prev) => [importedPlaybook, ...prev]);
+
+    // Prepend a usage action log
+    const newUsageEvent: PlaybookUsageEvent = {
+      id: `EV-I${Math.floor(Math.random() * 9000 + 1000)}`,
+      timestamp: `${new Date().toISOString().replace("T", " ").substring(0, 19)} UTC`,
+      playbookName: importedPlaybook.name,
+      relatedCase: `CASE-${Math.floor(Math.random() * 8000 + 1000)}`,
+      analyst: "phutd0212@gmail.com",
+      status: "APPLIED"
+    };
+    setUsages((prev) => [newUsageEvent, ...prev]);
+
+    handleInspectPlaybook(newId);
+  };
+
+  // Submit and log new Playbook procedure documentation
+  const handleCreatePlaybookSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim() || !newPurpose.trim()) return;
+
+    const newId = `pb-u-${Date.now()}`;
+    const generatedPlaybook: Playbook = {
+      id: newId,
+      name: newName,
+      category: newCategory,
+      severity: newSeverity,
+      version: "v1.0",
+      lastUpdated: new Date().toISOString().split("T")[0],
+      status: newStatus,
+      purpose: newPurpose,
+      estimatedTime: newEstTime,
+      owner: newOwner,
+      detectionSources: [
+        "SIEM gateway alerts",
+        "Peripheral routing telemetry rulesets"
+      ],
+      triageSteps: [
+        "Audit signature triggers inside local network registers.",
+        "Check source parameters format schema mapping anomalies."
+      ],
+      investigationSteps: [
+        "Identify and log compromised machine profiles.",
+        "Decompress historical data frames from server clusters."
+      ],
+      containmentProcedures: [
+        "Limit egress traffic on target destination ports.",
+        "Insert micro-firewall drop rules isolating client workstations."
+      ],
+      eradicationProcedures: [
+        "Purge unauthorized tasks and scripts from administrative repositories.",
+        "Perform global password resets on compromised user names."
+      ],
+      recoveryProcedures: [
+        "Validate database partition states.",
+        "Reinstate standard network routing priorities."
+      ],
+      lessonsLearnedTemplate: [
+        "Enforce strict least privilege access criteria.",
+        "Optimize routing exception triggers."
+      ]
+    };
+
+    setPlaybooks((prev) => [generatedPlaybook, ...prev]);
+
+    // Trigger usage event log
+    const newUsageEvent: PlaybookUsageEvent = {
+      id: `EV-N${Math.floor(Math.random() * 9000 + 1000)}`,
+      timestamp: `${new Date().toISOString().replace("T", " ").substring(0, 19)} UTC`,
+      playbookName: generatedPlaybook.name,
+      relatedCase: "CASE-INIT",
+      analyst: "phutd0212@gmail.com",
+      status: "ACTIVE"
+    };
+    setUsages((prev) => [newUsageEvent, ...prev]);
+
+    setIsCreateModalOpen(false);
+
+    // Reset fields
+    setNewName("");
+    setNewPurpose("");
+    setNewEstTime("20m");
+    setNewOwner("SOC Core Team");
+
+    // Auto inspect
+    handleInspectPlaybook(newId);
+  };
+
+  const inspectedPlaybook = playbooks.find((p) => p.id === inspectedPlaybookId) || playbooks[0];
 
   return (
     <motion.div
-      key="playbooks"
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 10 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      key="playbooks-page-canvas"
+      initial={{ opacity: 0, scale: 0.99 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.99 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
       className="space-y-6 pb-20 select-none relative"
-      id="playbooks-page-container"
+      id="playbooks-workspace"
     >
-      
-      {/* TOP SCRAWLER TITLE & LIVE COORDINATES CLOCK */}
-      <HeaderSection 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        utcTime={utcTime} 
+      {/* 1. Page Header with actions & clock */}
+      <PlaybooksHeader
+        onOpenCreateModal={() => setIsCreateModalOpen(true)}
+        onImportTrigger={handleImportPlaybook}
+        utcTime={utcTime}
       />
 
-      {/* METRICS COUNTER TILES INDICATOR */}
-      <HeroStatsGrid 
-        playbooks={playbooks} 
-        incidents={incidents} 
-      />
+      {/* 2. Page KPI Metrics */}
+      <PlaybooksKPIs playbooks={playbooks} />
 
-      {/* CORE INTERACTIVE WRAPPER SECTIONS */}
-      <div className="mt-2">
-        {activeTab === "workspace" && (
-          <WorkspaceTab
-            incidents={incidents}
-            setIncidents={setIncidents}
-            selectedIncidentId={selectedIncidentId}
-            setSelectedIncidentId={setSelectedIncidentId}
-            terminalLogs={terminalLogs}
-            setTerminalLogs={setTerminalLogs}
-          />
-        )}
+      {/* 3. Playbook Effectiveness Dashboard */}
+      <PlaybookEffectivenessCards />
 
-        {activeTab === "overview" && (
-          <LibraryTab
+      {/* 4. Main Split Structure Grid: Archive Tables & AI Matching Advisor */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch relative">
+        {/* Core Catalog Registry Database Table */}
+        <div className="xl:col-span-8">
+          <ResponseProcedureLibrary
             playbooks={playbooks}
-            setPlaybooks={setPlaybooks}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            severityFilter={severityFilter}
-            setSeverityFilter={setSeverityFilter}
-            layoutStyle={layoutStyle}
-            setLayoutStyle={setLayoutStyle}
-            selectedMitreId={selectedMitreId}
-            setSelectedMitreId={setSelectedMitreId}
-            inspectPlaybook={inspectPlaybook}
+            selectedId={inspectedPlaybookId}
+            onSelect={handleInspectPlaybook}
           />
-        )}
+        </div>
 
-        {activeTab === "analytics" && (
-          <AnalyticsTab
-            campaignId={campaignId}
-            setCampaignId={setCampaignId}
-          />
-        )}
+        {/* Playbook AI matching query advisory tool */}
+        <div className="xl:col-span-4">
+          <PlaybookAdvisorPanel />
+        </div>
       </div>
 
-      {/* POPUP COGNITIVE WORKSPACE INTERACTIVE MODAL */}
-      <InspectorDialog
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        selectedPlaybook={selectedPlaybook}
-        modalActiveTab={modalActiveTab}
-        setModalActiveTab={setModalActiveTab}
+      {/* 5. Incident Real-Time Evidence packet statistics */}
+      <EvidencePackageSummary
+        playbookId={inspectedPlaybookId}
+        playbookName={inspectedPlaybook ? inspectedPlaybook.name : "None Selected"}
       />
 
+      {/* 6. Incident Response Workflow template sequence */}
+      <IncidentResponseWorkflow />
+
+      {/* 7. Standardized Threat Response Coverage matrix */}
+      <PlaybookCoverageMatrix />
+
+      {/* Standard slide-out SOP details inspector drawer */}
+      <PlaybookDetailDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        playbook={inspectedPlaybook || null}
+      />
+
+      {/* CREATE WORKFLOW OVERLAY */}
+      <AnimatePresence>
+        {isCreateModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCreateModalOpen(false)}
+              className="fixed inset-0 bg-background/80 backdrop-blur-xs z-50 transition-all cursor-pointer"
+              id="modal-backdrop-overlay"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 sm:p-6 z-55 font-mono select-none"
+              id="create-playbook-dialog"
+            >
+              {/* Modal Title */}
+              <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <PlusCircle size={14} className="text-cyan-500 shrink-0" />
+                  <h3 className="text-xs font-black text-foreground uppercase tracking-wider leading-none">
+                    Log New Playbook Document
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="p-1 hover:text-rose-500 cursor-pointer transition-colors text-muted-foreground"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Form Input fields */}
+              <form onSubmit={handleCreatePlaybookSubmit} className="space-y-4 text-[9px]">
+                {/* Name */}
+                <div className="space-y-1.5">
+                  <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                    Playbook Procedure Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g., BRUTE FORCE MITIGATION WORKFLOW"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono placeholder:text-muted-foreground/50 transition-all uppercase"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Category select */}
+                  <div className="space-y-1.5">
+                    <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                      Vector Category
+                    </label>
+                    <select
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value as PlaybookCategory)}
+                      className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono outline-hidden cursor-pointer uppercase font-black"
+                    >
+                      <option value="Web Attacks">Web Attacks</option>
+                      <option value="Network Attacks">Network Attacks</option>
+                      <option value="Authentication Attacks">Authentication Attacks</option>
+                      <option value="Cloud Security">Cloud Security</option>
+                      <option value="Data Exposure">Data Exposure</option>
+                      <option value="Malware">Malware</option>
+                      <option value="Insider Threat">Insider Threat</option>
+                    </select>
+                  </div>
+
+                  {/* Severity select */}
+                  <div className="space-y-1.5">
+                    <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                      Incident Severity
+                    </label>
+                    <select
+                      value={newSeverity}
+                      onChange={(e) => setNewSeverity(e.target.value as Playbook["severity"])}
+                      className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono outline-hidden cursor-pointer uppercase font-black"
+                    >
+                      <option value="critical">Critical</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Estimated SLA duration */}
+                  <div className="space-y-1.5">
+                    <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                      Est. Duration SLA
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newEstTime}
+                      onChange={(e) => setNewEstTime(e.target.value)}
+                      placeholder="e.g., 25m"
+                      className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono placeholder:text-muted-foreground/50 transition-all uppercase"
+                    />
+                  </div>
+
+                  {/* Owner squad */}
+                  <div className="space-y-1.5">
+                    <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                      Procedure Owner
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newOwner}
+                      onChange={(e) => setNewOwner(e.target.value)}
+                      placeholder="e.g., SecOps Core"
+                      className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono placeholder:text-muted-foreground/50 transition-all uppercase"
+                    />
+                  </div>
+                </div>
+
+                {/* Status selection */}
+                <div className="space-y-1.5">
+                  <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                    Publication Status
+                  </label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as Playbook["status"])}
+                    className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono outline-hidden cursor-pointer uppercase font-black"
+                  >
+                    <option value="Published">Published (Active)</option>
+                    <option value="Draft">Draft (In Review)</option>
+                  </select>
+                </div>
+
+                {/* Purpose text box */}
+                <div className="space-y-1.5">
+                  <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                    Procedure Purpose & Outline Descriptions *
+                  </label>
+                  <textarea
+                    required
+                    placeholder="DEFINE THE GENERAL PURPOSES MAPPED TO THE PROTOCOL LIFECYCLE..."
+                    rows={3}
+                    value={newPurpose}
+                    onChange={(e) => setNewPurpose(e.target.value)}
+                    className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono placeholder:text-muted-foreground/50 transition-all uppercase h-20 resize-none leading-relaxed"
+                  />
+                </div>
+
+                {/* Confirm actions */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/40 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="px-3.5 py-2 hover:bg-muted border border-transparent rounded-lg text-[8.5px] font-black cursor-pointer uppercase transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[8.5px] font-black uppercase tracking-wider shadow-sm cursor-pointer transition-colors"
+                  >
+                    Save Playbook Document
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
+export default PlaybooksPage;
