@@ -75,8 +75,8 @@ export function RealtimeAlertFeed({ alerts = [], onSelectAlert, selectedAlertId 
       </div>
 
       {/* Main Alerts Stream list */}
-      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto custom-scrollbar bg-card">
-        <table className="w-full text-left border-collapse table-fixed min-w-218">
+      <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar bg-card min-h-35 max-h-180">
+        <table className="w-full text-left border-collapse table-fixed min-w-275">
           <thead>
             <tr className="border-b border-border bg-secondary/5 h-8 font-mono text-[7.5px] font-black text-muted-foreground uppercase tracking-widest">
               <th className="px-3 py-1 w-[16%]">Timestamp</th>
@@ -115,7 +115,7 @@ export function RealtimeAlertFeed({ alerts = [], onSelectAlert, selectedAlertId 
                       key={alert.id}
                       onClick={() => onSelectAlert && onSelectAlert(isSelected ? null : alert)}
                       className={cn(
-                        "border-b border-border/30 transition-all cursor-pointer h-9.5 text-[9.5px]",
+                        "border-b border-border/30 transition-all cursor-pointer h-9 text-[9.5px]",
                         isSelected ? "bg-cyan-500/5" : "hover:bg-muted/30"
                       )}
                     >
