@@ -957,7 +957,7 @@ export function ReportsPage() {
           <div ref={sectionRefs["export-center"]} className="bg-card border border-border rounded-xl p-5 space-y-5 shadow-lg" id="export-center-ref font-mono">
             <div className="border-b border-border/20 pb-3 flex items-center gap-1.5 select-none">
               <Download className="w-4 h-4 text-cyan-500" />
-              <h3 className="text-xs font-black text-foreground uppercase tracking-widest block font-mono">
+              <h3 className="text-xs font-sans font-black text-foreground uppercase tracking-widest block">
                 9. Corporate Compliance Exports & Notary Panel
               </h3>
             </div>

@@ -2,7 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { Toast } from "./settingsConfig";
+import { Toast } from "../../types/settings";
 
 interface SettingsToastPanelProps {
   toasts: Toast[];

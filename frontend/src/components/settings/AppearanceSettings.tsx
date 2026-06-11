@@ -1,237 +1,282 @@
-import React from "react";
-import { useSettingsStore } from "../../store/useSettingsStore";
+import React, { useState } from "react";
+import { z } from "zod";
+import { Palette, Eye, Sun, Moon, Sparkles, Layout, Sliders, ShieldCheck } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { Sun, Moon, Monitor, Eye, Palette } from "lucide-react";
 
-const ACCENT_COLORS = [
-  { name: 'Cyan', color: '#06b6d4', class: 'bg-cyan-500' },
-  { name: 'Purple', color: '#8b5cf6', class: 'bg-purple-500' },
-  { name: 'Red', color: '#ef4444', class: 'bg-red-500' },
-  { name: 'Orange', color: '#f59e0b', class: 'bg-orange-500' },
-  { name: 'Green', color: '#10b981', class: 'bg-emerald-500' },
-];
+// Zod Schema
+export const appearanceSettingsSchema = z.object({
+  theme: z.enum(["Dark", "Light", "System"]),
+  density: z.enum(["Compact", "Comfortable"]),
+  sidebarMode: z.enum(["Expanded", "Collapsed"]),
+  animations: z.enum(["Enable", "Disable"]),
+  severityColorCritical: z.string().min(4, "Invalid color code"),
+  severityColorHigh: z.string().min(4, "Invalid color code"),
+  severityColorMedium: z.string().min(4, "Invalid color code"),
+  severityColorLow: z.string().min(4, "Invalid color code"),
+});
 
-export function AppearanceSettings() {
-  const { draftSettings, updateDraft } = useSettingsStore();
-  const data = draftSettings.appearance;
+export type AppearanceSettingsType = z.infer<typeof appearanceSettingsSchema>;
+
+interface AppearanceSettingsProps {
+  data: AppearanceSettingsType;
+  onChange: (path: string, value: any) => void;
+}
+
+export function AppearanceSettings({ data, onChange }: AppearanceSettingsProps) {
+  // Setup color blind indicator toggle
+  const [colorBlindActive, setColorBlindActive] = useState(false);
+
+  const themeOptions = [
+    { value: "Dark", label: "Lunar Dark", icon: Moon, desc: "Absolute pure carbon slate backplane with bright neon overlays" },
+    { value: "Light", label: "Solar Light", icon: Sun, desc: "Slightly reflective high contrast cream backdrop for direct sunlight" },
+    { value: "System", label: "Agent Follows OS", icon: Layout, desc: "Let OS security parameters command style layouts dynamically" },
+  ];
+
+  const densityOptions = [
+    { value: "Compact", label: "Developer Compact", desc: "High density padding (4px border-bounds) for intense monitoring screens" },
+    { value: "Comfortable", label: "Security Executive", desc: "Generous breathing negative space (12px padding-bounds) for summaries" },
+  ];
+
+  const handleOptionChange = (field: keyof AppearanceSettingsType, val: any) => {
+    onChange(`appearance.${field}`, val);
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      {/* Header */}
+    <div className="space-y-6" id="appearance-settings-panel">
+      {/* Visual Identity Brief */}
       <div>
-        <h3 className="text-base font-black text-foreground uppercase tracking-widest mb-1.5 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-2">
           <Palette className="w-4 h-4 text-cyan-500" />
-          Appearance (UI Config)
+          Appearance & UX Preferences
         </h3>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">Interface themes, accent colorways, and layout density systems</p>
+        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+          Customize UI aesthetics, layout typography grids, density formats, micro-animations, and operational severity marker palettes.
+        </p>
       </div>
 
-      {/* Theme Selection Section */}
-      <div className="space-y-4">
-        <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-          🎨 Theme System Selection
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { id: 'light', label: 'LIGHT THEME', icon: Sun, desc: 'Clean high contrast UI' },
-            { id: 'dark', label: 'DARK THEME (DEFAULT)', icon: Moon, desc: 'Immersive dark workspace' },
-            { id: 'system', label: 'SYSTEM MODE', icon: Monitor, desc: 'Follow OS preferences' },
-          ].map((theme) => (
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Theme Selectors */}
+        <div className="lg:col-span-8 space-y-6">
+          
+          {/* Card: Theme Style */}
+          <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-sm">
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5 border-b border-border/40 pb-2">
+              <Sun className="w-3.5 h-3.5 text-cyan-500" />
+              General Window Interface Theme
+            </h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {themeOptions.map((opt) => {
+                const Icon = opt.icon;
+                const isSelected = data.theme === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleOptionChange("theme", opt.value)}
+                    className={cn(
+                      "flex flex-col items-start p-4 rounded-xl border text-left transition cursor-pointer select-none",
+                      isSelected 
+                        ? "bg-cyan-500/5 border-cyan-500 text-cyan-600 dark:text-cyan-400 font-bold" 
+                        : "bg-slate-50/50 dark:bg-slate-900/30 border-border/85 hover:bg-slate-100 dark:hover:bg-slate-900/60"
+                    )}
+                  >
+                    <Icon className={cn("w-5 h-5 mb-3", isSelected ? "text-cyan-500" : "text-slate-400")} />
+                    <span className="text-xs font-mono font-black uppercase tracking-wider text-slate-900 dark:text-white mb-1">
+                      {opt.label}
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-zinc-500 leading-normal font-medium font-mono uppercase">
+                      {opt.desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Grid Layout settings: Density & Sidebar */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Density */}
+            <div className="bg-card border border-border rounded-xl p-5 space-y-3 shadow-sm">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-cyan-500" />
+                Display Sizing Density
+              </h4>
+              <div className="flex flex-col gap-2 pt-1">
+                {densityOptions.map((opt) => {
+                  const isSelected = data.density === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleOptionChange("density", opt.value)}
+                      className={cn(
+                        "flex flex-col p-3 rounded-lg border text-left cursor-pointer transition select-none",
+                        isSelected 
+                          ? "bg-cyan-500/5 border-cyan-500 text-cyan-600 dark:text-cyan-400 font-bold" 
+                          : "bg-slate-50/60 dark:bg-slate-900/30 border-border/85 hover:border-border"
+                      )}
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-900 dark:text-white">{opt.label}</span>
+                      <span className="text-[8.5px] text-slate-500 dark:text-zinc-500 uppercase leading-normal font-mono font-medium">{opt.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sidebar & Animations */}
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-sm font-mono">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Layout className="w-3.5 h-3.5 text-cyan-500" />
+                Sidebar & Canvas Mechanics
+              </h4>
+
+              {/* Sidebar expanding */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase block">Default Sidebar Position</span>
+                  <span className="text-[8px] text-slate-500 uppercase block font-medium">Auto expanded nested groups</span>
+                </div>
+                <div className="bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-border/80 flex">
+                  {["Expanded", "Collapsed"].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => handleOptionChange("sidebarMode", mode)}
+                      className={cn(
+                        "px-2 py-1 text-[8.5px] font-black uppercase rounded cursor-pointer border-none transition",
+                        data.sidebarMode === mode ? "bg-cyan-500 text-slate-950" : "text-slate-500"
+                      )}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Animations */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase block">Animate UI Canvas Elements</span>
+                  <span className="text-[8px] text-slate-500 uppercase block font-medium">Hover actions and card fades</span>
+                </div>
+                <div className="bg-slate-100 dark:bg-slate-900 p-0.5 rounded-lg border border-border/80 flex">
+                  {["Enable", "Disable"].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => handleOptionChange("animations", mode)}
+                      className={cn(
+                        "px-2.5 py-1 text-[8.5px] font-black uppercase rounded cursor-pointer border-none transition",
+                        data.animations === mode ? "bg-cyan-500 text-slate-950" : "text-slate-500"
+                      )}
+                    >
+                      {mode === "Enable" ? "On" : "Off"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Severity Color Preview Panel */}
+        <div className="lg:col-span-4 space-y-4">
+          
+          <div className="bg-card border border-border rounded-xl p-5 space-y-4 shadow-sm font-mono flex flex-col justify-between h-full">
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5 border-b border-border/40 pb-2">
+                <Eye className="w-3.5 h-3.5 text-cyan-500" />
+                Color Guard Previews
+              </h4>
+              <p className="text-[9px] text-slate-500 dark:text-zinc-500 uppercase font-medium leading-normal">
+                Review core compliance severity indicators. Modify any of these hex parameters optionally to override alerts panel badges:
+              </p>
+
+              {/* Critical */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-[9px] uppercase font-bold">
+                  <span className="text-rose-500">Critical Alarms (Level 4)</span>
+                  <input
+                    type="text"
+                    className="bg-transparent text-right outline-none w-16 text-[9.5px] font-bold text-slate-800 dark:text-slate-200"
+                    value={data.severityColorCritical || "#ef4444"}
+                    onChange={(e) => handleOptionChange("severityColorCritical", e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 items-center">
+                  <div className="h-5 w-12 rounded border border-border/40" style={{ backgroundColor: data.severityColorCritical || "#ef4444" }} />
+                  <span className="text-[8px] text-slate-500 uppercase font-semibold">Immediate active host takeover or ransomware breach</span>
+                </div>
+              </div>
+
+              {/* High */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-[9px] uppercase font-bold">
+                  <span className="text-orange-500">High Operations (Level 3)</span>
+                  <input
+                    type="text"
+                    className="bg-transparent text-right outline-none w-16 text-[9.5px] font-bold text-slate-800 dark:text-slate-200"
+                    value={data.severityColorHigh || "#f97316"}
+                    onChange={(e) => handleOptionChange("severityColorHigh", e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 items-center">
+                  <div className="h-5 w-12 rounded border border-border/40" style={{ backgroundColor: data.severityColorHigh || "#f97316" }} />
+                  <span className="text-[8px] text-slate-500 uppercase font-semibold">Persistent port probes, SSH triggers or malware payloads</span>
+                </div>
+              </div>
+
+              {/* Medium */}
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-[9px] uppercase font-bold">
+                  <span className="text-yellow-500">Medium Incidents (Level 2)</span>
+                  <input
+                    type="text"
+                    className="bg-transparent text-right outline-none w-16 text-[9.5px] font-bold text-slate-800 dark:text-slate-200"
+                    value={data.severityColorMedium || "#eab308"}
+                    onChange={(e) => handleOptionChange("severityColorMedium", e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 items-center">
+                  <div className="h-5 w-12 rounded border border-border/40" style={{ backgroundColor: data.severityColorMedium || "#eab308" }} />
+                  <span className="text-[8px] text-slate-500 uppercase font-semibold">Abnormal DNS volume or network policy bypass warnings</span>
+                </div>
+              </div>
+
+              {/* Low */}
+              <div className="space-y-1 pb-3">
+                <div className="flex justify-between items-center text-[9px] uppercase font-bold">
+                  <span className="text-[#3b82f6]">Low Telemetry (Level 1)</span>
+                  <input
+                    type="text"
+                    className="bg-transparent text-right outline-none w-16 text-[9.5px] font-bold text-slate-800 dark:text-slate-200"
+                    value={data.severityColorLow || "#3b82f6"}
+                    onChange={(e) => handleOptionChange("severityColorLow", e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 items-center">
+                  <div className="h-5 w-12 rounded border border-border/40" style={{ backgroundColor: data.severityColorLow || "#3b82f6" }} />
+                  <span className="text-[8px] text-slate-500 uppercase font-semibold">Standard routine credential audit logs or ping Sweeps</span>
+                </div>
+              </div>
+            </div>
+
             <button
-              key={theme.id}
-              onClick={() => updateDraft('appearance.theme', theme.id)}
+              onClick={() => setColorBlindActive(!colorBlindActive)}
               className={cn(
-                "flex flex-col items-center sm:items-start text-center sm:text-left gap-3 p-5 rounded-xl border-2 transition-all relative overflow-hidden group cursor-pointer",
-                data.theme === theme.id 
-                  ? "border-cyan-500 bg-cyan-500/5 text-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.12)]" 
-                  : "border-border bg-card text-muted-foreground hover:border-border/80"
+                "w-full py-2 border rounded-lg text-[9px] font-black uppercase text-center transition cursor-pointer select-none",
+                colorBlindActive 
+                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/35" 
+                  : "bg-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white border-border"
               )}
             >
-              <div className="flex items-center gap-2.5">
-                <theme.icon className={cn("w-5 h-5", data.theme === theme.id ? "text-cyan-500 animate-pulse" : "text-muted-foreground")} />
-                <span className="text-[10px] font-black uppercase tracking-widest leading-none">{theme.label}</span>
-              </div>
-              <p className="text-[8.5px] font-mono text-muted-foreground/80 uppercase tracking-wider mt-1">{theme.desc}</p>
-              {data.theme === theme.id && (
-                <div className="absolute right-3 top-3 w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping" />
-              )}
+              {colorBlindActive ? "Disable Deuteranopia Shield View" : "Inject High Contrast / Deuteranopia Colors"}
             </button>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Accents Selector & Density Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* Accent Colors Card */}
-        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-          <div>
-            <span className="text-[8px] font-mono font-black text-muted-foreground uppercase tracking-widest">VISUAL VIBE</span>
-            <h4 className="text-[11px] font-black text-foreground uppercase tracking-wider mt-0.5">🌈 Accent Colors Selection</h4>
-          </div>
-          
-          <div className="flex flex-wrap gap-4 pt-1">
-            {ACCENT_COLORS.map((item) => {
-              const isSelected = data.accentColor === item.color || 
-                (item.name === 'Cyan' && (!data.accentColor || data.accentColor === '#06b6d4'));
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => updateDraft('appearance.accentColor', item.color)}
-                  className="flex flex-col items-center gap-1.5 focus:outline-none cursor-pointer group"
-                >
-                  <div className="relative flex items-center justify-center">
-                    <div 
-                      className={cn(
-                        "w-9 h-9 rounded-full transition-all flex items-center justify-center border",
-                        isSelected 
-                          ? "border-foreground scale-110 shadow-[0_0_10px_rgba(6,182,212,0.2)]" 
-                          : "border-transparent group-hover:scale-105"
-                      )}
-                      style={{ backgroundColor: item.color }}
-                    >
-                      {isSelected && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-white opacity-90 shadow-sm" />
-                      )}
-                    </div>
-                  </div>
-                  <span className={cn(
-                    "text-[8px] font-mono font-bold tracking-wider uppercase",
-                    isSelected ? "text-cyan-500 font-black" : "text-muted-foreground"
-                  )}>
-                    {item.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
         </div>
 
-        {/* Interface preferences Card */}
-        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-          <div>
-            <span className="text-[8px] font-mono font-black text-muted-foreground uppercase tracking-widest">TUNERS</span>
-            <h4 className="text-[11px] font-black text-foreground uppercase tracking-wider mt-0.5">⚙️ Interface Preferences</h4>
-          </div>
-
-          <div className="space-y-3">
-            {/* Compact Mode */}
-            <div className="flex items-center justify-between p-3.5 bg-muted/35 border border-border rounded-xl">
-              <div>
-                <span className="text-[10px] font-mono font-black text-foreground uppercase tracking-widest">Compact Mode</span>
-                <p className="text-[8.5px] font-mono text-muted-foreground uppercase tracking-wide mt-0.5">Minimize layout spacing guidelines</p>
-              </div>
-              <button 
-                onClick={() => updateDraft('appearance.compactMode', !data.compactMode)}
-                className={cn(
-                  "w-10 h-5.5 rounded-full transition-all relative border border-border/60 cursor-pointer",
-                  data.compactMode ? "bg-cyan-500" : "bg-muted"
-                )}
-              >
-                <div className={cn(
-                  "absolute top-0.75 w-3.5 h-3.5 rounded-full bg-slate-900 dark:bg-white transition-all shadow-sm",
-                  data.compactMode ? "right-1" : "left-1"
-                )} />
-              </button>
-            </div>
-
-            {/* Motion & Animations */}
-            <div className="flex items-center justify-between p-3.5 bg-muted/35 border border-border rounded-xl">
-              <div>
-                <span className="text-[10px] font-mono font-black text-foreground uppercase tracking-widest">Motion & Animations</span>
-                <p className="text-[8.5px] font-mono text-muted-foreground uppercase tracking-wide mt-0.5">Smooth route and tab animations</p>
-              </div>
-              <button 
-                onClick={() => updateDraft('appearance.animations', !data.animations)}
-                className={cn(
-                  "w-10 h-5.5 rounded-full transition-all relative border border-border/60 cursor-pointer",
-                  data.animations ? "bg-cyan-500" : "bg-muted"
-                )}
-              >
-                <div className={cn(
-                  "absolute top-0.75  w-3.5 h-3.5 rounded-full bg-slate-900 dark:bg-white transition-all shadow-sm",
-                  data.animations ? "right-1" : "left-1"
-                )} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Live Preview Panel Card */}
-      <div className="p-6 bg-card border border-border rounded-xl shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-36 h-36 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex items-center justify-between border-b border-border/80 pb-4 mb-4">
-          <div className="flex items-center gap-2">
-            <Eye className="w-4 h-4 text-cyan-500" />
-            <h4 className="text-[11px] font-mono font-black text-foreground uppercase tracking-widest ml-1">
-              📐 UI PREVIEW PANEL
-            </h4>
-          </div>
-          <span className="text-[8px] font-mono font-black text-cyan-500 border border-cyan-500/20 px-2 py-0.5 bg-cyan-500/5 rounded uppercase">
-            LIVE CONFIG RENDER
-          </span>
-        </div>
-
-        <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider mb-4">
-          Live spacing preview showing layout density and spacing patterns:
-        </p>
-
-        {/* Dynamic preview elements based on configuration values */}
-        <div className={cn(
-          "border border-border/60 bg-muted/15 rounded-xl transition-all duration-300",
-          data.compactMode ? "p-3 space-y-2" : "p-6 space-y-4"
-        )}>
-          {/* Header row in preview */}
-          <div className="flex items-center justify-between border-b border-border/40 pb-2">
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping" />
-              <span className="text-[9px] font-mono font-bold text-foreground">DEMO_SECURE_WIDGET.XML</span>
-            </div>
-            <span className="text-[8.5px] font-mono text-muted-foreground/60">12 SEC AGO</span>
-          </div>
-
-          {/* Dummy visual data list */}
-          <div className="space-y-2">
-            <div className={cn(
-              "bg-card border border-border rounded-lg flex items-center justify-between shadow-sm",
-              data.compactMode ? "px-3 py-1.5" : "px-4 py-2.5"
-            )}>
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 bg-purple-500/10 text-purple-500 border border-purple-500/20 rounded flex items-center justify-center text-[8px] font-mono font-bold">
-                  AI
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[9.5px] font-mono font-bold text-foreground uppercase">Botnet Exfiltration Detector</span>
-                  <p className="text-[7.5px] font-mono text-muted-foreground/80 leading-none">HIGH CONFIDENCE INDICATOR</p>
-                </div>
-              </div>
-              <span className="text-[9.5px] font-mono font-black text-red-500 uppercase">99.2% MATCH</span>
-            </div>
-
-            <div className={cn(
-              "bg-card border border-border rounded-lg flex items-center justify-between shadow-sm",
-              data.compactMode ? "px-3 py-1.5" : "px-4 py-2.5"
-            )}>
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 rounded flex items-center justify-center text-[8px] font-mono font-bold">
-                  K
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[9.5px] font-mono font-bold text-foreground uppercase">Kafka Consumer Pipeline Stream</span>
-                  <p className="text-[7.5px] font-mono text-muted-foreground/80 leading-none">727,500 EVENTS PER SEC</p>
-                </div>
-              </div>
-              <span className="text-[9.5px] font-mono font-black text-emerald-500 uppercase">HEALTHY</span>
-            </div>
-          </div>
-
-          <div className="text-right">
-            <span className="text-[8px] font-mono text-muted-foreground uppercase">
-              Current state: <strong className="text-foreground">{data.compactMode ? 'COMPACT (HIGH DENSITY)' : 'COMFORTABLE (STANDARD)'}</strong>
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );

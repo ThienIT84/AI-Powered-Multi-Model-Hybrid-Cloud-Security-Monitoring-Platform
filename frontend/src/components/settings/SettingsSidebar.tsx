@@ -3,33 +3,27 @@ import {
   Settings, 
   Palette, 
   Brain, 
-  Merge, 
   BellRing, 
-  Cloud, 
   Boxes, 
-  Database, 
-  FileSpreadsheet, 
   Users2, 
-  ActivitySquare, 
-  FolderSync 
+  FileSpreadsheet, 
+  FolderSync,
+  FileCheck
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useSettingsStore } from "../../store/useSettingsStore";
 
-// The 12 groups requested by the user, in exact order
+// The 9 groups requested by the user, in exact order
 const SETTINGS_CATEGORIES = [
-  { id: 'general', label: 'General', icon: Settings, group: 'SYSTEM' },
-  { id: 'appearance', label: 'Appearance', icon: Palette, group: 'SYSTEM' },
-  { id: 'ai-engine', label: 'AI Engine', icon: Brain, group: 'DEFENSE ENGINE' },
-  { id: 'fusion', label: 'Fusion Layer', icon: Merge, group: 'DEFENSE ENGINE' },
-  { id: 'alerts', label: 'Alerts', icon: BellRing, group: 'DEFENSE ENGINE' },
-  { id: 'aws', label: 'AWS', icon: Cloud, group: 'INTEGRATIONS' },
-  { id: 'integrations', label: 'Integrations', icon: Boxes, group: 'INTEGRATIONS' },
-  { id: 'dataset', label: 'Dataset', icon: Database, group: 'DATA & SEC' },
-  { id: 'reports', label: 'Reports', icon: FileSpreadsheet, group: 'DATA & SEC' },
-  { id: 'users', label: 'Users', icon: Users2, group: 'ACCESS & HEALTH' },
-  { id: 'monitoring', label: 'Monitoring', icon: ActivitySquare, group: 'ACCESS & HEALTH' },
-  { id: 'backup', label: 'Backup', icon: FolderSync, group: 'ACCESS & HEALTH' },
+  { id: 'general', label: 'General System', icon: Settings, group: 'SYSTEM' },
+  { id: 'appearance', label: 'Appearance Preferences', icon: Palette, group: 'SYSTEM' },
+  { id: 'detection', label: 'Detection Policies', icon: Brain, group: 'DETECTION & ALERTS' },
+  { id: 'alerts', label: 'Alert Management', icon: BellRing, group: 'DETECTION & ALERTS' },
+  { id: 'integrations', label: 'Integrations Config', icon: Boxes, group: 'INTEGRATIONS' },
+  { id: 'access', label: 'Users & Access Control', icon: Users2, group: 'ADMINISTRATIVE CONTROL' },
+  { id: 'reporting', label: 'Reporting Config', icon: FileSpreadsheet, group: 'ADMINISTRATIVE CONTROL' },
+  { id: 'backup', label: 'Backup & Recovery', icon: FolderSync, group: 'ADMINISTRATIVE CONTROL' },
+  { id: 'compliance', label: 'Audit & Compliance', icon: FileCheck, group: 'ADMINISTRATIVE CONTROL' },
 ];
 
 export function SettingsSidebar() {
@@ -42,9 +36,9 @@ export function SettingsSidebar() {
         key={cat.id}
         onClick={() => setCategory(cat.id)}
         className={cn(
-          "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[10px] font-mono uppercase tracking-widest transition-all cursor-pointer border select-none group",
+          "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[10px] font-mono uppercase tracking-widest transition-all cursor-pointer border select-none group focus:outline-none",
           isActive 
-            ? "bg-cyan-500/10 text-cyan-500 border-cyan-500/25 shadow-[0_0_15px_rgba(6,182,212,0.12)] font-bold font-mono" 
+            ? "bg-cyan-500/10 text-cyan-500 border-cyan-500/25 shadow-[0_0_15px_rgba(6,182,212,0.12)] font-bold" 
             : "text-muted-foreground hover:bg-muted/50 hover:text-foreground border-transparent"
         )}
       >
@@ -59,7 +53,7 @@ export function SettingsSidebar() {
     );
   };
 
-  const groups = ['SYSTEM', 'DEFENSE ENGINE', 'INTEGRATIONS', 'DATA & SEC', 'ACCESS & HEALTH'];
+  const groups = ['SYSTEM', 'DETECTION & ALERTS', 'INTEGRATIONS', 'ADMINISTRATIVE CONTROL'];
 
   return (
     <div className="w-68 h-full border-r border-border bg-card/45 dark:bg-zinc-950/40 flex flex-col shrink-0 overflow-y-auto custom-scrollbar select-none">

@@ -1,32 +1,46 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { SettingsSidebar } from "../components/settings/SettingsSidebar";
 
 // Types and Mocks
-import { SettingsStateData, Toast } from "../components/settings/settingsConfig";
+import { SettingsStateData, Toast } from "../types/settings";
 import { DEFAULT_COMPLETE_SETTINGS } from "../components/settings/settingsMocks";
 
 // Layout components
 import { SettingsHeader } from "../components/settings/SettingsHeader";
-import { SettingsDebugConsole } from "../components/settings/SettingsDebugConsole";
 import { SettingsSaveBar } from "../components/settings/SettingsSaveBar";
 import { SettingsDiscardModal } from "../components/settings/SettingsDiscardModal";
 import { SettingsToastPanel } from "../components/settings/SettingsToastPanel";
 
-// Tab Components
-import { GeneralSettingsTab } from "../components/settings/GeneralSettingsTab";
-import { AppearanceSettingsTab } from "../components/settings/AppearanceSettingsTab";
-import { AiEngineSettingsTab } from "../components/settings/AiEngineSettingsTab";
-import { FusionSettingsTab } from "../components/settings/FusionSettingsTab";
-import { AlertSettingsTab } from "../components/settings/AlertSettingsTab";
-import { AwsSettingsTab } from "../components/settings/AwsSettingsTab";
-import { IntegrationSettingsTab } from "../components/settings/IntegrationSettingsTab";
-import { DatasetSettingsTab } from "../components/settings/DatasetSettingsTab";
-import { ReportSettingsTab } from "../components/settings/ReportSettingsTab";
-import { UserManagementSettingsTab } from "../components/settings/UserManagementSettingsTab";
-import { MonitoringSettingsTab } from "../components/settings/MonitoringSettingsTab";
-import { BackupSettingsTab } from "../components/settings/BackupSettingsTab";
+// Lazy-loaded configuration panels for fast demand-based loading
+const GeneralSettings = lazy(() =>
+  import("../components/settings/GeneralSettings").then((m) => ({ default: m.GeneralSettings }))
+);
+const AppearanceSettings = lazy(() =>
+  import("../components/settings/AppearanceSettings").then((m) => ({ default: m.AppearanceSettings }))
+);
+const DetectionPolicies = lazy(() =>
+  import("../components/settings/DetectionPolicies").then((m) => ({ default: m.DetectionPolicies }))
+);
+const AlertManagement = lazy(() =>
+  import("../components/settings/AlertManagement").then((m) => ({ default: m.AlertManagement }))
+);
+const Integrations = lazy(() =>
+  import("../components/settings/Integrations").then((m) => ({ default: m.Integrations }))
+);
+const AccessControl = lazy(() =>
+  import("../components/settings/AccessControl").then((m) => ({ default: m.AccessControl }))
+);
+const Reporting = lazy(() =>
+  import("../components/settings/Reporting").then((m) => ({ default: m.Reporting }))
+);
+const BackupRecovery = lazy(() =>
+  import("../components/settings/BackupRecovery").then((m) => ({ default: m.BackupRecovery }))
+);
+const AuditCompliance = lazy(() =>
+  import("../components/settings/AuditCompliance").then((m) => ({ default: m.AuditCompliance }))
+);
 
 interface SettingsPageProps {
   key?: string;
@@ -38,13 +52,12 @@ interface SettingsPageProps {
 export function SettingsPage({
   isDarkMode = true,
   onThemeToggle,
-  onThemeChange
+  onThemeChange,
 }: SettingsPageProps) {
   const { activeCategory } = useSettingsStore();
 
   const [liveSettings, setLiveSettings] = useState<SettingsStateData>(DEFAULT_COMPLETE_SETTINGS);
   const [draftSettings, setDraftSettings] = useState<SettingsStateData>(DEFAULT_COMPLETE_SETTINGS);
-  const [isLoadingTab, setIsLoadingTab] = useState(false);
   
   // Custom confirmation modal trigger
   const [showConfirmReset, setShowConfirmReset] = useState(false);
@@ -59,15 +72,6 @@ export function SettingsPage({
     setLiveSettings((prev) => ({ ...prev, theme: activeTheme }));
     setDraftSettings((prev) => ({ ...prev, theme: activeTheme }));
   }, [isDarkMode]);
-
-  // Debug Console stream log states
-  const [consoleLogs, setConsoleLogs] = useState<string[]>([
-    "[SYSTEM - INIT] Zeek log listener initialized.",
-    "[SYSTEM - INFO] Isolation Forest model weighting online (w=20%).",
-    "[SYSTEM - SUCCESS] Connected with AWS services comfortably.",
-    "[SYSTEM - ACTIVE] WebSocket consumer is receiving packets indices live..."
-  ]);
-  const consoleBottomRef = useRef<HTMLDivElement>(null);
 
   // Filter query keyword for search settings bar
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,15 +88,34 @@ export function SettingsPage({
     setDraftSettings((prev) => {
       const copy = { ...prev };
       const parts = path.split(".");
-      let current: any = copy;
-      for (let i = 0; i < parts.length - 1; i++) {
-        current = current[parts[i]];
+      
+      if (parts[0] === "general") {
+        const field = parts[1];
+        if (field === "platformName") {
+          copy.systemName = value;
+        } else {
+          (copy as any)[field] = value;
+        }
+      } else if (parts[0] === "users" && parts[1] === "permissions") {
+        const page = parts[2];
+        const role = parts[3];
+        if (!copy.permissions) {
+          copy.permissions = {};
+        }
+        if (!copy.permissions[page]) {
+          copy.permissions[page] = {};
+        }
+        copy.permissions[page][role] = value;
+      } else if (parts.length === 2) {
+        const field = parts[1];
+        (copy as any)[field] = value;
+      } else {
+        (copy as any)[path] = value;
       }
-      current[parts[parts.length - 1]] = value;
       return copy;
     });
 
-    if (path === "theme" && onThemeChange) {
+    if (path === "appearance.theme" && onThemeChange) {
       onThemeChange(value);
     }
   };
@@ -103,103 +126,55 @@ export function SettingsPage({
 
   const saveLiveSettings = () => {
     setLiveSettings(draftSettings);
-    triggerToast("SOC PLATFORM CONFIGURATIONS COMMITTED SUCCESSFULLY!", "success");
-    // Print logs to console
-    appendConsoleLog(`[COMMIT - SUCCESS] Configurations committed to core state memory layer.`);
+    triggerToast("PLATFORM ADMINISTRATOR PREFERENCES PERSISTED SUCCESSFULLY!", "success");
   };
 
   const discardDraftSettings = () => {
     setDraftSettings(liveSettings);
     setShowConfirmReset(false);
-    triggerToast("DRAFT MODIFICATIONS PURGED.", "info");
+    triggerToast("DRAFT OVERRIDES DISCARDED SUCCESSFULLY.", "info");
   };
 
   const handleDownloadSettings = () => {
-    triggerToast("SERIALIZING PLATFORM STATE ENGINE...", "info");
+    triggerToast("SERIALIZING CORE v3 CONFIG STATE...", "info");
     try {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(draftSettings, null, 2));
+      const dataStr =
+        "data:text/json;charset=utf-8," +
+        encodeURIComponent(JSON.stringify(draftSettings, null, 2));
       const downloadAnchor = document.createElement("a");
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `zeek_ai_soc_config_${Date.now()}.json`);
+      downloadAnchor.setAttribute("download", `hybrid_cloud_soc_config_${Date.now()}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
-      triggerToast("CONFIGURATION PROTOCOLS DOWNLOADED SUCCESSFULLY!", "success");
+      triggerToast("PLATFORM CONFIGURATIONS EXPORTED SUCCESSFULLY!", "success");
     } catch (err) {
       triggerToast("FAILED TO SERIALIZE SETTINGS STORAGE DATA", "warning");
     }
   };
 
-  // Switch tabs with a micro loading skeleton to fulfill the UI/UX loading skeleton directive
-  useEffect(() => {
-    setIsLoadingTab(true);
-    const handler = setTimeout(() => {
-      setIsLoadingTab(false);
-    }, 380);
-    return () => clearTimeout(handler);
-  }, [activeCategory]);
-
-  const appendConsoleLog = (text: string) => {
-    const timestamp = new Date().toISOString().substring(11, 19);
-    setConsoleLogs((prev) => [...prev, `[${timestamp}] ${text}`]);
-    setTimeout(() => {
-      consoleBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 60);
-  };
-
-  // Continuous background logs simulation if Developer Mode & Debug console is active
-  useEffect(() => {
-    if (!draftSettings.developerMode || !draftSettings.debugConsole) return;
-    const logInterval = setInterval(() => {
-      const messages = [
-        "Ingestion Rate: 1,424 packets/sec under SQS stream.",
-        "XGBoost classification integrity validated (confidence: 96%).",
-        "Duplicates Check evaluated: 0.12% redundancy found on conn.log.",
-        "Suricata matched 1 rules under http.log payload validation. Scoring calculated.",
-        "Fusion layer synthesized decision score: 42 (LOW THREAT). No action required.",
-        "WebSocket peer listener index polled: 4 healthy client connections.",
-        "System resources usage metrics dispatched. (CPU: 38% | RAM: 54%)"
-      ];
-      const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-      appendConsoleLog(`[MOCK ENGINE - POLLING] ${randomMsg}`);
-    }, 6000);
-
-    return () => clearInterval(logInterval);
-  }, [draftSettings.developerMode, draftSettings.debugConsole]);
-
-  const handleSimulateData = (type: "alerts" | "attacks" | "traffic") => {
-    triggerToast(`SIMULATING CORE DATA: ${type.toUpperCase()} INGRESS LOOP STAGED...`, "info");
-    appendConsoleLog(`[SIM PROTOCOL] Commencing high intensity ${type.toUpperCase()} injection scenario...`);
-    
-    setTimeout(() => {
-      if (type === "alerts") {
-        appendConsoleLog(`[MOCK ALERT - CRITICAL] AI2B discovered dynamic SQL Injection attempt! Threat synthesized in Fusion Layer.`);
-        triggerToast("MOCK CRITICAL INCIDENT GENERATED!", "warning");
-      } else if (type === "attacks") {
-        appendConsoleLog(`[MOCK DETECT - WARNING] Port Scan pattern matched on AI1 Isolation Forest. Weight verified.`);
-        triggerToast("SPIKE IN HOST SCAN ATTACKS SIMULATED", "info");
-      } else {
-        appendConsoleLog(`[MOCK TRAFFIC] Ingress bandwidth scaled to 5,000,000 Flows across Zeek nodes.`);
-        triggerToast("GRID NETWORK TRAFFIC SYNCHRONIZED", "success");
-      }
-    }, 1200);
-  };
-
   const activeCategoryLabel = useMemo(() => {
     switch (activeCategory) {
-      case "general": return "GENERAL SYSTEM";
-      case "appearance": return "APPEARANCE";
-      case "ai-engine": return "AI Core Engine";
-      case "fusion": return "FUSION CONTROLS";
-      case "alerts": return "ALARM INTERCEPTS";
-      case "aws": return "AWS CONNECTS";
-      case "integrations": return "INGRESS PLUGS";
-      case "dataset": return "DATABASES";
-      case "reports": return "REPORTS FORMAT";
-      case "users": return "OPERATORS Access";
-      case "monitoring": return "HEALTH DIAGS";
-      case "backup": return "BACKUP snapshot";
-      default: return activeCategory.toUpperCase();
+      case "general":
+        return "GENERAL SYSTEM";
+      case "appearance":
+        return "APPEARANCE";
+      case "detection":
+        return "DETECTION POLICIES";
+      case "alerts":
+        return "ALERT MANAGEMENT";
+      case "integrations":
+        return "INTEGRATIONS CONFIG";
+      case "access":
+        return "USERS & ACCESS CONTROL";
+      case "reporting":
+        return "REPORTING CONFIG";
+      case "backup":
+        return "BACKUP & RECOVERY";
+      case "compliance":
+        return "AUDIT & COMPLIANCE";
+      default:
+        return activeCategory.toUpperCase();
     }
   }, [activeCategory]);
 
@@ -218,7 +193,7 @@ export function SettingsPage({
       {/* Main Settings Portal */}
       <main className="flex-1 flex flex-col relative overflow-hidden bg-background">
         {/* Sticky Header / Breadcrumbs */}
-        <SettingsHeader 
+        <SettingsHeader
           activeCategoryLabel={activeCategoryLabel}
           searchQuery={searchQuery}
           onSearchChange={(val) => {
@@ -232,146 +207,176 @@ export function SettingsPage({
         />
 
         {/* Dynamic Content Surface */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-16">
-           <div className="mx-auto w-full max-w-5xl space-y-6">
-
-              {isLoadingTab ? (
-                /* LOADING MODULE SKELETON SKELETONS */
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24">
+          <div className="w-full space-y-6">
+            <Suspense
+              fallback={
+                /* LOADING MODULE SKELETON */
                 <div className="space-y-6 animate-pulse p-4">
                   <div className="h-6 w-1/3 bg-muted rounded-md mb-2" />
                   <div className="h-3 w-1/2 bg-muted rounded-md mb-8" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="h-45bg-muted/65 rounded-xl border border-border" />
-                    <div className="h-45bg-muted/65 rounded-xl border border-border" />
-                    <div className="h-45bg-muted/65 rounded-xl border border-border md:col-span-2" />
+                    <div className="h-45 bg-muted/65 rounded-xl border border-border" />
+                    <div className="h-45 bg-muted/65 rounded-xl border border-border" />
+                    <div className="h-45 bg-muted/65 rounded-xl border border-border md:col-span-2" />
                   </div>
                 </div>
-              ) : (
-                <AnimatePresence mode="wait">
-                   <motion.div
-                     key={activeCategory}
-                     initial={{ opacity: 0, y: 8 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, y: -8 }}
-                     transition={{ duration: 0.2 }}
-                   >
-                      {activeCategory === "general" && (
-                        <GeneralSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                          onToast={triggerToast}
-                          onLog={appendConsoleLog}
-                        />
-                      )}
-                      
-                      {activeCategory === "appearance" && (
-                        <AppearanceSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                        />
-                      )}
-                      
-                      {activeCategory === "ai-engine" && (
-                        <AiEngineSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                          onToast={triggerToast}
-                        />
-                      )}
+              }
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeCategory}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {activeCategory === "general" && (
+                    <GeneralSettings
+                      data={{
+                        platformName: draftSettings.systemName,
+                        organization: draftSettings.organization,
+                        environment: draftSettings.environment,
+                        timezone: draftSettings.timezone,
+                        language: draftSettings.language,
+                        refreshInterval: draftSettings.refreshInterval,
+                      }}
+                      onChange={updateDraft}
+                    />
+                  )}
 
-                      {activeCategory === "fusion" && (
-                        <FusionSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                          onToast={triggerToast}
-                        />
-                      )}
+                  {activeCategory === "appearance" && (
+                    <AppearanceSettings
+                      data={{
+                        theme: draftSettings.theme,
+                        density: draftSettings.density,
+                        sidebarMode: draftSettings.sidebarMode,
+                        animations: draftSettings.animations,
+                        severityColorCritical: draftSettings.severityColorCritical,
+                        severityColorHigh: draftSettings.severityColorHigh,
+                        severityColorMedium: draftSettings.severityColorMedium,
+                        severityColorLow: draftSettings.severityColorLow,
+                      }}
+                      onChange={updateDraft}
+                    />
+                  )}
 
-                      {activeCategory === "alerts" && (
-                        <AlertSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                          onToast={triggerToast}
-                        />
-                      )}
+                  {activeCategory === "detection" && (
+                    <DetectionPolicies
+                      data={{
+                        ai1Threshold: draftSettings.ai1Threshold,
+                        ai2aConfidence: draftSettings.ai2aConfidence,
+                        ai2bThreshold: draftSettings.ai2bThreshold,
+                        consensusThreshold: draftSettings.consensusThreshold,
+                        thresholdCritical: draftSettings.thresholdCritical,
+                        thresholdHigh: draftSettings.thresholdHigh,
+                        thresholdMedium: draftSettings.thresholdMedium,
+                        thresholdLow: draftSettings.thresholdLow,
+                      }}
+                      onChange={updateDraft}
+                    />
+                  )}
 
-                      {activeCategory === "aws" && (
-                        <AwsSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                          onToast={triggerToast}
-                        />
-                      )}
+                  {activeCategory === "alerts" && (
+                    <AlertManagement
+                      data={{
+                        alertRetention: draftSettings.alertRetention,
+                        alertAutoClose: draftSettings.alertAutoClose,
+                        alertAutoCloseDuration: draftSettings.alertAutoCloseDuration,
+                        soundCritical: draftSettings.soundCritical,
+                        soundHigh: draftSettings.soundHigh,
+                        soundMedium: draftSettings.soundMedium,
+                        soundLow: draftSettings.soundLow,
+                        channelEmail: draftSettings.channelEmail,
+                        channelSlack: draftSettings.channelSlack,
+                        channelTeams: draftSettings.channelTeams,
+                        escalateDelayCritical: draftSettings.escalateDelayCritical,
+                        escalateDelayHigh: draftSettings.escalateDelayHigh,
+                        escalateDelayMedium: draftSettings.escalateDelayMedium,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
 
-                      {activeCategory === "integrations" && (
-                        <IntegrationSettingsTab 
-                          data={draftSettings}
-                          onToast={triggerToast}
-                        />
-                      )}
+                  {activeCategory === "integrations" && (
+                    <Integrations
+                      data={{
+                        zeekStatus: draftSettings.zeekStatus,
+                        zeekEndpointUrl: draftSettings.zeekEndpointUrl,
+                        suricataStatus: draftSettings.suricataStatus,
+                        suricataRulesUrl: draftSettings.suricataRulesUrl,
+                        suricataRulesSyncInterval: draftSettings.suricataRulesSyncInterval,
+                        awsSqsUrl: draftSettings.awsSqsUrl,
+                        awsSqsStatus: draftSettings.awsSqsStatus,
+                        postgresHost: draftSettings.postgresHost,
+                        postgresPort: draftSettings.postgresPort,
+                        postgresDb: draftSettings.postgresDb,
+                        postgresStatus: draftSettings.postgresStatus,
+                        websocketUrl: draftSettings.websocketUrl,
+                        websocketMaxRetry: draftSettings.websocketMaxRetry,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
 
-                      {activeCategory === "dataset" && (
-                        <DatasetSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                          onToast={triggerToast}
-                        />
-                      )}
+                  {activeCategory === "access" && (
+                    <AccessControl
+                      data={{
+                        sessionTimeout: draftSettings.sessionTimeout,
+                        mfaRequired: draftSettings.mfaRequired,
+                        passwordRotationValue: draftSettings.passwordRotationValue,
+                        operatorUsers: draftSettings.operatorUsers,
+                        permissions: draftSettings.permissions,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
 
-                      {activeCategory === "reports" && (
-                        <ReportSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                        />
-                      )}
+                  {activeCategory === "reporting" && (
+                    <Reporting
+                      data={{
+                        reportFormat: draftSettings.reportFormat,
+                        reportSchedule: draftSettings.reportSchedule,
+                        reportAutoGenerate: draftSettings.reportAutoGenerate,
+                        reportRetentionMonths: draftSettings.reportRetentionMonths,
+                        reportStoragePath: draftSettings.reportStoragePath,
+                        emailSubscribers: draftSettings.emailSubscribers,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
 
-                      {activeCategory === "users" && (
-                        <UserManagementSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                          onToast={triggerToast}
-                        />
-                      )}
+                  {activeCategory === "backup" && (
+                    <BackupRecovery
+                      onToast={triggerToast}
+                    />
+                  )}
 
-                      {activeCategory === "monitoring" && (
-                        <MonitoringSettingsTab 
-                          data={draftSettings}
-                          onChange={updateDraft}
-                          onToast={triggerToast}
-                        />
-                      )}
-
-                      {activeCategory === "backup" && (
-                        <BackupSettingsTab 
-                          currentSettings={draftSettings}
-                          onRestore={(parsed) => {
-                            setDraftSettings({ ...draftSettings, ...parsed });
-                          }}
-                          onToast={triggerToast}
-                        />
-                      )}
-                   </motion.div>
-                </AnimatePresence>
-              )}
-
-           </div>
+                  {activeCategory === "compliance" && (
+                    <AuditCompliance
+                      data={{
+                        auditLogRetention: draftSettings.auditLogRetention,
+                        trackConfigChanges: draftSettings.trackConfigChanges,
+                        complianceMapping: draftSettings.complianceMapping,
+                        mitreTrackingEnabled: draftSettings.mitreTrackingEnabled,
+                        enableDailyPolicyValidation: draftSettings.enableDailyPolicyValidation,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </Suspense>
+          </div>
         </div>
 
-        {/* DEVELOPER MODE MOCK GENERATORS & DEBUG CONSOLE */}
-        <SettingsDebugConsole
-          developerMode={draftSettings.developerMode}
-          debugConsole={draftSettings.debugConsole}
-          consoleLogs={consoleLogs}
-          consoleBottomRef={consoleBottomRef}
-          onClearLogs={() => {
-            setConsoleLogs(["[CONSOLE] Clear committed logs initiated."]);
-            triggerToast("DEBUG LOGS CLEARED", "info");
-          }}
-          onSimulate={handleSimulateData}
-        />
-
         {/* Global Save Bar (Unsaved Changes Detection) */}
-        <SettingsSaveBar 
+        <SettingsSaveBar
           isDirty={isDirty}
           onDiscard={() => setShowConfirmReset(true)}
           onSave={saveLiveSettings}
@@ -381,7 +386,7 @@ export function SettingsPage({
         <SettingsToastPanel toasts={toasts} />
 
         {/* CONFIRMATION DISCARD MODAL */}
-        <SettingsDiscardModal 
+        <SettingsDiscardModal
           isOpen={showConfirmReset}
           onClose={() => setShowConfirmReset(false)}
           onConfirm={discardDraftSettings}
@@ -390,4 +395,5 @@ export function SettingsPage({
     </motion.div>
   );
 }
+
 export default SettingsPage;
