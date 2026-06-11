@@ -39,6 +39,15 @@ import { SOCQuickActions } from "./components/dashboard/SOCQuickActions";
 import { useDashboardMetrics } from "./components/dashboard/hooks/useDashboardMetrics";
 import { usePlatformHealth } from "./components/dashboard/hooks/usePlatformHealth";
 
+<<<<<<< HEAD
+=======
+import { AIThreatDetectionPage } from "./pages/AIThreatDetectionPage";
+import { AttackSurfacePage } from "./pages/AttackSurfacePage";
+import { MitreAttackPage } from "./pages/MitreAttackPage";
+import { CaseManagementPage } from "./pages/CaseManagementPage";
+import { CloudPage } from "./pages/CloudPage";
+import { ThreatIntelPage } from "./pages/ThreatIntelPage";
+>>>>>>> 924c5840903931e63161b08042c285e0145de18e
 import { useSocket } from "./useSocket";
 import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
@@ -259,6 +268,10 @@ export default function App() {
               <PlaybooksPage key="playbooks" />
             ) : currentView === "reports" ? (
               <ReportsPage key="reports" />
+            ) : currentView === "cloud" ? (
+              <CloudPage key="cloud" />
+            ) : currentView === "threat-intel" ? (
+              <ThreatIntelPage key="threat-intel" />
             ) : (
               <SettingsPage 
                 key="settings" 

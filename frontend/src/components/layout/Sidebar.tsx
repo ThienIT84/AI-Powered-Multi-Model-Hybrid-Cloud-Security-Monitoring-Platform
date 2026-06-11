@@ -147,14 +147,14 @@ export function Sidebar({
                                (isEndpoints && currentView === 'endpoints') ||
                                (isCloud && currentView === 'cloud') ||
                                (isThreatIntel && currentView === 'threat-intel') ||
-                               (isIntegrations && currentView === 'integrations') ||
-                               (isPlaybooks && currentView === 'playbooks') ||
-                               (isReports && currentView === 'reports') ||
-                               (isSettings && currentView === 'settings') ||
                                (isAIThreatDetection && currentView === 'ai-threat-detection') ||
                                (isAttackSurface && currentView === 'attack-surface') ||
                                (isMitreAttack && currentView === 'mitre-attack') ||
-                               (isCaseManagement && currentView === 'case-management');
+                               (isCaseManagement && currentView === 'case-management') ||
+                               (isIntegrations && currentView === 'integrations') ||
+                               (isPlaybooks && currentView === 'playbooks') ||
+                               (isReports && currentView === 'reports') ||
+                               (isSettings && currentView === 'settings');
               
               return (
                 <button
