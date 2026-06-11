@@ -1,4 +1,4 @@
-import { AlertRecord } from "./reportsConfig";
+import { AlertRecord } from "./types";
 
 export const MOCK_IP_ALERTS: AlertRecord[] = [
   {

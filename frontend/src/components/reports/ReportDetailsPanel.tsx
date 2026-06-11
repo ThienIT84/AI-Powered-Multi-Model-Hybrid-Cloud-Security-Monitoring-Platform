@@ -1,7 +1,7 @@
 import React from "react";
 import { X, Download } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { AlertRecord } from "./reportsConfig";
+import { AlertRecord } from "./types";
 
 interface ReportDetailsPanelProps {
   selectedReportDetail: AlertRecord | null;
@@ -75,7 +75,7 @@ export function ReportDetailsPanel({
 
             {/* Section: Raw Evidence Log */}
             <div className="space-y-1.5">
-              <span className="text-[8px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest block">
+              <span className="text-[8px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest block">
                 Raw Intrusion Evidence Logs
               </span>
               <pre className="p-3 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-350 border border-border dark:border-slate-800 rounded-lg max-h-35 overflow-y-auto custom-scrollbar select-text leading-relaxed font-mono whitespace-pre-wrap text-[9px]">
@@ -85,7 +85,7 @@ export function ReportDetailsPanel({
 
             {/* Model Consensus Analytics */}
             <div className="space-y-2 border-t border-border/80 pt-4">
-              <span className="text-[8px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest block">
+              <span className="text-[8px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest block">
                 Multi-Model ML consensus
               </span>
 
