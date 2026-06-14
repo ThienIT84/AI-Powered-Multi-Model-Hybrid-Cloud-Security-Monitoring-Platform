@@ -150,30 +150,52 @@ async function startServer() {
     });
   });
 
-  // 🔥 API ENDPOINT để nhận dữ liệu từ Python script
-  app.post("/api/soc-logs", (req: any, res: any) => {
-    const logData = req.body;
-    
-    // Debug: in ra toàn bộ dữ liệu
-    console.log(`📨 Raw Data: ${JSON.stringify(logData)}`);
-    
-    // Lấy field names đúng (camelCase từ Python)
-    const sourceIp = logData.sourceIp || logData.source_ip || 'unknown';
-    const destIp = logData.destIp || logData.dest_ip || 'unknown';
-    
-    console.log(`📨 Nhận log từ API: ${sourceIp} -> ${destIp}`);
+  // API endpoint to receive SOC logs (e.g. from a Python script)
+  app.post("/api/soc-logs", (req: import("express").Request, res: import("express").Response) => {
+    const apiKey = process.env.SOC_LOGS_API_KEY;
 
-    // Broadcast dữ liệu tới tất cả WebSocket clients
+    // In production, require an API key (deny-by-default if not configured)
+    if (process.env.NODE_ENV === "production") {
+      const providedKey = req.header("x-api-key");
+      if (!apiKey || providedKey !== apiKey) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+    }
+
+    const body = (req.body ?? {}) as Record<string, any>;
+
+    // Normalize common snake_case/camelCase variants to the shape expected by the frontend mapper
+    const normalized = {
+      ...body,
+      id: body.id ?? `API-${Date.now()}`,
+      timestamp: body.timestamp ?? new Date().toISOString(),
+      sourceIp: body.sourceIp ?? body.source_ip ?? "unknown",
+      destIp: body.destIp ?? body.dest_ip ?? body.destinationIp ?? body.destination_ip ?? "unknown",
+      destPort: body.destPort ?? body.dest_port ?? body.destinationPort ?? body.destination_port ?? 0,
+      attackType: body.attackType ?? body.attack_type ?? "Unknown",
+      severity: body.severity ?? body.severity_level ?? "Medium",
+      payload: body.payload ?? body.raw_payload ?? body.rawPayload ?? "",
+      rawPayload: body.rawPayload ?? body.raw_payload ?? body.payload ?? "",
+    };
+
+    // Best-effort logging (avoid dumping entire payloads to logs)
+    console.log(
+      `Received SOC log: ${normalized.sourceIp} -> ${normalized.destIp} (${normalized.attackType})`
+    );
+
+    // Broadcast data to all WebSocket clients
     clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({
-          type: "NEW_ALERT",
-          data: logData,
-        }));
+        client.send(
+          JSON.stringify({
+            type: "NEW_ALERT",
+            data: normalized,
+          })
+        );
       }
     });
 
-    res.json({ success: true, message: "Log received successfully" });
+    return res.json({ success: true, message: "Log received successfully" });
   });
 
   if (process.env.NODE_ENV !== "production") {
