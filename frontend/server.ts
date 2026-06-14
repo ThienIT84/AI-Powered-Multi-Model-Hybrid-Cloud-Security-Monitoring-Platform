@@ -14,7 +14,7 @@ async function startServer() {
   const wss = new WebSocketServer({ server });
 
   // Middleware
-  app.use(express.json());
+  app.use(express.json({ limit: "256kb" }));
   const clients: Set<WebSocket> = new Set();
 
   const attackTypes = ["DDoS", "SQL Injection", "XSS", "Brute Force", "Port Scan", "LFI", "Command Injection", "Beaconing", "Botnet Activity", "Credential Stuffing"];
