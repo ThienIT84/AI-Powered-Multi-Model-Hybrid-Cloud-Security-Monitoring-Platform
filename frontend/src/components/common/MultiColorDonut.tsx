@@ -99,7 +99,7 @@ export function MultiColorDonut({
                 >
                   {activePct}%
                 </span>
-                <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest mt-1 text-center leading-tight max-w-[80px]">
+                <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest mt-1 text-center leading-tight max-w-20">
                   {active.name}
                 </span>
               </motion.div>
@@ -141,8 +141,8 @@ export function MultiColorDonut({
                 className={cn(
                   "flex flex-col p-2 px-3 rounded-lg border transition-all cursor-pointer relative overflow-hidden select-none",
                   isActive 
-                    ? "border-white/20 bg-white/[0.08]" 
-                    : "bg-background border-border/40 hover:bg-white/[0.04]"
+                    ? "border-white/20 bg-white/8" 
+                    : "bg-background border-border/40 hover:bg-white/4"
                 )}
                 style={{ 
                   borderLeftColor: item.color,
@@ -207,8 +207,8 @@ export function MultiColorDonut({
               className={cn(
                 "flex items-center justify-between px-3 py-2 rounded-lg border transition-all duration-200 cursor-pointer group",
                 isActive
-                  ? "border-white/20 bg-white/[0.08]"
-                  : "border-white/5 bg-white/[0.02] hover:border-white/10 hover:bg-white/[0.04]"
+                  ? "border-white/20 bg-white/8"
+                  : "border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/4"
               )}
               onMouseEnter={() => setActiveIndex(idx)}
               onMouseLeave={() => setActiveIndex(null)}

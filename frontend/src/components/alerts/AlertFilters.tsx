@@ -2,14 +2,7 @@ import React from "react";
 import { 
   X, 
   Search, 
-  Cloud, 
-  Shield, 
-  Clock, 
-  User, 
-  Zap,
-  Target,
-  Plus,
-  Brain,
+  Plus, 
   Filter
 } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -26,14 +19,6 @@ interface AlertFiltersProps {
   minConfidence: number;
   setMinConfidence: (val: number) => void;
   
-  // New AI Model filters
-  ai1Filter: string;
-  setAi1Filter: (val: string) => void;
-  ai2aFilter: string;
-  setAi2aFilter: (val: string) => void;
-  ai2bFilter: string;
-  setAi2bFilter: (val: string) => void;
-
   savedFilters: string[];
   onApplySavedFilter: (filterName: string) => void;
   onRemoveSavedFilter: (filterName: string, e: React.MouseEvent) => void;
@@ -53,14 +38,6 @@ export function AlertFilters({
   minConfidence,
   setMinConfidence,
 
-  // New AI model filters destructured
-  ai1Filter,
-  setAi1Filter,
-  ai2aFilter,
-  setAi2aFilter,
-  ai2bFilter,
-  setAi2bFilter,
-
   savedFilters,
   onApplySavedFilter,
   onRemoveSavedFilter,
@@ -78,12 +55,12 @@ export function AlertFilters({
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm mb-6 space-y-4">
+    <div id="alerts-applied-filters-block" className="bg-card border border-border rounded-xl p-4 shadow-sm mb-6 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between pb-2.5 border-b border-border/40">
         <h3 className="text-[10px] font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-2">
           <Filter className="w-3.5 h-3.5 text-cyan-500" />
-          FUSION INTELLIGENCE INQUIRY FILTERING
+          FUSION QUEUE FILTER PANELS
         </h3>
         <div className="flex items-center gap-3">
           <button 
@@ -106,59 +83,20 @@ export function AlertFilters({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Filter Row 1: Fusion Decision Severity & Status */}
+        {/* Severity filter */}
         <div className="space-y-1.5">
-          <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block ml-0.5">Fusion Severity & Status</label>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative">
-              <select 
-                value={severityFilter}
-                onChange={(e) => setSeverityFilter(e.target.value)}
-                className="w-full bg-muted border border-border rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider focus:outline-none focus:border-cyan-500/45 text-foreground cursor-pointer appearance-none"
-              >
-                <option value="ALL">ALL SEVERITIES</option>
-                <option value="CRITICAL">CRITICAL</option>
-                <option value="HIGH">HIGH</option>
-                <option value="MEDIUM">MEDIUM</option>
-                <option value="LOW">LOW</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground">
-                <span className="text-[7.5px]">▼</span>
-              </div>
-            </div>
-
-            <div className="relative">
-              <select 
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full bg-muted border border-border rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider focus:outline-none focus:border-cyan-500/45 text-foreground cursor-pointer appearance-none"
-              >
-                <option value="ALL">ALL STATUSES</option>
-                <option value="NEW">NEW</option>
-                <option value="INVESTIGATING">INVESTIGATING</option>
-                <option value="MITIGATED">MITIGATED</option>
-                <option value="RESOLVED">RESOLVED</option>
-                <option value="FALSE_POSITIVE">FALSE POSITIVE</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground">
-                <span className="text-[7.5px]">▼</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Row 2: AI1 Anomaly Detector (ANOMALY | NORMAL) */}
-        <div className="space-y-1.5">
-          <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block ml-0.5">AI1 Anomaly Verdict</label>
+          <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block ml-0.5">Fusion Severity</label>
           <div className="relative">
             <select 
-              value={ai1Filter}
-              onChange={(e) => setAi1Filter(e.target.value)}
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
               className="w-full bg-muted border border-border rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider focus:outline-none focus:border-cyan-500/45 text-foreground cursor-pointer appearance-none"
             >
-              <option value="ALL">ALL VERDICTS</option>
-              <option value="ANOMALY">ANOMALY DETECTED</option>
-              <option value="NORMAL">NORMAL BEHAVIOR</option>
+              <option value="ALL">ALL SEVERITIES</option>
+              <option value="CRITICAL">CRITICAL</option>
+              <option value="HIGH">HIGH</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="LOW">LOW</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground">
               <span className="text-[7.5px]">▼</span>
@@ -166,20 +104,21 @@ export function AlertFilters({
           </div>
         </div>
 
-        {/* Filter Row 3: AI2A Network Attack Type Classifier */}
+        {/* Status filter */}
         <div className="space-y-1.5">
-          <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block ml-0.5">AI2A Network Class</label>
+          <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block ml-0.5">Alert Audit Status</label>
           <div className="relative">
             <select 
-              value={ai2aFilter}
-              onChange={(e) => setAi2aFilter(e.target.value)}
-              className="w-full bg-muted border border-border rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider focus:outline-none focus:border-cyan-500/45 text-foreground cursor-pointer appearance-none font-mono"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full bg-muted border border-border rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider focus:outline-none focus:border-cyan-500/45 text-foreground cursor-pointer appearance-none"
             >
-              <option value="ALL">ALL CLASSES</option>
-              <option value="PortScan">PortScan</option>
-              <option value="DoS">DoS</option>
-              <option value="BruteForce">BruteForce</option>
-              <option value="Normal">Normal</option>
+              <option value="ALL">ALL STATUSES</option>
+              <option value="NEW">NEW</option>
+              <option value="INVESTIGATING">INVESTIGATING</option>
+              <option value="MITIGATED">MITIGATED</option>
+              <option value="RESOLVED">RESOLVED</option>
+              <option value="FALSE_POSITIVE">FALSE POSITIVE</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground">
               <span className="text-[7.5px]">▼</span>
@@ -187,30 +126,6 @@ export function AlertFilters({
           </div>
         </div>
 
-        {/* Filter Row 4: AI2B Web payload Type Classifier */}
-        <div className="space-y-1.5">
-          <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block ml-0.5">AI2B Web Attack Type</label>
-          <div className="relative">
-            <select 
-              value={ai2bFilter}
-              onChange={(e) => setAi2bFilter(e.target.value)}
-              className="w-full bg-muted border border-border rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider focus:outline-none focus:border-cyan-500/45 text-foreground cursor-pointer appearance-none font-mono"
-            >
-              <option value="ALL">ALL WEB TYPES</option>
-              <option value="XSS">XSS</option>
-              <option value="SQLi">SQL Injection (SQLi)</option>
-              <option value="NONE">NONE (Normal Packet)</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground">
-              <span className="text-[7.5px]">▼</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-        
         {/* Source CIDR IP Filter */}
         <div className="space-y-1.5">
           <label className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block ml-0.5">Source IP / CIDR Block</label>
@@ -251,10 +166,13 @@ export function AlertFilters({
           </div>
         </div>
 
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
         {/* Min Confidence Rating slider */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest">
-            <span className="text-muted-foreground">Minimum AI Confidence Slicer</span>
+            <span className="text-muted-foreground">Minimum Fusion Confidence Filter</span>
             <span className="text-cyan-500 font-mono font-bold leading-none">{minConfidence > 0 ? `> ${minConfidence}%` : 'ALL SCENARIOS'}</span>
           </div>
           <div className="flex items-center gap-3 pt-1">
@@ -267,10 +185,9 @@ export function AlertFilters({
               onChange={(e) => setMinConfidence(Number(e.target.value))}
               className="flex-1 h-1 bg-muted rounded-full appearance-none accent-cyan-500 cursor-pointer border border-border" 
             />
-            <span className="text-[8.5px] font-mono text-muted-foreground/60 w-4 select-none">100%</span>
+            <span className="text-[8.5px] font-mono text-muted-foreground/60 w-4 select-none animate-pulse">100%</span>
           </div>
         </div>
-
       </div>
 
       {/* Preset Saved Filter Chips */}
@@ -300,3 +217,5 @@ export function AlertFilters({
     </div>
   );
 }
+
+export default AlertFilters;

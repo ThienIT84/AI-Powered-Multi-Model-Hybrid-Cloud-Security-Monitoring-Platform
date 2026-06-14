@@ -1,516 +1,429 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Playbook, PlaybookAction } from "../components/playbooks/playbooksConfig";
-import { PlaybookFilters } from "../components/playbooks/PlaybookFilters";
-import { PlaybookList } from "../components/playbooks/PlaybookList";
-import { PlaybookModal } from "../components/playbooks/PlaybookModal";
-import { 
-  Workflow, 
-  PlayCircle, 
-  Activity, 
-  HelpCircle,
-  Terminal,
-  Cpu,
-  Clock,
-  ShieldCheck,
-  AlertTriangle,
-  Zap,
-  RefreshCw
-} from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { PlusCircle, X, ShieldCheck } from "lucide-react";
+import { Playbook, PlaybookCategory, PlaybookUsageEvent } from "../components/playbooks/types";
+import { MOCK_PLAYBOOKS, MOCK_USAGES } from "../components/playbooks/playbookMockData";
 
-const initialPlaybooks: Playbook[] = [
-  {
-    id: "pb-1",
-    name: "AUTO-ISOLATE COMPROMISED EC2",
-    description: "AUTOMATICALLY ISOLATE COMPROMISED EC2 INSTANCES BY DISCONNECTING VPC SUBNETS WHEN AI DETECTS HIGH ANOMALY SCORES IN ZEEK TRAFFIC LOGS.",
-    status: "active",
-    triggerType: "automated",
-    triggerCondition: "AI ANOMALY SCORE OF ZEEK RECORDS > 0.88",
-    executions: 124,
-    updatedAt: "3 hours ago",
-    severity: "critical",
-    avgDurationMs: 123,
-    confidenceThreshold: 92,
-    riskScoreThreshold: 88,
-    lastExecutionStatus: "success",
-    lastExecutedTime: "3 HOURS AGO",
-    actions: [
-      {
-        id: "pb1-act-1",
-        step: 1,
-        name: "Virtual Subnet Connection Severance",
-        description: "Call AWS EC2 API to disconnect network interfaces from production subnets",
-        type: "isolate",
-        status: "completed",
-        target: "vpc-subnet-941a",
-        severity: "critical"
-      },
-      {
-        id: "pb1-act-2",
-        step: 2,
-        name: "Slack Incident Response Dispatcher",
-        description: "Send isolation reports and payload logs to the #critical-soc-responses channel",
-        type: "slack",
-        status: "completed",
-        target: "#critical-soc-responses",
-        severity: "medium"
-      }
-    ]
-  },
-  {
-    id: "pb-2",
-    name: "BLOCK BRUTE FORCE IP VIA PFSENSE",
-    description: "DETECT SYSTEMATIC CREDENTIAL BRUTE FORCE AND AUTOMATICALLY BLOCK CULPRIT SOURCE IPS IN THE PFSENSE FIREWALL RULE TABLE USING SURICATA ALERT DETAILS.",
-    status: "active",
-    triggerType: "automated",
-    triggerCondition: "SURICATA SIGNATURE CATEGORY === BRUTE FORCE",
-    executions: 312,
-    updatedAt: "1 day ago",
-    severity: "high",
-    avgDurationMs: 84,
-    confidenceThreshold: 90,
-    riskScoreThreshold: 80,
-    lastExecutionStatus: "success",
-    lastExecutedTime: "1 DAY AGO",
-    actions: [
-      {
-        id: "pb2-act-1",
-        step: 1,
-        name: "pfSense Firewall Alias Block List Injector",
-        description: "Inject offender IP into firewall block dynamic lists (Alias Block List)",
-        type: "firewall",
-        status: "completed",
-        target: "WAN_Block_Alias",
-        severity: "high"
-      },
-      {
-        id: "pb2-act-2",
-        step: 2,
-        name: "Jira Threat Tracking Ticket Creator",
-        description: "Generate automatically an incident response ticket inside Jira Software for SOC L1 analysts",
-        type: "jira",
-        status: "completed",
-        target: "SEC-JIRA-INTEG",
-        severity: "low"
-      }
-    ]
-  },
-  {
-    id: "pb-3",
-    name: "SLACK ALERT & CRITICAL INCIDENT CREATION",
-    description: "IDENTIFY REMOTE CODE EXECUTION OR SQL INJECTION EXPLOITS AND NOTIFY SECOPS TEAMS INSTANTLY VIA SLACK WHILE LOGGING INCIDENTS INSIDE INTERNAL SOC TICKETS.",
-    status: "inactive",
-    triggerType: "automated",
-    triggerCondition: "AI2B WEB ATTACK CONFIDENCE SCORE > 0.95",
-    executions: 45,
-    updatedAt: "4 days ago",
-    severity: "medium",
-    avgDurationMs: 142,
-    confidenceThreshold: 95,
-    riskScoreThreshold: 75,
-    lastExecutionStatus: "warning",
-    lastExecutedTime: "4 DAYS AGO",
-    actions: [
-      {
-        id: "pb3-act-1",
-        step: 1,
-        name: "Broadcast Alerts on WebSec Teams",
-        description: "Send alert payload logs to targeted DevSecOps communication rooms",
-        type: "slack",
-        status: "completed",
-        target: "#sec-emergency",
-        severity: "high"
-      },
-      {
-        id: "pb3-act-2",
-        step: 2,
-        name: "Urgent Incident Board Registration",
-        description: "Automatically log incident details inside custom project boards",
-        type: "jira",
-        status: "completed",
-        target: "DEV-SEC-BOARDS",
-        severity: "medium"
-      }
-    ]
-  },
-  {
-    id: "pb-4",
-    name: "REVOKE LEAKED AWS IAM SESSION",
-    description: "REVOKE ACTIVE TEMPORAL TOKENS AND BLOCK CREDENTIAL ACCESS IMMEDIATELY UPON DETECTION OF ANOMALOUS AWS ACTIVITY.",
-    status: "active",
-    triggerType: "automated",
-    triggerCondition: "AWS CLOUDTRAIL ANOMALIES DETECTED BY AI OPTIMIZER",
-    executions: 18,
-    updatedAt: "Just now",
-    severity: "high",
-    avgDurationMs: 115,
-    confidenceThreshold: 92,
-    riskScoreThreshold: 82,
-    lastExecutionStatus: "success",
-    lastExecutedTime: "JUST NOW",
-    actions: [
-      {
-        id: "pb4-act-1",
-        step: 1,
-        name: "AWS Temporal Session Access Invalidation",
-        description: "Deactivate leaked credentials and apply explicit deny policy on the compromise IAM user",
-        type: "aws_iam",
-        status: "completed",
-        target: "arn:aws:iam::user/AdminLeak",
-        severity: "critical"
-      },
-      {
-        id: "pb4-act-2",
-        step: 2,
-        name: "Emergency Email To AWS Administrators",
-        description: "Send compromise context and mitigation details directly to cloud engineers",
-        type: "email",
-        status: "completed",
-        target: "aws-alerts@company.com",
-        severity: "medium"
-      }
-    ]
-  }
-];
+// NIST-aligned FCAJ Cloud Internship 2025 v3.0 Playbook Modules
+import { PlaybooksHeader } from "../components/playbooks/PlaybooksHeader";
+import { PlaybooksKPIs } from "../components/playbooks/PlaybooksKPIs";
+import { ResponseProcedureLibrary } from "../components/playbooks/ResponseProcedureLibrary";
+import { IncidentResponseWorkflow } from "../components/playbooks/IncidentResponseWorkflow";
+import { PlaybookCoverageMatrix } from "../components/playbooks/PlaybookCoverageMatrix";
+import { PlaybookEffectivenessCards } from "../components/playbooks/PlaybookEffectivenessCards";
+import { PlaybookAdvisorPanel } from "../components/playbooks/PlaybookAdvisorPanel";
+import { EvidencePackageSummary } from "../components/playbooks/EvidencePackageSummary";
+import { PlaybookDetailDrawer } from "../components/playbooks/PlaybookDetailDrawer";
 
 export function PlaybooksPage() {
-  const [playbooks, setPlaybooks] = useState<Playbook[]>(initialPlaybooks);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [triggerFilter, setTriggerFilter] = useState<"all" | "automated" | "manual">("all");
+  // Master procedure database list state
+  const [playbooks, setPlaybooks] = useState<Playbook[]>(MOCK_PLAYBOOKS);
 
-  const [selectedPlaybook, setSelectedPlaybook] = useState<Playbook | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Chronological usage log state
+  const [usages, setUsages] = useState<PlaybookUsageEvent[]>(MOCK_USAGES);
 
-  // UTC Clock state
-  const [systemTime, setSystemTime] = useState("");
+  // Selection inspection target for standard detail drawer
+  const [inspectedPlaybookId, setInspectedPlaybookId] = useState<string | null>("pb-sqli");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Auto Scroll state for terminal logs
-  const [autoScroll, setAutoScroll] = useState(false);
-  const logsContainerRef = useRef<HTMLDivElement>(null);
+  // Creation overlay dialog visibility state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Live event ticker state
-  const [logsList, setLogsList] = useState<string[]>([
-    "SEC_CORE: ACTIVE THREAT RESPONSE LOOP INITIALIZED SUCCESSFULLY. FRAME READY.",
-    "SURICATA_MONITOR: STANDBY ON WAN SUB-INTERFACES. RULESETS SYNCED (24,195 SIGNATURES).",
-    "FUSION_NODE: CONNECTING LOCAL TELEMETRY TO CENTRAL COMMAND. ENGINE PING: 2MS.",
-    "[03:59:20] THREAT_INTEL: PULLED FRESH REPUTATION INDICATORS FROM MITRE ATT&CK INTEGRATION. LOADED."
-  ]);
+  // Create Form interactive inputs state
+  const [newName, setNewName] = useState("");
+  const [newCategory, setNewCategory] = useState<PlaybookCategory>("Web Attacks");
+  const [newSeverity, setNewSeverity] = useState<Playbook["severity"]>("medium");
+  const [newStatus, setNewStatus] = useState<Playbook["status"]>("Published");
+  const [newPurpose, setNewPurpose] = useState("");
+  const [newEstTime, setNewEstTime] = useState("20m");
+  const [newOwner, setNewOwner] = useState("SOC Core Team");
 
-  // Handle ticking system clock
+  // UTC system time ticker
+  const [utcTime, setUtcTime] = useState("");
   useEffect(() => {
-    const updateTime = () => {
+    const tick = () => {
       const now = new Date();
-      // format: 2026-05-29 03:59:27 UTC
-      const year = now.getUTCFullYear();
-      const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-      const day = String(now.getUTCDate()).padStart(2, "0");
-      const hours = String(now.getUTCHours()).padStart(2, "0");
-      const minutes = String(now.getUTCMinutes()).padStart(2, "0");
-      const seconds = String(now.getUTCSeconds()).padStart(2, "0");
-      setSystemTime(`${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC`);
+      const yr = now.getUTCFullYear();
+      const mo = String(now.getUTCMonth() + 1).padStart(2, "0");
+      const dy = String(now.getUTCDate()).padStart(2, "0");
+      const hr = String(now.getUTCHours()).padStart(2, "0");
+      const mi = String(now.getUTCMinutes()).padStart(2, "0");
+      const se = String(now.getUTCSeconds()).padStart(2, "0");
+      setUtcTime(`${yr}-${mo}-${dy} ${hr}:${mi}:${se} UTC`);
     };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
+    tick();
+    const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Stateful scroll posture keeper
-  useEffect(() => {
-    if (autoScroll && logsContainerRef.current) {
-      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+  // Handler for inspecting a playbook document from any element
+  const handleInspectPlaybook = (id: string) => {
+    setInspectedPlaybookId(id);
+    setIsDrawerOpen(true);
+  };
+
+  // Handler for custom playbooks file import
+  const handleImportPlaybook = (importedData: any) => {
+    if (!importedData || typeof importedData !== "object") {
+      alert("Invalid JSON data parsed during procedure import.");
+      return;
     }
-  }, [logsList, autoScroll]);
 
-  // Handle active running security alerts event stream
-  useEffect(() => {
-    const eventsPool = [
-      "AI_DETECTOR: WEB ANOMALY SCORE CHECKED ON /API/AUTH. RISK EVALUATION SCORE: 0.14 [CLEAN]",
-      "PFSENSE_FIREWALL: SYNCING RULES WITH DYNAMIC CLOUD BLOCK ALIAS TABLE... OK",
-      "AWS_CLOUD_TRAIL: EVALUATED SESSION ROLE AWS_L1_SECOPS TOKEN LIFESPAN. STANDBY.",
-      "ZEEK_PARSER: PARSED 842 CONNECTION RECORDS. ANOMALY INDEX MATCHES STEADY STATE PARAMETERS.",
-      "AUTOMATION_RUNNER: SCHEDULED MAINTENANCE SCAN OF HIGH-SEVERITY PLAYBOOKS... [0 ERRORS FOUND]",
-      "SIEM_GATEWAY: HEARTBEAT SENT TO CENTRAL ENTERPRISE CONTROLLER. STANDBY OPERATIONAL: ONLINE.",
-      "THREAT_INTEL: PULLED FRESH REPUTATION INDICATORS FROM MITRE ATT&CK INTEGRATION. LOADED.",
-      "PFSENSE: INJECTED BLOCK LIST INTEGRITY VERIFIED. 14 CULPRIT IPS ACTIVELY BLOCKED."
-    ];
+    // Check basic parameters mapping schema
+    const requiredFields = ["name", "category", "severity", "purpose"];
+    const missing = requiredFields.filter((f) => !importedData[f]);
+    if (missing.length > 0) {
+      alert(`Invalid Playbook schema. Missing key properties: ${missing.join(", ")}`);
+      return;
+    }
 
-    const interval = setInterval(() => {
-      const index = Math.floor(Math.random() * eventsPool.length);
-      const now = new Date();
-      const timestamp = String(now.getUTCHours()).padStart(2, "0") + ":" + 
-                        String(now.getUTCMinutes()).padStart(2, "0") + ":" + 
-                        String(now.getUTCSeconds()).padStart(2, "0");
-      const newEvent = `[${timestamp}] ${eventsPool[index]}`;
-      
-      setLogsList(prev => {
-        const nextList = [...prev, newEvent];
-        if (nextList.length > 8) {
-          return nextList.slice(nextList.length - 8);
-        }
-        return nextList;
-      });
-    }, 6000);
+    const newId = `imported-${Date.now()}`;
+    const importedPlaybook: Playbook = {
+      id: newId,
+      name: String(importedData.name),
+      category: (importedData.category as PlaybookCategory) || "Web Attacks",
+      severity: (importedData.severity as Playbook["severity"]) || "medium",
+      version: String(importedData.version || "v1.0"),
+      lastUpdated: new Date().toISOString().split("T")[0],
+      status: (importedData.status as Playbook["status"]) || "Published",
+      purpose: String(importedData.purpose),
+      estimatedTime: String(importedData.estimatedTime || "20m"),
+      owner: String(importedData.owner || "Imported Analyst Role"),
+      detectionSources: Array.isArray(importedData.detectionSources) ? importedData.detectionSources : ["Imported Log Hook"],
+      triageSteps: Array.isArray(importedData.triageSteps) ? importedData.triageSteps : ["Verify inbound vectors."],
+      investigationSteps: Array.isArray(importedData.investigationSteps) ? importedData.investigationSteps : ["Check database transactions."],
+      containmentProcedures: Array.isArray(importedData.containmentProcedures) ? importedData.containmentProcedures : ["Block source subnets."],
+      eradicationProcedures: Array.isArray(importedData.eradicationProcedures) ? importedData.eradicationProcedures : ["Reset passwords."],
+      recoveryProcedures: Array.isArray(importedData.recoveryProcedures) ? importedData.recoveryProcedures : ["Confirm system baselines."],
+      lessonsLearnedTemplate: Array.isArray(importedData.lessonsLearnedTemplate) ? importedData.lessonsLearnedTemplate : ["Compile post-mortem logs."],
+    };
 
-    return () => clearInterval(interval);
-  }, []);
+    setPlaybooks((prev) => [importedPlaybook, ...prev]);
 
-  // Toggle switch status handler
-  const handleToggleStatus = (id: string, newStatus: "active" | "inactive") => {
-    const timestampPool = ["JUST NOW", "SECONDS AGO", "UNDER EVALUATION"];
-    const randomTime = timestampPool[Math.floor(Math.random() * timestampPool.length)];
-    
-    setPlaybooks(prev =>
-      prev.map(pb => (pb.id === id ? { 
-        ...pb, 
-        status: newStatus, 
-        updatedAt: "JUST NOW",
-        lastExecutedTime: newStatus === "active" ? randomTime : pb.lastExecutedTime
-      } : pb))
-    );
+    // Prepend a usage action log
+    const newUsageEvent: PlaybookUsageEvent = {
+      id: `EV-I${Math.floor(Math.random() * 9000 + 1000)}`,
+      timestamp: `${new Date().toISOString().replace("T", " ").substring(0, 19)} UTC`,
+      playbookName: importedPlaybook.name,
+      relatedCase: `CASE-${Math.floor(Math.random() * 8000 + 1000)}`,
+      analyst: "phutd0212@gmail.com",
+      status: "APPLIED"
+    };
+    setUsages((prev) => [newUsageEvent, ...prev]);
 
-    const now = new Date();
-    const timestamp = String(now.getUTCHours()).padStart(2, "0") + ":" + 
-                      String(now.getUTCMinutes()).padStart(2, "0") + ":" + 
-                      String(now.getUTCSeconds()).padStart(2, "0");
-    const playbookName = playbooks.find(p => p.id === id)?.name || "Playbook";
-    setLogsList(prev => [
-      ...prev,
-      `[${timestamp}] SOAR_ENGINE: PLAYBOOK "${playbookName.toUpperCase()}" STATE MODIFIED TO [${newStatus.toUpperCase()}]`
-    ].slice(-8));
+    handleInspectPlaybook(newId);
   };
 
-  // Double click or view detail
-  const handleCardClick = (playbook: Playbook) => {
-    setSelectedPlaybook(playbook);
-    setIsModalOpen(true);
+  // Submit and log new Playbook procedure documentation
+  const handleCreatePlaybookSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim() || !newPurpose.trim()) return;
+
+    const newId = `pb-u-${Date.now()}`;
+    const generatedPlaybook: Playbook = {
+      id: newId,
+      name: newName,
+      category: newCategory,
+      severity: newSeverity,
+      version: "v1.0",
+      lastUpdated: new Date().toISOString().split("T")[0],
+      status: newStatus,
+      purpose: newPurpose,
+      estimatedTime: newEstTime,
+      owner: newOwner,
+      detectionSources: [
+        "SIEM gateway alerts",
+        "Peripheral routing telemetry rulesets"
+      ],
+      triageSteps: [
+        "Audit signature triggers inside local network registers.",
+        "Check source parameters format schema mapping anomalies."
+      ],
+      investigationSteps: [
+        "Identify and log compromised machine profiles.",
+        "Decompress historical data frames from server clusters."
+      ],
+      containmentProcedures: [
+        "Limit egress traffic on target destination ports.",
+        "Insert micro-firewall drop rules isolating client workstations."
+      ],
+      eradicationProcedures: [
+        "Purge unauthorized tasks and scripts from administrative repositories.",
+        "Perform global password resets on compromised user names."
+      ],
+      recoveryProcedures: [
+        "Validate database partition states.",
+        "Reinstate standard network routing priorities."
+      ],
+      lessonsLearnedTemplate: [
+        "Enforce strict least privilege access criteria.",
+        "Optimize routing exception triggers."
+      ]
+    };
+
+    setPlaybooks((prev) => [generatedPlaybook, ...prev]);
+
+    // Trigger usage event log
+    const newUsageEvent: PlaybookUsageEvent = {
+      id: `EV-N${Math.floor(Math.random() * 9000 + 1000)}`,
+      timestamp: `${new Date().toISOString().replace("T", " ").substring(0, 19)} UTC`,
+      playbookName: generatedPlaybook.name,
+      relatedCase: "CASE-INIT",
+      analyst: "phutd0212@gmail.com",
+      status: "ACTIVE"
+    };
+    setUsages((prev) => [newUsageEvent, ...prev]);
+
+    setIsCreateModalOpen(false);
+
+    // Reset fields
+    setNewName("");
+    setNewPurpose("");
+    setNewEstTime("20m");
+    setNewOwner("SOC Core Team");
+
+    // Auto inspect
+    handleInspectPlaybook(newId);
   };
 
-  // Create Playbook click
-  const handleCreateClick = () => {
-    setSelectedPlaybook(null);
-    setIsModalOpen(true);
-  };
-
-  // Save/Update playbook logic
-  const handleSavePlaybook = (savedPlaybook: Playbook) => {
-    setPlaybooks(prev => {
-      const exists = prev.some(pb => pb.id === savedPlaybook.id);
-      if (exists) {
-        // Update existing & append metadata if needed
-        return prev.map(pb => pb.id === savedPlaybook.id ? {
-          ...pb,
-          ...savedPlaybook,
-          updatedAt: "JUST NOW",
-          lastExecutedTime: "JUST NOW"
-        } : pb);
-      } else {
-        // Create new
-        return [savedPlaybook, ...prev];
-      }
-    });
-
-    const now = new Date();
-    const timestamp = String(now.getUTCHours()).padStart(2, "0") + ":" + 
-                      String(now.getUTCMinutes()).padStart(2, "0") + ":" + 
-                      String(now.getUTCSeconds()).padStart(2, "0");
-    setLogsList(prev => [
-      ...prev,
-      `[${timestamp}] PROVISIONER: SUCCESSFULLY DEPLOYED NESTED CONFIG MODEL FOR: "${savedPlaybook.name.toUpperCase()}"`
-    ].slice(-8));
-
-    setIsModalOpen(false);
-  };
-
-  const activePlaybooksCount = playbooks.filter(pb => pb.status === "active").length;
-  const automatedPlaybooksCount = playbooks.filter(pb => pb.triggerType === "automated").length;
-  const totalExecutions = playbooks.reduce((acc, pb) => acc + pb.executions, 0);
+  const inspectedPlaybook = playbooks.find((p) => p.id === inspectedPlaybookId) || playbooks[0];
 
   return (
-    <div className="space-y-6">
-      {/* Decorative Top-level Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between pb-3.5 border-b border-border gap-4">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            <span className="text-[10px] font-mono font-black tracking-[0.25em] text-blue-400 uppercase">
-              SOAR COORDINATOR OPERATIONAL NODE / DEFENCE REMEDIATION PLAYBOOKS
-            </span>
-          </div>
-          <h2 className="text-2xl font-mono font-black text-foreground tracking-tight uppercase leading-none">
-            DEFENCE REMEDIATION PLAYBOOKS
-          </h2>
+    <motion.div
+      key="playbooks-page-canvas"
+      initial={{ opacity: 0, scale: 0.99 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.99 }}
+      transition={{ duration: 0.25, ease: "easeInOut" }}
+      className="space-y-6 pb-20 select-none relative"
+      id="playbooks-workspace"
+    >
+      {/* 1. Page Header with actions & clock */}
+      <PlaybooksHeader
+        onOpenCreateModal={() => setIsCreateModalOpen(true)}
+        onImportTrigger={handleImportPlaybook}
+        utcTime={utcTime}
+      />
+
+      {/* 2. Page KPI Metrics */}
+      <PlaybooksKPIs playbooks={playbooks} />
+
+      {/* 3. Playbook Effectiveness Dashboard */}
+      <PlaybookEffectivenessCards />
+
+      {/* 4. Main Split Structure Grid: Archive Tables & AI Matching Advisor */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch relative">
+        {/* Core Catalog Registry Database Table */}
+        <div className="xl:col-span-8">
+          <ResponseProcedureLibrary
+            playbooks={playbooks}
+            selectedId={inspectedPlaybookId}
+            onSelect={handleInspectPlaybook}
+          />
         </div>
 
-        {/* Live System Time Telemetry readout */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="bg-card border border-border rounded-lg px-4 py-2 font-mono text-right">
-            <span className="text-[8px] font-black tracking-widest text-muted-foreground block uppercase mb-0.5">
-              SYSTEM ENGINE CLOCK
-            </span>
-            <span className="text-xs font-bold text-cyan-550 dark:text-cyan-400">
-              {systemTime || "2026-05-29 03:59:27 UTC"} <span className="text-muted-foreground/35">|</span> ORCH_SYS_V2.5
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Cyber stats row banner layout with visual design upgrades */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-4 relative overflow-hidden shadow-lg group hover:border-border/80 transition duration-305">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-blue-500/2 to-transparent pointer-events-none" />
-          <div className="p-3.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl relative z-10 shadow-inner">
-            <Workflow className="w-5.5 h-5.5" />
-          </div>
-          <div className="relative z-10 flex-1">
-            <span className="text-[9px] font-mono font-black text-muted-foreground tracking-widest uppercase block mb-1">
-              SOAR ENGINES ENGAGED
-            </span>
-            <span className="text-2xl font-black font-mono text-foreground leading-none block">
-              {activePlaybooksCount} <strong className="text-muted-foreground/60 font-bold text-sm">/ {playbooks.length} ACTIVE</strong>
-            </span>
-          </div>
-          <span className="text-[7.5px] font-mono text-muted-foreground font-extrabold uppercase bg-muted px-1.5 py-0.5 rounded shrink-0 animate-pulse">
-            LOAD: 12%
-          </span>
-        </div>
-
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-4 relative overflow-hidden shadow-lg group hover:border-border/80 transition duration-300">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-cyan-500/2 to-transparent pointer-events-none" />
-          <div className="p-3.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-550 dark:text-cyan-400 rounded-xl relative z-10 shadow-inner">
-            <Activity className="w-5.5 h-5.5 animate-pulse" />
-          </div>
-          <div className="relative z-10 flex-1">
-            <span className="text-[9px] font-mono font-black text-muted-foreground tracking-widest uppercase block mb-1">
-              AUTOMATION DURATION RATIO
-            </span>
-            <span className="text-2xl font-black font-mono text-foreground leading-none block">
-              100% <strong className="text-muted-foreground/60 font-bold text-xs uppercase font-mono">STANDBY</strong>
-            </span>
-          </div>
-          <span className="text-[7.5px] font-mono text-muted-foreground font-extrabold uppercase bg-muted px-1.5 py-0.5 rounded shrink-0">
-            AUTO DISPATCH ENABLED
-          </span>
-        </div>
-
-        <div className="bg-card border border-border rounded-xl p-5 flex items-center gap-4 relative overflow-hidden shadow-lg group hover:border-border/80 transition duration-300">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-linear-to-bl from-emerald-500/2 to-transparent pointer-events-none" />
-          <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-550 dark:text-emerald-400 rounded-xl relative z-10 shadow-inner">
-            <PlayCircle className="w-5.5 h-5.5" />
-          </div>
-          <div className="relative z-10 flex-1">
-            <span className="text-[9px] font-mono font-black text-muted-foreground tracking-widest uppercase block mb-1">
-              COMPLETED REMEDIATIONS
-            </span>
-            <span className="text-2xl font-black font-mono text-foreground leading-none block">
-              {totalExecutions} <strong className="text-muted-foreground/60 font-bold text-xs font-mono uppercase">RUN CHECKS</strong>
-            </span>
-          </div>
-          <span className="text-[7.5px] font-mono text-muted-foreground font-extrabold uppercase bg-muted px-1.5 py-0.5 rounded shrink-0">
-            SUCCESS RATE: 100%
-          </span>
+        {/* Playbook AI matching query advisory tool */}
+        <div className="xl:col-span-4">
+          <PlaybookAdvisorPanel />
         </div>
       </div>
 
-      {/* Live active cybersecurity SOAR streams monitor console (EXECUTION & AUTOMATION FEEDBACK) */}
-      <div className="bg-card border border-border rounded-xl p-4 shadow-xl">
-        <div className="flex items-center justify-between border-b border-border pb-2 mb-3.5">
-          <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-cyan-550 dark:text-cyan-400 animate-pulse" />
-            <span className="text-[10px] font-mono font-black text-muted-foreground tracking-widest uppercase">
-              LIVE CORE EXECUTOR AND THREAT AUDIT FEED STREAM
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Scroll control button */}
-            <button
-              onClick={() => setAutoScroll(prev => !prev)}
-              className={`px-2 py-0.5 rounded text-[8px] font-mono font-black transition-all border tracking-wider select-none ${
-                autoScroll 
-                  ? "bg-cyan-500/15 text-cyan-500 border-cyan-500/30 dark:text-cyan-400" 
-                  : "bg-muted text-muted-foreground border-border"
-              }`}
+      {/* 5. Incident Real-Time Evidence packet statistics */}
+      <EvidencePackageSummary
+        playbookId={inspectedPlaybookId}
+        playbookName={inspectedPlaybook ? inspectedPlaybook.name : "None Selected"}
+      />
+
+      {/* 6. Incident Response Workflow template sequence */}
+      <IncidentResponseWorkflow />
+
+      {/* 7. Standardized Threat Response Coverage matrix */}
+      <PlaybookCoverageMatrix />
+
+      {/* Standard slide-out SOP details inspector drawer */}
+      <PlaybookDetailDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        playbook={inspectedPlaybook || null}
+      />
+
+      {/* CREATE WORKFLOW OVERLAY */}
+      <AnimatePresence>
+        {isCreateModalOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCreateModalOpen(false)}
+              className="fixed inset-0 bg-background/80 backdrop-blur-xs z-50 transition-all cursor-pointer"
+              id="modal-backdrop-overlay"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 sm:p-6 z-55 font-mono select-none"
+              id="create-playbook-dialog"
             >
-              AUTO SCROLL: {autoScroll ? "ON" : "OFF"}
-            </button>
-            <div className="flex items-center gap-1.5">
-              <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin" />
-              <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest">
-                POLLING SYSTEM METRIC LOGS ACTIVE
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Streaming Event Blocks */}
-        <div 
-          ref={logsContainerRef}
-          className="space-y-2 bg-muted/30 p-3.5 rounded-lg border border-border max-h-35 overflow-y-auto custom-scrollbar font-mono text-[9px] uppercase tracking-wide scroll-smooth"
-        >
-          {logsList.map((log, id) => {
-            let textColor = "text-muted-foreground/80 dark:text-muted-foreground/90";
-            if (log.includes("[SUCCESS]") || log.includes("successfully") || log.includes("remediated") || log.includes("SUCCESSFULLY")) {
-              textColor = "text-emerald-700 dark:text-emerald-450 font-bold bg-emerald-500/5 px-1.5 py-0.5 rounded border border-emerald-500/10";
-            } else if (log.includes("critical") || log.includes("offender") || log.includes("Blocked") || log.includes("MODIFIED")) {
-              textColor = "text-rose-700 dark:text-rose-450 font-bold bg-rose-500/5 px-1.5 py-0.5 rounded border border-rose-500/10";
-            } else if (log.includes("AI_DETECTOR") || log.includes("FUSION_NODE") || log.includes("THREAT_INTEL")) {
-              textColor = "text-cyan-700 dark:text-cyan-455 font-bold";
-            }
-
-            return (
-              <div key={id} className={`flex items-start gap-2 py-0.5 border-b border-border/5 ${textColor}`}>
-                <span className="text-muted-foreground/45 font-bold shrink-0">&gt;&gt;</span>
-                <span className="leading-normal">{log}</span>
+              {/* Modal Title */}
+              <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <PlusCircle size={14} className="text-cyan-500 shrink-0" />
+                  <h3 className="text-xs font-black text-foreground uppercase tracking-wider leading-none">
+                    Log New Playbook Document
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="p-1 hover:text-rose-500 cursor-pointer transition-colors text-muted-foreground"
+                >
+                  <X size={14} />
+                </button>
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Cyber filter control systems */}
-      <PlaybookFilters
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        triggerFilter={triggerFilter}
-        onTriggerFilterChange={setTriggerFilter}
-        onCreateClick={handleCreateClick}
-      />
+              {/* Form Input fields */}
+              <form onSubmit={handleCreatePlaybookSubmit} className="space-y-4 text-[9px]">
+                {/* Name */}
+                <div className="space-y-1.5">
+                  <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                    Playbook Procedure Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g., BRUTE FORCE MITIGATION WORKFLOW"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono placeholder:text-muted-foreground/50 transition-all uppercase"
+                  />
+                </div>
 
-      {/* Playbook List components mapping */}
-      <PlaybookList
-        playbooks={playbooks}
-        searchQuery={searchQuery}
-        statusFilter={statusFilter}
-        triggerFilter={triggerFilter}
-        onCardClick={handleCardClick}
-        onToggleStatus={handleToggleStatus}
-      />
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Category select */}
+                  <div className="space-y-1.5">
+                    <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                      Vector Category
+                    </label>
+                    <select
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value as PlaybookCategory)}
+                      className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono outline-hidden cursor-pointer uppercase font-black"
+                    >
+                      <option value="Web Attacks">Web Attacks</option>
+                      <option value="Network Attacks">Network Attacks</option>
+                      <option value="Authentication Attacks">Authentication Attacks</option>
+                      <option value="Cloud Security">Cloud Security</option>
+                      <option value="Data Exposure">Data Exposure</option>
+                      <option value="Malware">Malware</option>
+                      <option value="Insider Threat">Insider Threat</option>
+                    </select>
+                  </div>
 
-      {/* Warning/Manual explanation footnote */}
-      <div className="bg-muted/10 border border-border rounded-xl p-4 flex items-start gap-3.5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-24 h-24 bg-[radial-gradient(ellipse_at_bottom_right,rgba(6,182,212,0.03),transparent)] pointer-events-none" />
-        <HelpCircle className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
-        <div className="space-y-1.5 relative z-10">
-          <span className="text-[9px] font-mono font-black tracking-widest text-muted-foreground uppercase block">
-            SOAR DISPATCH SECURITY COMPLIANCE POLICY GUIDE
-          </span>
-          <p className="text-[10px] text-muted-foreground leading-normal font-medium first-letter:uppercase">
-            Automated playbooks are executed instantly by correlation engine. Manual playbooks require SOC operator approval inside incident console.
-          </p>
-        </div>
-      </div>
+                  {/* Severity select */}
+                  <div className="space-y-1.5">
+                    <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                      Incident Severity
+                    </label>
+                    <select
+                      value={newSeverity}
+                      onChange={(e) => setNewSeverity(e.target.value as Playbook["severity"])}
+                      className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono outline-hidden cursor-pointer uppercase font-black"
+                    >
+                      <option value="critical">Critical</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                </div>
 
-      {/* Playbook creator & inspector workspace modal popup */}
-      <PlaybookModal
-        isOpen={isModalOpen}
-        playbook={selectedPlaybook}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSavePlaybook}
-      />
-    </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Estimated SLA duration */}
+                  <div className="space-y-1.5">
+                    <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                      Est. Duration SLA
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newEstTime}
+                      onChange={(e) => setNewEstTime(e.target.value)}
+                      placeholder="e.g., 25m"
+                      className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono placeholder:text-muted-foreground/50 transition-all uppercase"
+                    />
+                  </div>
+
+                  {/* Owner squad */}
+                  <div className="space-y-1.5">
+                    <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                      Procedure Owner
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newOwner}
+                      onChange={(e) => setNewOwner(e.target.value)}
+                      placeholder="e.g., SecOps Core"
+                      className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono placeholder:text-muted-foreground/50 transition-all uppercase"
+                    />
+                  </div>
+                </div>
+
+                {/* Status selection */}
+                <div className="space-y-1.5">
+                  <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                    Publication Status
+                  </label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as Playbook["status"])}
+                    className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono outline-hidden cursor-pointer uppercase font-black"
+                  >
+                    <option value="Published">Published (Active)</option>
+                    <option value="Draft">Draft (In Review)</option>
+                  </select>
+                </div>
+
+                {/* Purpose text box */}
+                <div className="space-y-1.5">
+                  <label className="text-[7.5px] text-muted-foreground uppercase font-black tracking-widest block leading-none">
+                    Procedure Purpose & Outline Descriptions *
+                  </label>
+                  <textarea
+                    required
+                    placeholder="DEFINE THE GENERAL PURPOSES MAPPED TO THE PROTOCOL LIFECYCLE..."
+                    rows={3}
+                    value={newPurpose}
+                    onChange={(e) => setNewPurpose(e.target.value)}
+                    className="w-full px-3 py-2 bg-muted/40 border border-border focus:border-cyan-500 rounded-lg text-[9px] text-foreground font-mono placeholder:text-muted-foreground/50 transition-all uppercase h-20 resize-none leading-relaxed"
+                  />
+                </div>
+
+                {/* Confirm actions */}
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/40 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="px-3.5 py-2 hover:bg-muted border border-transparent rounded-lg text-[8.5px] font-black cursor-pointer uppercase transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[8.5px] font-black uppercase tracking-wider shadow-sm cursor-pointer transition-colors"
+                  >
+                    Save Playbook Document
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
+export default PlaybooksPage;

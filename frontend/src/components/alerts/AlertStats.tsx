@@ -1,186 +1,117 @@
 import React from "react";
 import { 
-  ShieldAlert, 
   Activity,
-  BrainCircuit,
-  TrendingUp,
-  Fingerprint,
-  Users,
-  PieChart,
-  Zap,
-  Layers,
-  Flame
+  ShieldAlert,
+  Flame,
+  CheckCircle,
+  Gauge
 } from "lucide-react";
-import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
-import { cn } from "../../lib/utils";
-
-function Sparkline({ points, color }: { points: number[], color: string }) {
-  const max = Math.max(...points);
-  const min = Math.min(...points);
-  const range = max - min || 1;
-  const width = 110;
-  const height = 26;
-  const strokeWidth = 1.6;
-  
-  const coords = points.map((val, i) => {
-    const x = (i / points.length) * (width - strokeWidth * 2) + strokeWidth;
-    const y = height - ((val - min) / range) * (height - strokeWidth * 2) - strokeWidth;
-    return `${x},${y}`;
-  }).join(" ");
-
-  return (
-    <div className="h-6 flex items-center shrink-0">
-      <svg className="w-20 h-6 overflow-visible" viewBox={`0 0 ${width} ${height}`}>
-        <polyline
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          points={coords}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="opacity-90"
-        />
-      </svg>
-    </div>
-  );
-}
+import { Alert, Severity, AlertStatus } from "../../types";
 
 export function AlertStats({ alerts }: { alerts: Alert[] }) {
   const totalFusionAlerts = alerts.length;
-  
-  // SECTION 2.2: False Positive Reduction (raw metric and percentage)
-  const fpReductionRate = totalFusionAlerts > 0 
-    ? (86.2 + (totalFusionAlerts % 7) * 0.4).toFixed(1)
-    : "87.4";
 
-  // Raw reduction equivalents
-  const rawInputCount = totalFusionAlerts * 15 + 3200;
-  const rawOutputReductionText = `${rawInputCount} → ${totalFusionAlerts}`;
+  const criticalAlerts = alerts.filter(a => 
+    a.severity === Severity.CRITICAL || String(a.severity).toLowerCase() === "critical"
+  ).length;
 
-  // SECTION 2.4: Multi-vector Attack Count (where AI2A is not Normal and AI2B is not NONE)
-  const multiVectorCount = alerts.filter(a => {
-    const m = getAlertFusionMeta(a);
-    return m.ai2aClass !== "Normal" && m.ai2bWeb !== "NONE";
-  }).length || 3;
+  const highAlerts = alerts.filter(a => 
+    a.severity === Severity.HIGH || String(a.severity).toLowerCase() === "high"
+  ).length;
 
-  // SECTION 2.3: AI Agreement Rate (%)
-  const agreementRate = totalFusionAlerts > 0
-    ? (93.5 + (totalFusionAlerts % 5) * 0.3).toFixed(1)
-    : "94.6";
+  const mediumAlerts = alerts.filter(a => 
+    a.severity === Severity.MEDIUM || String(a.severity).toLowerCase() === "medium"
+  ).length;
 
-  // SECTION 2.5: Critical Campaign Count
-  const criticalCampaignCount = 3;
+  const avgConfidence = alerts.length > 0
+    ? Math.round(
+        (alerts.reduce((sum, a) => sum + (a.confidenceScore !== undefined ? a.confidenceScore : 0.8), 0) / alerts.length) * 100
+      )
+    : 86;
 
-  // Stable trendlines
-  const fusionTrendPoints = [15, 21, 18, 26, 22, 30, totalFusionAlerts || 35];
-  const fpTrendPoints = [82, 84, 83, 86, 85, 87, parseFloat(fpReductionRate)];
-  const multiTrendPoints = [1, 2, 1, 3, 2, 4, multiVectorCount];
-  const agreementTrendPoints = [92, 93, 93, 94, 95, 94, parseFloat(agreementRate)];
-  const campaignTrendPoints = [2, 3, 2, 4, 3, 3, criticalCampaignCount];
+  const blockedOrResolved = alerts.filter(a => 
+    a.status === AlertStatus.RESOLVED || 
+    a.status === AlertStatus.MITIGATED ||
+    String(a.status).toLowerCase() === "resolved" ||
+    String(a.status).toLowerCase() === "blocked" ||
+    String(a.status).toLowerCase() === "mitigated"
+  ).length;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div id="alert-summary-kpis" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
       
-      {/* Card 1: Total Fusion Alerts */}
-      <div className="bg-card border border-border p-4 rounded-xl shadow-sm hover:border-border/80 transition-all flex flex-col justify-between h-27.5">
-        <div className="flex items-start justify-between">
-          <div className="p-2 rounded-lg bg-cyan-500/10 text-cyan-500">
-            <Activity className="w-4 h-4" />
-          </div>
-          <div className="flex items-center gap-1 text-[8.5px] font-black uppercase tracking-wider text-green-400 font-mono">
-            <TrendingUp size={10} />
-            +14.8%
-          </div>
+      {/* 1. Total Fusion Alerts */}
+      <div className="bg-card border border-border p-3.5 rounded-xl shadow-sm transition-all flex flex-col justify-between h-24">
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Total Alerts</span>
+          <Activity className="w-3.5 h-3.5 text-cyan-500" />
         </div>
-        
-        <div className="flex items-end justify-between mt-2.5">
-          <div>
-            <div className="text-xl font-black text-foreground font-mono leading-none">{totalFusionAlerts}</div>
-            <div className="text-[8.5px] font-black text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">Total Fusion Alerts</div>
-          </div>
-          <Sparkline points={fusionTrendPoints} color="rgb(6, 182, 212)" />
+        <div>
+          <div className="text-lg font-black text-foreground font-mono leading-none">{totalFusionAlerts}</div>
+          <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">Fusion Queue (24h)</div>
         </div>
       </div>
 
-      {/* Card 2: False Positive Reduction Rate */}
-      <div className="bg-card border border-border p-4 rounded-xl shadow-sm hover:border-border/80 transition-all flex flex-col justify-between h-27.5">
-        <div className="flex items-start justify-between">
-          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-            <PieChart className="w-4 h-4" />
-          </div>
-          <span className="font-mono text-[7px] bg-emerald-500/10 text-emerald-500 px-1 rounded uppercase tracking-wider font-extrabold leading-tight">
-            {rawOutputReductionText}
-          </span>
+      {/* 2. Critical Alerts */}
+      <div className="bg-card border border-border p-3.5 rounded-xl shadow-sm transition-all flex flex-col justify-between h-24">
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Critical</span>
+          <Flame className="w-3.5 h-3.5 text-red-500 animate-pulse" />
         </div>
-        
-        <div className="flex items-end justify-between mt-2.5">
-          <div>
-            <div className="text-xl font-black text-emerald-500 font-mono leading-none">
-              {fpReductionRate}%
-            </div>
-            <div className="text-[8.5px] font-black text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">False Positive Reduction</div>
-          </div>
-          <Sparkline points={fpTrendPoints} color="rgb(16, 185, 129)" />
+        <div>
+          <div className="text-lg font-black text-red-500 font-mono leading-none">{criticalAlerts}</div>
+          <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">Immediate Action</div>
         </div>
       </div>
 
-      {/* Card 3: AI Model Agreement Rate */}
-      <div className="bg-card border border-border p-4 rounded-xl shadow-sm hover:border-border/80 transition-all flex flex-col justify-between h-27.5">
-        <div className="flex items-start justify-between">
-          <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
-            <BrainCircuit className="w-4 h-4" />
-          </div>
-          <span className="text-[7.5px] font-black uppercase text-purple-400 font-mono">STABLE</span>
+      {/* 3. High Alerts */}
+      <div className="bg-card border border-border p-3.5 rounded-xl shadow-sm transition-all flex flex-col justify-between h-24">
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest">High</span>
+          <ShieldAlert className="w-3.5 h-3.5 text-orange-500" />
         </div>
-        
-        <div className="flex items-end justify-between mt-1.5">
-          <div>
-            <div className="text-xl font-black text-purple-500 font-mono leading-none">{agreementRate}%</div>
-            <div className="text-[8.5px] font-black text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">AI Agreement Rate</div>
-          </div>
-          <Sparkline points={agreementTrendPoints} color="rgb(168, 85, 247)" />
+        <div>
+          <div className="text-lg font-black text-orange-400 font-mono leading-none">{highAlerts}</div>
+          <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">High Severity Items</div>
         </div>
       </div>
 
-      {/* Card 4: Multi-vector Attacks count */}
-      <div className="bg-card border border-border p-4 rounded-xl shadow-sm hover:border-border/80 transition-all flex flex-col justify-between h-27.5">
-        <div className="flex items-start justify-between">
-          <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
-            <Layers className="w-4 h-4" />
-          </div>
-          <div className="text-[7px] font-mono leading-none bg-orange-500/10 px-1 py-0.5 rounded text-orange-400 font-bold uppercase">
-            CORRELATED
-          </div>
+      {/* 4. Medium Alerts */}
+      <div className="bg-card border border-border p-3.5 rounded-xl shadow-sm transition-all flex flex-col justify-between h-24">
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-black text-yellow-500 uppercase tracking-widest">Medium</span>
+          <ShieldAlert className="w-3.5 h-3.5 text-yellow-500" />
         </div>
-        
-        <div className="flex items-end justify-between mt-2.5">
-          <div>
-            <div className="text-xl font-black text-orange-500 font-mono leading-none">{multiVectorCount}</div>
-            <div className="text-[8.5px] font-black text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">Multi-Vector Attack Count</div>
-          </div>
-          <Sparkline points={multiTrendPoints} color="rgb(249, 115, 22)" />
+        <div>
+          <div className="text-lg font-black text-yellow-500 font-mono leading-none">{mediumAlerts}</div>
+          <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">Medium Severity Items</div>
         </div>
       </div>
 
-      {/* Card 5: Critical Campaign Count */}
-      <div className="bg-card border border-border p-4 rounded-xl shadow-sm hover:border-border/80 transition-all flex flex-col justify-between h-27.5">
-        <div className="flex items-start justify-between">
-          <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
-            <Flame className="w-4 h-4 text-red-500" />
-          </div>
-          <span className="text-[7.5px] font-mono leading-none text-red-400 font-black tracking-widest uppercase animate-pulse">
-            OUTBREAKS
-          </span>
+      {/* 5. Average Fusion Confidence */}
+      <div className="bg-card border border-border p-3.5 rounded-xl shadow-sm transition-all flex flex-col justify-between h-24">
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Avg Confidence</span>
+          <Gauge className="w-3.5 h-3.5 text-emerald-500" />
         </div>
-        
-        <div className="flex items-end justify-between mt-2.5">
-          <div>
-            <div className="text-xl font-black text-red-500 font-mono leading-none">{criticalCampaignCount}</div>
-            <div className="text-[8.5px] font-black text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">Critical Campaign Count</div>
-          </div>
-          <Sparkline points={campaignTrendPoints} color="rgb(239, 68, 68)" />
+        <div>
+          <div className="text-lg font-black text-emerald-500 font-mono leading-none">{avgConfidence}%</div>
+          <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">Consensus Rating</div>
         </div>
       </div>
+
+      {/* 6. Blocked / Resolved Alerts */}
+      <div className="bg-card border border-border p-3.5 rounded-xl shadow-sm transition-all flex flex-col justify-between h-24">
+        <div className="flex items-center justify-between">
+          <span className="text-[8px] font-black text-cyan-400 uppercase tracking-widest">Resolved</span>
+          <CheckCircle className="w-3.5 h-3.5 text-cyan-500" />
+        </div>
+        <div>
+          <div className="text-lg font-black text-cyan-400 font-mono leading-none">{blockedOrResolved}</div>
+          <div className="text-[8px] font-bold text-muted-foreground uppercase tracking-wider mt-1.5 leading-none">Mitigated Incidents</div>
+        </div>
+      </div>
+
     </div>
   );
 }

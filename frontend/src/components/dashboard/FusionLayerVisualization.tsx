@@ -1,17 +1,13 @@
 import React from "react";
-import {
-  Database,
-  Cpu,
-  Sparkles,
-  ShieldAlert,
-  Activity,
-  Workflow,
+import { 
+  Database, 
+  Cpu, 
+  Sparkles, 
+  ShieldAlert, 
+  Activity, 
+  Workflow, 
   ArrowRight,
-  TrendingDown,
-  CheckCircle2,
-  GitCommit,
-  ArrowDown,
-  LucideIcon
+  CheckCircle2
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -22,16 +18,14 @@ interface FusionLayerVisualizationProps {
 interface PipelineNode {
   name: string;
   val: string;
-  icon: LucideIcon;
-
+  icon: React.ComponentType<any>;
   info?: string;
-
   isAi?: boolean;
   isFusion?: boolean;
   isFinal?: boolean;
 }
 
-interface PipelineStep {
+interface Step {
   title: string;
   nodes: PipelineNode[];
 }
@@ -39,7 +33,7 @@ interface PipelineStep {
 export function FusionLayerVisualization({ alertsCount = 0 }: FusionLayerVisualizationProps) {
   
   // Realtime pipeline stats
-  const steps: PipelineStep[] = [
+  const steps: Step[] = [
     {
       title: "Data Sources",
       nodes: [

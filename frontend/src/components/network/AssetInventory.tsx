@@ -24,10 +24,8 @@ interface LabAsset {
   hostname: string;
   ip: string;
   role: string;
-  status: "ACTIVE" | "PROBED" | "COMPROMISED" | "OFFLINE";
+  status: "ACTIVE" | "OFFLINE";
   lastSeen: string;
-  riskScore: number;
-  attackCount: number;
   cpuRam: string;
   details: string;
 }
@@ -40,18 +38,6 @@ export const AssetInventory: React.FC<AssetInventoryProps> = ({
   const [searchText, setSearchText] = useState("");
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
 
-  // Compute live attack counts targeting assets based on logs
-  const assetAttackStats = useMemo(() => {
-    const stats: Record<string, number> = {};
-    logs.forEach(l => {
-      if (l.verdict === "ANOMALY") {
-        stats[l.destIp] = (stats[l.destIp] || 0) + 1;
-        stats[l.srcIp] = (stats[l.srcIp] || 0) + 1;
-      }
-    });
-    return stats;
-  }, [logs]);
-
   // LAB DEPLOYED ASSETS MODEL DATA
   const assets: LabAsset[] = useMemo(() => {
     return [
@@ -59,48 +45,40 @@ export const AssetInventory: React.FC<AssetInventoryProps> = ({
         hostname: "kali-attacker-external",
         ip: "185.190.240.8",
         role: "Adversary External C2 Peer",
-        status: logs.some(l => l.srcIp === "185.190.240.8" && l.verdict === "ANOMALY") ? "ACTIVE" : "ACTIVE",
+        status: "ACTIVE",
         lastSeen: "Just Now",
-        riskScore: 94,
-        attackCount: assetAttackStats["185.190.240.8"] || 5,
         cpuRam: "8 Cores / 16 GB",
-        details: "Dynamic Russian proxy exit node identified sweep probing SSH databases and routing exfiltrated proprietary backups."
+        details: "External IP node active. Mapping outbound connections and proxy exits."
       },
       {
         hostname: "ubuntu-server-web",
         ip: "10.0.1.18",
         role: "Secure Corporation Web Host",
-        status: logs.some(l => l.destIp === "10.0.1.18" && l.verdict === "ANOMALY") ? "PROBED" : "ACTIVE",
+        status: "ACTIVE",
         lastSeen: "Just Now",
-        riskScore: 42,
-        attackCount: assetAttackStats["10.0.1.18"] || 2,
         cpuRam: "16 Cores / 32 GB",
-        details: "DMZ webserver launching secure node pipelines. Target of recent synthetic port sweep storms."
+        details: "Active DMZ web server routing corporate node pipelines & load balancers."
       },
       {
         hostname: "windows-target-ad",
         ip: "192.168.1.109",
         role: "Windows Active Directory Domain Controller",
-        status: logs.some(l => l.srcIp === "192.168.1.109" && l.verdict === "ANOMALY") ? "COMPROMISED" : "ACTIVE",
+        status: "ACTIVE",
         lastSeen: "Just Now",
-        riskScore: 88,
-        attackCount: assetAttackStats["192.168.1.109"] || 4,
         cpuRam: "24 Cores / 64 GB",
-        details: "Core organizational directory domain root server. Exhibiting UDP Onion proxy tunneling on port 9001."
+        details: "Organizational directory controller system. High-capacity corporate directory master."
       },
       {
         hostname: "pfsense-gateway-fw",
         ip: "10.0.12.3",
         role: "Internal PostgreSQL Master Database Node",
-        status: logs.some(l => l.destIp === "10.0.12.3" && l.verdict === "ANOMALY") ? "COMPROMISED" : "ACTIVE",
+        status: "ACTIVE",
         lastSeen: "1s ago",
-        riskScore: 78,
-        attackCount: assetAttackStats["10.0.12.3"] || 8,
         cpuRam: "4 Cores / 8 GB",
-        details: "Corporate database storage. Primary point of SSH credential guessing and postgres exfiltration spill."
+        details: "Core relational SQL asset processing transactional logs and analytical entries."
       }
     ];
-  }, [logs, assetAttackStats]);
+  }, []);
 
   // Handle Search Filtering
   const filteredAssets = useMemo(() => {
@@ -157,17 +135,16 @@ export const AssetInventory: React.FC<AssetInventoryProps> = ({
             <table className="w-full text-left truncate">
               <thead className="bg-secondary dark:bg-slate-900 sticky top-0 z-10 text-[8px] uppercase text-muted-foreground font-bold border-b border-border">
                 <tr>
-                  <th className="px-3 py-2">Host IP Node</th>
-                  <th className="px-3 py-2">System Hostnames</th>
-                  <th className="px-3 py-2">Operational Role</th>
+                  <th className="px-3 py-2 border-r border-border/10">Host IP Node</th>
+                  <th className="px-3 py-2 border-r border-border/10">System Hostnames</th>
+                  <th className="px-3 py-2 border-r border-border/10">Operational Role</th>
                   <th className="px-3 py-2 text-center font-sans">Status</th>
-                  <th className="px-3 py-2 text-right">Risk Score</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 text-[9px] font-mono leading-none">
                 {filteredAssets.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground italic col-span-5">
+                    <td colSpan={4} className="px-3 py-6 text-center text-muted-foreground italic col-span-4">
                       No matching container host virtual asset found.
                     </td>
                   </tr>
@@ -186,26 +163,15 @@ export const AssetInventory: React.FC<AssetInventoryProps> = ({
                             : ""
                         }`}
                       >
-                        <td className="px-3 py-1 text-slate-800 dark:text-slate-205 font-black whitespace-nowrap flex items-center gap-1.5 h-full">
+                        <td className="px-3 py-1 text-slate-800 dark:text-slate-205 font-black whitespace-nowrap flex items-center gap-1.5 h-full border-r border-border/10">
                           {isIsolated && <Compass className="w-3 h-3 text-cyan-600 dark:text-cyan-405 animate-spin" />}
                           {a.ip}
                         </td>
-                        <td className="px-3 py-1 text-muted-foreground font-bold whitespace-nowrap">{a.hostname}</td>
-                        <td className="px-3 py-1 text-muted-foreground whitespace-nowrap truncate max-w-37.5">{a.role}</td>
+                        <td className="px-3 py-1 text-muted-foreground font-bold whitespace-nowrap border-r border-border/10">{a.hostname}</td>
+                        <td className="px-3 py-1 text-muted-foreground whitespace-nowrap truncate max-w-37.5 border-r border-border/10">{a.role}</td>
                         <td className="px-3 py-1 text-center whitespace-nowrap font-sans">
-                          <span className={`px-1 py-0.2 rounded text-[8px] font-black tracking-widest border uppercase ${
-                            a.status === "COMPROMISED" 
-                              ? "bg-red-550/10 dark:bg-red-922 text-red-650 dark:text-red-400 border-red-500/15 animate-pulse" 
-                              : a.status === "PROBED" 
-                              ? "bg-amber-550/10 dark:bg-amber-922 text-amber-600 dark:text-amber-500 border-amber-500/15" 
-                              : "bg-emerald-550/10 dark:bg-emerald-922 text-emerald-600 dark:text-emerald-450 border-emerald-500/10"
-                          }`}>
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-black tracking-widest border uppercase bg-emerald-550/10 dark:bg-emerald-922 text-emerald-600 dark:text-emerald-450 border-emerald-500/10">
                             {a.status}
-                          </span>
-                        </td>
-                        <td className="px-3 py-1 text-right font-black whitespace-nowrap">
-                          <span className={a.riskScore > 75 ? "text-red-650 dark:text-red-400 font-black" : "text-emerald-600 dark:text-emerald-500"}>
-                            {a.riskScore}/100
                           </span>
                         </td>
                       </tr>
@@ -232,15 +198,15 @@ export const AssetInventory: React.FC<AssetInventoryProps> = ({
               <div className="space-y-1.5 text-[10px]">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground font-bold">Role:</span>
-                  <span className="text-slate-700 dark:text-slate-350 leading-tight text-right max-w-37.5 truncate">{activeAssetDetail.role}</span>
+                  <span className="text-slate-700 dark:text-slate-350 leading-tight text-right max-w-37.5 pr-1">{activeAssetDetail.role}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground font-bold">Specs:</span>
                   <span className="text-slate-700 dark:text-slate-350">{activeAssetDetail.cpuRam}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-bold">Metrics alerts:</span>
-                  <span className="text-rose-600 dark:text-rose-455 font-extrabold">{activeAssetDetail.attackCount} interferences</span>
+                  <span className="text-muted-foreground font-bold">State:</span>
+                  <span className="text-emerald-500 font-extrabold uppercase">{activeAssetDetail.status} SEEN</span>
                 </div>
               </div>
 

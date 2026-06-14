@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Search, Binary } from "lucide-react";
+import { Search, Binary, Info } from "lucide-react";
 import { NetworkLog } from "../network/NetworkConfig";
 
 interface NetworkFlowTableProps {
@@ -22,31 +22,31 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 30;
 
-  // Filter keys
+  // Filter states
   const [searchText, setSearchText] = useState("");
   const [protocolFilter, setProtocolFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL"); // Lightweight anomaly status filter
   const [serviceFilter, setServiceFilter] = useState("ALL");
-  const [riskFilter, setRiskFilter] = useState("ALL");
 
   // Reset page when filters or selection IP changes to avoid blank views
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedTopologyIP, selectedAssetIP, searchText, protocolFilter, serviceFilter, riskFilter]);
+  }, [selectedTopologyIP, selectedAssetIP, searchText, protocolFilter, statusFilter, serviceFilter]);
 
-  // FILTERED LOGGER LOGS ARRAY (For the active Flow Table Explorer)
+  // Filtered logs
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
-      // 1. Check topology selection IP
+      // 1. Topology filter
       if (selectedTopologyIP && log.srcIp !== selectedTopologyIP && log.destIp !== selectedTopologyIP) {
         return false;
       }
 
-      // 1.2 Check asset selection IP
+      // 2. Asset filter
       if (selectedAssetIP && log.srcIp !== selectedAssetIP && log.destIp !== selectedAssetIP) {
         return false;
       }
       
-      // 2. Check search coordinates
+      // 3. Search text
       const term = searchText.trim().toLowerCase();
       if (term) {
         const srcMatch = log.srcIp.toLowerCase().includes(term);
@@ -58,12 +58,19 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
         }
       }
 
-      // 3. Check protocol selector
+      // 4. Protocol filter
       if (protocolFilter !== "ALL" && log.protocol !== protocolFilter) {
         return false;
       }
 
-      // 4. Check Service selector
+      // 5. Lightweight Anomaly status filter
+      if (statusFilter !== "ALL") {
+        const isAnomaly = log.verdict === "ANOMALY";
+        if (statusFilter === "ANOMALY" && !isAnomaly) return false;
+        if (statusFilter === "NORMAL" && isAnomaly) return false;
+      }
+
+      // 6. Service filter
       if (serviceFilter !== "ALL") {
         if (serviceFilter === "HTTP" && log.destPort !== 80) return false;
         if (serviceFilter === "HTTPS" && log.destPort !== 443) return false;
@@ -73,23 +80,15 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
         if (serviceFilter === "ICMP" && log.protocol !== "ICMP") return false;
       }
 
-      // 5. Check risk score severity
-      if (riskFilter !== "ALL") {
-        if (riskFilter === "HIGH" && log.threatScore < 70) return false;
-        if (riskFilter === "MEDIUM" && (log.threatScore < 30 || log.threatScore >= 70)) return false;
-        if (riskFilter === "LOW" && log.threatScore >= 30) return false;
-      }
-
       return true;
     });
-  }, [logs, selectedTopologyIP, selectedAssetIP, searchText, protocolFilter, serviceFilter, riskFilter]);
+  }, [logs, selectedTopologyIP, selectedAssetIP, searchText, protocolFilter, statusFilter, serviceFilter]);
 
-  // Compute pagination bounds and paginated subset
+  // Compute pagination
   const totalPages = useMemo(() => {
     return Math.ceil(filteredLogs.length / itemsPerPage);
   }, [filteredLogs.length, itemsPerPage]);
 
-  // Gracefully clamp pagination if filtered list shrinks, rather than auto-resetting to 1
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -102,12 +101,11 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
     return filteredLogs.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredLogs, currentPage, itemsPerPage, totalPages]);
 
-  // Copy Reference Token helper
   const handleCopyReference = (logId: string) => {
     navigator.clipboard.writeText(logId);
     onActionFeedback({
       type: "success",
-      message: `COPED REF ID: Flow token copied successfully [${logId.substring(0, 10)}]`
+      message: `COPIED REF ID: Flow token copied [${logId.substring(0, 10)}]`
     });
   };
 
@@ -118,21 +116,21 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
         <div className="flex items-center gap-2">
           <Binary className="w-4 h-4 text-emerald-500 animate-pulse" />
           <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
-            ADVANCED REAL-TIME ZEEK CONN.LOG FIELD EXPLORER
+            ZEEK CONN.LOG NETWORK FLOW DISCOVERY
           </h3>
         </div>
 
         {/* Filters dropdown parameters row */}
         <div className="flex flex-wrap items-center gap-2 text-[10px]">
-          {/* Search Text IP */}
+          {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search Node IP, UID, or Attack..."
+              placeholder="Filter IP, ID, or parameters..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="pl-7 pr-2 py-1 w-48 bg-background border border-border rounded focus:outline-none focus:border-emerald-505 text-foreground placeholder:text-muted-foreground/60 transition-colors"
+              className="pl-7 pr-2 py-1 w-44 bg-background border border-border rounded focus:outline-none focus:border-emerald-505 text-foreground placeholder:text-muted-foreground/60 transition-colors"
             />
           </div>
 
@@ -142,13 +140,24 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
             onChange={(e) => setProtocolFilter(e.target.value)}
             className="bg-background border border-border rounded py-1 px-1.5 text-foreground focus:outline-none focus:border-cyan-500 cursor-pointer transition-colors"
           >
-            <option value="ALL">ALL PROTOCOLS (TCP/UDP/ICMP)</option>
+            <option value="ALL">ALL PROTOCOLS</option>
             <option value="TCP">TCP ONLY</option>
             <option value="UDP">UDP ONLY</option>
-            <option value="ICMP">ICMP DETECTOR</option>
+            <option value="ICMP">ICMP ONLY</option>
           </select>
 
-          {/* Service type filter */}
+          {/* Anomaly Status filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-background border border-border rounded py-1 px-1.5 text-foreground focus:outline-none focus:border-cyan-500 cursor-pointer transition-colors"
+          >
+            <option value="ALL">ALL TRAFFIC STATUS</option>
+            <option value="ANOMALY">ANOMALIES ONLY</option>
+            <option value="NORMAL">NORMAL TRAFFIC ONLY</option>
+          </select>
+
+          {/* Service Filter */}
           <select
             value={serviceFilter}
             onChange={(e) => setServiceFilter(e.target.value)}
@@ -157,21 +166,9 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
             <option value="ALL">ALL SERVICES</option>
             <option value="HTTP">HTTP (Port 80)</option>
             <option value="HTTPS">HTTPS (Port 443)</option>
-            <option value="SSH font-mono">SSH (Port 22)</option>
-            <option value="DNS font-mono">DNS Resolver</option>
-            <option value="FTP font-mono">FTP File Relay</option>
-          </select>
-
-          {/* Risk category level filter */}
-          <select
-            value={riskFilter}
-            onChange={(e) => setRiskFilter(e.target.value)}
-            className="bg-background border border-border rounded py-1 px-1.5 text-foreground focus:outline-none focus:border-cyan-500 cursor-pointer transition-colors"
-          >
-            <option value="ALL">ALL ACTIONS</option>
-            <option value="HIGH">CRITICAL / HIGH THREAT (&gt;70)</option>
-            <option value="MEDIUM">MEDIUM (30-70)</option>
-            <option value="LOW">LOW VERDICT STATUS (&lt;30)</option>
+            <option value="SSH">SSH (Port 22)</option>
+            <option value="DNS">DNS</option>
+            <option value="FTP">FTP</option>
           </select>
         </div>
       </div>
@@ -182,24 +179,31 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
           <thead className="bg-secondary/80 dark:bg-slate-900/80 sticky top-0 z-10 text-[9px] uppercase font-black text-muted-foreground">
             <tr className="border-b border-border">
               <th className="px-3 py-2">Timestamp</th>
-              <th className="px-3 py-2">UID Identifier</th>
-              <th className="px-3 py-2">Source Host (IP:Port)</th>
-              <th className="px-3 py-2">Destination Host (IP:Port)</th>
+              <th className="px-3 py-2">UID</th>
+              <th className="px-3 py-2">Source (IP:Port)</th>
+              <th className="px-3 py-2">Destination (IP:Port)</th>
               <th className="px-3 py-2">Protocol</th>
               <th className="px-3 py-2">Service</th>
               <th className="px-3 py-2">Conn.State</th>
-              <th className="px-3 py-2 text-right">Size (Bytes)</th>
-              <th className="px-3 py-2 text-center">AI1 Anomal-Score</th>
-              <th className="px-3 py-2 text-center">AI2A Prediction</th>
-              <th className="px-3 py-2 text-center">Security Status</th>
+              <th className="px-3 py-2 text-right">Bytes</th>
+              <th className="px-3 py-2 text-center flex items-center justify-center gap-1">
+                AI1 Anomaly Score
+                <div className="relative group cursor-help inline-block">
+                  <Info className="w-3.5 h-3.5 text-cyan-500" />
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1.5 hidden group-hover:block bg-slate-900 text-slate-100 text-[8px] font-mono leading-relaxed p-2 rounded shadow-xl border border-slate-700 w-44 text-center z-50">
+                    Calculated by AI1 Isolation Forest: score reflects network statistical deviation; &gt;70% triggers security alert flag.
+                  </div>
+                </div>
+              </th>
+              <th className="px-3 py-2 text-center">Status</th>
               <th className="w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/30 text-[10px]">
             {paginatedLogs.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-4 py-12 text-center text-muted-foreground italic">
-                  No active flows match selected operational parameter filter arrays.
+                <td colSpan={11} className="px-4 py-12 text-center text-muted-foreground italic">
+                  No active flows match selected network filters.
                 </td>
               </tr>
             ) : (
@@ -220,23 +224,12 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
                 else if (log.destPort === 53 || log.srcPort === 5353) svc = "DNS";
                 else if (log.destPort === 21) svc = "FTP";
 
-                // Derive Connection State dynamically
+                // Connection state
                 const state = log.destPort === 22 && isAnomaly
                   ? "REJ"
                   : isAnomaly && log.origBytes > 50000000
                   ? "RSTR"
                   : "SF";
-
-                // Derive AI2A multiclass prediction name
-                const ai2aPred = isAnomaly
-                  ? log.reason.toLowerCase().includes("scan") || log.id.includes("scan")
-                    ? "Port Scan"
-                    : log.reason.toLowerCase().includes("leak") || log.reason.toLowerCase().includes("exfil")
-                    ? "Botnet"
-                    : log.destPort === 22
-                    ? "Brute Force"
-                    : "DoS"
-                  : "Normal";
 
                 const isSelected = selectedLog?.id === log.id;
 
@@ -271,16 +264,13 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
                         {log.threatScore}%
                       </span>
                     </td>
-                    <td className="px-3 py-1 text-center font-extrabold whitespace-nowrap">
-                      <span className={isAnomaly ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}>{ai2aPred}</span>
-                    </td>
                     <td className="px-3 py-1 text-center whitespace-nowrap">
                       <span className={`px-2 py-0.5 text-[8.5px] font-black tracking-widest rounded border ${
                         isAnomaly 
                           ? "bg-red-500/10 dark:bg-red-950 text-red-655 dark:text-red-400 border-red-500/20" 
                           : "bg-emerald-500/10 dark:bg-emerald-950 text-emerald-655 dark:text-emerald-400 border-emerald-500/20"
                       }`}>
-                        {log.verdict}
+                        {isAnomaly ? "Anomaly" : "Normal"}
                       </span>
                     </td>
                     <td className="px-2 py-1 text-center" onClick={(e) => e.stopPropagation()}>
@@ -375,7 +365,7 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
 
       <div className="text-[9px] text-muted-foreground uppercase flex flex-col md:flex-row justify-between items-center gap-2">
         <span>Selected parameters matched {filteredLogs.length} of {logs.length} flows loaded inside active ZEEK RAM memory.</span>
-        <span>Click any flow row to decode hexadecimal payload frame captures inline.</span>
+        <span>Click any flow row to inspect basic socket configuration and AI1 telemetry.</span>
       </div>
     </>
   );
