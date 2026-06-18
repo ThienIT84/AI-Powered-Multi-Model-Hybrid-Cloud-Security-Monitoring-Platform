@@ -5,6 +5,8 @@
 
 import { useState, useEffect } from "react";
 import React from "react";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { Sidebar } from "./components/layout/Sidebar";
 import { Header } from "./components/layout/Header";
 import { IncidentDetail } from "./components/alerts/IncidentDetail";
@@ -39,24 +41,73 @@ import { SOCQuickActions } from "./components/dashboard/SOCQuickActions";
 import { useDashboardMetrics } from "./components/dashboard/hooks/useDashboardMetrics";
 import { usePlatformHealth } from "./components/dashboard/hooks/usePlatformHealth";
 
-<<<<<<< HEAD
-=======
-import { AIThreatDetectionPage } from "./pages/AIThreatDetectionPage";
-import { AttackSurfacePage } from "./pages/AttackSurfacePage";
-import { MitreAttackPage } from "./pages/MitreAttackPage";
-import { CaseManagementPage } from "./pages/CaseManagementPage";
-import { CloudPage } from "./pages/CloudPage";
-import { ThreatIntelPage } from "./pages/ThreatIntelPage";
->>>>>>> 924c5840903931e63161b08042c285e0145de18e
 import { useSocket } from "./useSocket";
+import { useAuth } from "./hooks/useAuth";
 import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "./lib/utils";
 import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/securityData";
 import { AppView } from "./types/views";
+import { useTheme } from "./context/ThemeContext";
+import { Loader2 } from "lucide-react";
 
 export default function App() {
+  const { isAuthenticated, loading } = useAuth();
+
+  // Track deep auth pathway
+  const [authScreen, setAuthScreen] = useState<"login" | "register">(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path === "/register") return "register";
+    }
+    return "login";
+  });
+
+  // Keep routing synced to popstate events
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === "/register") {
+        setAuthScreen("register");
+      } else if (path === "/login") {
+        setAuthScreen("login");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Enforce unauthorized redirection
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      const path = window.location.pathname;
+      if (path !== "/login" && path !== "/register") {
+        window.history.pushState({}, "", "/login");
+        setAuthScreen("login");
+      }
+    }
+  }, [isAuthenticated, loading]);
+
+  // Push main page URLs if already authorized
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      const path = window.location.pathname;
+      if (path === "/login" || path === "/register") {
+        window.history.pushState({}, "", "/");
+      }
+    }
+  }, [isAuthenticated, loading]);
+
+  const handleNavigateToAuth = (screen: "login" | "register") => {
+    setAuthScreen(screen);
+    window.history.pushState({}, "", `/${screen}`);
+  };
+
+  const handleAuthSuccess = () => {
+    window.history.pushState({}, "", "/");
+  };
+
   const { isConnected, alerts, traffic } = useSocket();
 
   // Call unified SOC command center dashboard hooks
@@ -81,7 +132,7 @@ export default function App() {
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentView, setCurrentView] = useState<AppView>("dashboard");
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const { theme, isDarkMode, setTheme } = useTheme();
   const [disabledAttackTypes, setDisabledAttackTypes] = useState<string[]>([]);
   
   const { 
@@ -90,15 +141,6 @@ export default function App() {
     openPanel, 
     closePanel 
   } = usePanelState();
-
-  // Apply theme to document
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
 
   const toggleAttackType = (typeName: string) => {
     setDisabledAttackTypes(prev => 
@@ -132,7 +174,33 @@ export default function App() {
     );
   });
 
-  return (
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-[#030303] text-cyan-500 font-mono flex flex-col items-center justify-center space-y-4">
+        <Loader2 size={32} className="animate-spin text-cyan-400" />
+        <span className="text-xs uppercase tracking-widest text-zinc-400">Loading Secure SOC Workspace...</span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    if (authScreen === "register") {
+      return (
+        <RegisterPage
+          onNavigateToLogin={() => handleNavigateToAuth("login")}
+          onSuccess={handleAuthSuccess}
+        />
+      );
+    }
+    return (
+      <LoginPage
+        onNavigateToRegister={() => handleNavigateToAuth("register")}
+        onSuccess={handleAuthSuccess}
+      />
+    );
+  }
+
+   return (
     <div className="flex h-screen font-sans overflow-hidden transition-colors duration-500 bg-background text-foreground">
       <Sidebar currentView={currentView} onViewChange={setCurrentView} />
       
@@ -142,7 +210,7 @@ export default function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           isDarkMode={isDarkMode}
-          onThemeToggle={() => setIsDarkMode(!isDarkMode)}
+          onThemeToggle={() => setTheme(isDarkMode ? "Light" : "Dark")}
           currentView={currentView}
           onViewChange={setCurrentView}
           alerts={alerts}
@@ -244,6 +312,7 @@ export default function App() {
                   </div>
                 </div>
               </motion.div>
+
             ) : currentView === "alerts" ? (
               <AlertsPage key="alerts" />
             ) : currentView === "network" ? (
@@ -268,24 +337,13 @@ export default function App() {
               <PlaybooksPage key="playbooks" />
             ) : currentView === "reports" ? (
               <ReportsPage key="reports" />
-            ) : currentView === "cloud" ? (
-              <CloudPage key="cloud" />
-            ) : currentView === "threat-intel" ? (
-              <ThreatIntelPage key="threat-intel" />
             ) : (
               <SettingsPage 
                 key="settings" 
                 isDarkMode={isDarkMode} 
-                onThemeToggle={() => setIsDarkMode(!isDarkMode)} 
+                onThemeToggle={() => setTheme(isDarkMode ? "Light" : "Dark")} 
                 onThemeChange={(themeVal) => {
-                  if (themeVal === "Light") {
-                    setIsDarkMode(false);
-                  } else if (themeVal === "Dark") {
-                    setIsDarkMode(true);
-                  } else {
-                    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-                    setIsDarkMode(systemPrefersDark);
-                  }
+                  setTheme(themeVal);
                 }}
               />
             )}

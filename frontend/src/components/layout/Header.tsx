@@ -1,5 +1,6 @@
 import React from "react";
 import { AppView } from "../../types/views";
+import { useAuth } from "../../hooks/useAuth";
 import {
   Bell,
   Settings,
@@ -78,7 +79,13 @@ export function Header({
   socketError,
   dataMode = "mock",
 }: HeaderProps) {
+  const { user, logout } = useAuth();
   const [time, setTime] = React.useState(new Date());
+
+  const handleLogout = React.useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    logout();
+  }, [logout]);
 
   React.useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -195,9 +202,28 @@ export function Header({
 
           <div className="relative group cursor-pointer" onClick={() => onViewChange("settings")}>
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-[9px] font-black transition-all bg-secondary border border-border text-foreground hover:border-cyan-500">
-              SO
+              {user?.avatar || "SO"}
             </div>
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-background rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)] transition-colors" />
+
+            {/* Operator Session Info Hover Dropdown */}
+            <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl p-4 shadow-xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto transition-all duration-200 z-50 text-left font-mono">
+              <div className="space-y-2 pb-2.5 border-b border-border">
+                <div className="text-[8px] font-black text-gray-505 uppercase tracking-widest leading-none">ACTIVE OPERATOR</div>
+                <div className="text-xs font-black text-foreground truncate">{user?.fullName || "SOC Operator"}</div>
+                <div className="text-[9px] text-cyan-400 font-bold uppercase">{user?.role || "SOC Analyst"}</div>
+                <div className="text-[9px] text-muted-foreground truncate">{user?.organization || "Command Security Office"}</div>
+              </div>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full py-1.5 px-3 bg-red-950/20 hover:bg-red-900/30 border border-red-500/10 hover:border-red-500/30 rounded-lg text-[9px] font-black uppercase text-red-400 hover:text-red-300 transition-all text-center tracking-wider cursor-pointer"
+                >
+                  Terminate Session
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
