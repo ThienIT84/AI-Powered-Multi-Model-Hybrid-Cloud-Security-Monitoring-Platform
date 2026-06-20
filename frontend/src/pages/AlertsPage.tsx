@@ -10,7 +10,6 @@ import {
   X,
   List
 } from "lucide-react";
-import { useSocket } from "../useSocket";
 import { AlertStats } from "../components/alerts/AlertStats";
 import { AlertFilters } from "../components/alerts/AlertFilters";
 import { AlertTable } from "../components/alerts/AlertTable";
@@ -18,6 +17,11 @@ import { AlertDetailDrawer } from "../components/alerts/AlertDetailDrawer";
 import { CreateRuleDrawer } from "../components/alerts/CreateRuleDrawer";
 import { Alert, Severity, AlertStatus } from "../types";
 import { cn } from "../lib/utils";
+
+interface AlertsPageProps {
+  alerts: Alert[];
+  isConnected: boolean;
+}
 
 // IP filtering logic (CIDR & prefixes)
 function matchesIpFilter(ip: string, filterVal: string) {
@@ -39,8 +43,7 @@ function matchesIpFilter(ip: string, filterVal: string) {
   return ip.toLowerCase().includes(val);
 }
 
-export function AlertsPage() {
-  const { alerts, isConnected } = useSocket();
+export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   
   // Sliding drawer for policy creation state
@@ -289,6 +292,15 @@ export function AlertsPage() {
         
         {/* TOOLBAR ACTIONS */}
         <div className="flex items-center gap-2 flex-wrap">
+          <span className={cn(
+            "px-2.5 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-widest font-mono",
+            isConnected
+              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-500"
+              : "bg-red-500/10 border-red-500/25 text-red-500"
+          )}>
+            {isConnected ? "Stream Live" : "Stream Offline"}
+          </span>
+
           {/* ADVANCED SEARCH INPUT */}
           <div className="relative w-48 sm:w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />

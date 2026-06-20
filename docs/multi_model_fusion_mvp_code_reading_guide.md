@@ -493,6 +493,17 @@ VITE_WS_URL=ws://localhost:8000/ws/alerts \
 pnpm dev
 ```
 
+### Frontend mock SOC mode
+
+```bash
+cd frontend
+VITE_DATA_MODE=mock \
+VITE_MOCK_WS_URL=ws://localhost:3001 \
+pnpm dev
+```
+
+Mock mode does not need the backend. It uses `frontend/server.ts` to stream initial alerts plus a new alert and traffic point every 2 seconds. The realtime state is owned once in `frontend/src/App.tsx`; pages receive `alerts` and `isConnected` as props.
+
 Nếu `pnpm` trên WSL bị lỗi shim, chạy theo cách Node/npm mà môi trường của bạn hỗ trợ. Trong lần verify này, TypeScript được chạy bằng:
 
 ```bash
@@ -581,4 +592,3 @@ Các phần chưa được làm, để tránh hiểu nhầm:
 - Chưa dùng final holdout `133-136` để quyết định dashboard integration.
 
 Nhưng contract đã sẵn sàng để cắm AI1/AI2A thật sau này mà không cần đổi frontend schema.
-
