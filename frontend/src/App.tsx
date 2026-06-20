@@ -314,7 +314,7 @@ export default function App() {
               </motion.div>
 
             ) : currentView === "alerts" ? (
-              <AlertsPage key="alerts" />
+              <AlertsPage key="alerts" alerts={alerts} isConnected={isConnected} />
             ) : currentView === "network" ? (
               <NetworkMonitoringPage key="network" />
             ) : currentView === "endpoints" ? (

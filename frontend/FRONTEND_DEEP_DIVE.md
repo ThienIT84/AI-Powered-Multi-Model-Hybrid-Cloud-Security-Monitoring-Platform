@@ -12,16 +12,63 @@ This note documents the current React + Vite frontend under `frontend/`. It focu
 
 ### Commands
 - `pnpm install`
-- `pnpm dev` (starts Express + Vite middleware + WebSocket)
+- `VITE_DATA_MODE=mock pnpm dev` (starts Express + Vite middleware + local mock WebSocket)
+- `VITE_DATA_MODE=api VITE_API_BASE_URL=http://localhost:8000 VITE_WS_URL=ws://localhost:8000/ws/alerts pnpm dev` (connects to backend)
 - `pnpm build` (Vite build + server bundle)
 - `pnpm start` (runs bundled server)
 - `pnpm lint` (tsc)
+
+### Full-stack local run
+Terminal 1, backend:
+
+From the repo root:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+If already inside `backend/`:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=. \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+This terminal is expected to remain occupied because `uvicorn` is serving the backend. `--no-capture-output` prevents `conda run` from hiding live server logs.
+
+Useful backend checks:
+
+```bash
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/api/replay/demo
+```
+
+Terminal 2, frontend API mode:
+
+```bash
+cd frontend
+VITE_DATA_MODE=api \
+VITE_API_BASE_URL=http://localhost:8000 \
+VITE_WS_URL=ws://localhost:8000/ws/alerts \
+pnpm dev
+```
 
 ### Environment
 - `VITE_DATA_MODE=mock|api`
 - `VITE_API_BASE_URL` (REST base)
 - `VITE_WS_URL` (WebSocket API)
-- `VITE_MOCK_WS_URL` (fallback mock socket url)
+- `VITE_MOCK_WS_URL` (local mock socket url; default `.env.example` uses `ws://localhost:3001`)
+
+### Demo login
+Frontend authentication is a local demo implemented by `src/components/auth/authService.ts`.
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@defense.soc` | `Password123!` |
+| SOC Analyst | `analyst@defense.soc` | `Password123!` |
+
+These credentials are local demo data seeded into browser `localStorage`; they are not backend or production secrets.
 
 ## Entry and Layout
 - HTML entry: `index.html` mounts `#root`.
@@ -38,6 +85,8 @@ This note documents the current React + Vite frontend under `frontend/`. It focu
 ### Data mode
 - `src/config.ts` chooses `mock` or `api` based on `VITE_DATA_MODE`.
 - WebSocket endpoint chosen from `wsUrl` (api) or `mockWsUrl` (mock).
+- `App.tsx` owns the single `useSocket()` instance and passes alert state into pages.
+- Page components should render socket state from props instead of opening another WebSocket stream.
 
 ### WebSocket message types
 `useSocket` handles:
@@ -47,15 +96,12 @@ This note documents the current React + Vite frontend under `frontend/`. It focu
 - `TRAFFIC_UPDATE` -> appends to traffic chart, caps at 100
 
 ### Alert DTO mapping
-There are two mappers:
-- `src/useSocket.ts` has an internal `mapBackendAlertToAlert(raw)` that accepts flexible field names (camelCase or some alternate names).
-- `src/lib/alertMapper.ts` provides a full snake_case backend DTO mapping.
-
-Current usage: only the mapper inside `useSocket` is used. `alertMapper.ts` is not referenced elsewhere.
+- `src/useSocket.ts` receives WebSocket messages and calls `src/lib/alertMapper.ts` for snake_case backend DTOs.
+- Legacy/mock camelCase alerts are normalized in `useSocket.ts` so the dashboard can keep using the same internal `Alert` type.
 
 ### Mock data
 - `src/mocks/securityData.ts` provides `generateMockAlertDTO`, `generateMockTrafficPoint`, plus static summary/status lists.
-- `server.ts` uses these to emit WebSocket messages at 2s intervals and serves Vite SPA.
+- `server.ts` uses these to emit `INITIAL_DATA`, `NEW_ALERT`, and `TRAFFIC_UPDATE` messages at 2s intervals and serves Vite SPA.
 
 ## App Views (Page Summary)
 ### Dashboard

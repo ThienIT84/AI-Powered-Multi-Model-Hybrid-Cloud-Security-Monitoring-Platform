@@ -16,18 +16,26 @@ contract.
 
 ## Run
 
+From the repo root:
+
 ```bash
-cd backend
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+If your shell is already inside `backend/`, use `PYTHONPATH=.` instead:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=. \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+`uvicorn` is a long-running server, so the terminal is expected to stay open. `--no-capture-output` makes startup logs visible instead of letting `conda run` buffer them.
 
 For a quick replay:
 
 ```bash
-python scripts/replay_demo.py
+conda run -n interior_ai python backend/scripts/replay_demo.py
 ```
 
 Frontend API mode:
@@ -36,4 +44,3 @@ Frontend API mode:
 cd frontend
 VITE_DATA_MODE=api VITE_API_BASE_URL=http://localhost:8000 VITE_WS_URL=ws://localhost:8000/ws/alerts pnpm dev
 ```
-

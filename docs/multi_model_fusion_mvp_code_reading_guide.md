@@ -465,16 +465,35 @@ Fusion: network alert
 
 ## 5. Cách Chạy Nhanh
 
-### Backend mock mode
+### Backend mode
+
+Từ repo root:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Nếu terminal đang đứng trong `backend/`:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=. \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Lưu ý: backend server sẽ giữ terminal. Nếu nhìn như “treo” và không thấy log, thường là do thiếu `--no-capture-output` hoặc đang dùng sai `PYTHONPATH` so với thư mục hiện tại.
+
+Nếu đang dùng shell đã activate sẵn `interior_ai`, có thể chạy ngắn từ repo root:
 
 ```bash
 PYTHONPATH=backend uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Backend real AI2B mode
+### Backend real AI2B mode from repo root
 
 ```bash
-PYTHONPATH=backend AI2B_PREDICTOR_MODE=real uvicorn app.main:app --host 0.0.0.0 --port 8000
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend AI2B_PREDICTOR_MODE=real \
+  uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### Trigger demo events
@@ -492,6 +511,26 @@ VITE_API_BASE_URL=http://localhost:8000 \
 VITE_WS_URL=ws://localhost:8000/ws/alerts \
 pnpm dev
 ```
+
+### Frontend mock SOC mode
+
+```bash
+cd frontend
+VITE_DATA_MODE=mock \
+VITE_MOCK_WS_URL=ws://localhost:3001 \
+pnpm dev
+```
+
+Mock mode does not need the backend. It uses `frontend/server.ts` to stream initial alerts plus a new alert and traffic point every 2 seconds. The realtime state is owned once in `frontend/src/App.tsx`; pages receive `alerts` and `isConnected` as props.
+
+Frontend demo login:
+
+```text
+Admin:       admin@defense.soc / Password123!
+SOC Analyst: analyst@defense.soc / Password123!
+```
+
+These are local demo accounts seeded by `frontend/src/components/auth/authService.ts` into browser `localStorage`; they are safe for local testing docs and are not production credentials.
 
 Nếu `pnpm` trên WSL bị lỗi shim, chạy theo cách Node/npm mà môi trường của bạn hỗ trợ. Trong lần verify này, TypeScript được chạy bằng:
 
@@ -581,4 +620,3 @@ Các phần chưa được làm, để tránh hiểu nhầm:
 - Chưa dùng final holdout `133-136` để quyết định dashboard integration.
 
 Nhưng contract đã sẵn sàng để cắm AI1/AI2A thật sau này mà không cần đổi frontend schema.
-
