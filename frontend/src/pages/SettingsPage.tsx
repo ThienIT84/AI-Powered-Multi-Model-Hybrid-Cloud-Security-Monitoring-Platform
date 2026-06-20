@@ -1,184 +1,399 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  Save, 
-  RotateCcw, 
-  ChevronRight, 
-  Search, 
-  Share2, 
-  Download,
-  AlertCircle
-} from "lucide-react";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { SettingsSidebar } from "../components/settings/SettingsSidebar";
-import { GeneralSettings } from "../components/settings/GeneralSettings";
-import { AppearanceSettings } from "../components/settings/AppearanceSettings";
-import { AiConfigSettings } from "../components/settings/AiConfigSettings";
-import { SecuritySettings } from "../components/settings/SecuritySettings";
-import { CloudIntegrationSettings } from "../components/settings/CloudIntegrationSettings";
-import { NotificationSettings } from "../components/settings/NotificationSettings";
-import { UserManagementSettings } from "../components/settings/UserManagementSettings";
-import { cn } from "../lib/utils";
 
-const MODULE_NAMES: Record<string, string> = {
-  rules: "ALERT RULES",
-  api: "API & WEBHOOKS",
-  data: "DATA & STORAGE",
-  monitoring: "MONITORING",
-  performance: "PERFORMANCE",
-  backup: "BACKUP & RECOVERY",
-  audit: "AUDIT LOGS",
-  advanced: "ADVANCED",
-};
+// Types and Mocks
+import { SettingsStateData, Toast } from "../types/settings";
+import { DEFAULT_COMPLETE_SETTINGS } from "../components/settings/settingsMocks";
 
-export function SettingsPage() {
-  const { 
-    activeCategory, 
-    isDirty, 
-    saveChanges, 
-    resetDraft 
-  } = useSettingsStore();
+// Layout components
+import { SettingsHeader } from "../components/settings/SettingsHeader";
+import { SettingsSaveBar } from "../components/settings/SettingsSaveBar";
+import { SettingsDiscardModal } from "../components/settings/SettingsDiscardModal";
+import { SettingsToastPanel } from "../components/settings/SettingsToastPanel";
 
-  const isCategoryEmpty = !!MODULE_NAMES[activeCategory];
+// Lazy-loaded configuration panels for fast demand-based loading
+const GeneralSettings = lazy(() =>
+  import("../components/settings/GeneralSettings").then((m) => ({ default: m.GeneralSettings }))
+);
+const AppearanceSettings = lazy(() =>
+  import("../components/settings/AppearanceSettings").then((m) => ({ default: m.AppearanceSettings }))
+);
+const DetectionPolicies = lazy(() =>
+  import("../components/settings/DetectionPolicies").then((m) => ({ default: m.DetectionPolicies }))
+);
+const AlertManagement = lazy(() =>
+  import("../components/settings/AlertManagement").then((m) => ({ default: m.AlertManagement }))
+);
+const Integrations = lazy(() =>
+  import("../components/settings/Integrations").then((m) => ({ default: m.Integrations }))
+);
+const AccessControl = lazy(() =>
+  import("../components/settings/AccessControl").then((m) => ({ default: m.AccessControl }))
+);
+const Reporting = lazy(() =>
+  import("../components/settings/Reporting").then((m) => ({ default: m.Reporting }))
+);
+const BackupRecovery = lazy(() =>
+  import("../components/settings/BackupRecovery").then((m) => ({ default: m.BackupRecovery }))
+);
+const AuditCompliance = lazy(() =>
+  import("../components/settings/AuditCompliance").then((m) => ({ default: m.AuditCompliance }))
+);
 
-  const renderContent = () => {
-    switch (activeCategory) {
-      case "general": return <GeneralSettings />;
-      case "appearance": return <AppearanceSettings />;
-      case "notifications": return <NotificationSettings />;
-      case "ai": return <AiConfigSettings />;
-      case "security": return <SecuritySettings />;
-      case "cloud": return <CloudIntegrationSettings />;
-      case "users": return <UserManagementSettings />;
-      default: {
-        const moduleName = MODULE_NAMES[activeCategory] || activeCategory.toUpperCase();
-        return (
-          <div className="flex flex-col items-center justify-center min-h-115 text-center p-8 bg-zinc-950/45 dark:bg-zinc-950/70 border border-border/80 rounded-2xl relative overflow-hidden select-none shadow-sm h-full w-full">
-            {/* Visual background grids */}
-            <div className="absolute inset-x-0 top-0 h-40 bg-linear-to-b from-cyan-500/10 to-transparent blur-3xl pointer-events-none" />
-            
-            {/* Center icon ! in circle */}
-            <div className="relative flex items-center justify-center mb-6">
-              <div className="absolute w-21 h-21 rounded-full border border-cyan-500/10 animate-ping duration-3000" />
-              <div className="w-16 h-16 rounded-full bg-cyan-950/30 dark:bg-cyan-950/20 border border-cyan-500/25 flex items-center justify-center text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-                <span className="text-2xl font-mono font-black select-none">!</span>
-              </div>
-            </div>
+interface SettingsPageProps {
+  key?: string;
+  isDarkMode?: boolean;
+  onThemeToggle?: () => void;
+  onThemeChange?: (themeVal: "Dark" | "Light" | "System") => void;
+}
 
-            {/* Typography */}
-            <div className="space-y-3.5 z-10 max-w-sm">
-              <h3 className="text-xs font-mono font-black text-foreground uppercase tracking-[0.25em] leading-none">
-                CATEGORY: {moduleName}
-              </h3>
-              <p className="text-[9.5px] font-mono text-muted-foreground uppercase tracking-[0.2em] leading-normal">
-                MODULE LOGIC IS BEING INITIALIZED...
-              </p>
-            </div>
-          </div>
-        );
+export function SettingsPage({
+  isDarkMode = true,
+  onThemeToggle,
+  onThemeChange,
+}: SettingsPageProps) {
+  const { activeCategory } = useSettingsStore();
+
+  const [liveSettings, setLiveSettings] = useState<SettingsStateData>(DEFAULT_COMPLETE_SETTINGS);
+  const [draftSettings, setDraftSettings] = useState<SettingsStateData>(DEFAULT_COMPLETE_SETTINGS);
+  
+  // Custom confirmation modal trigger
+  const [showConfirmReset, setShowConfirmReset] = useState(false);
+
+  // Custom Toast state
+  const [toasts, setToasts] = useState<Array<Toast>>([]);
+  const toastIdRef = useRef(0);
+
+  // Sync state settings with isDarkMode coming from App context
+  useEffect(() => {
+    const activeTheme = isDarkMode ? "Dark" : "Light";
+    setLiveSettings((prev) => ({ ...prev, theme: activeTheme }));
+    setDraftSettings((prev) => ({ ...prev, theme: activeTheme }));
+  }, [isDarkMode]);
+
+  // Filter query keyword for search settings bar
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const triggerToast = (message: string, type: "success" | "warning" | "info" = "success") => {
+    const id = toastIdRef.current++;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  };
+
+  const updateDraft = (path: string, value: any) => {
+    setDraftSettings((prev) => {
+      const copy = { ...prev };
+      const parts = path.split(".");
+      
+      if (parts[0] === "general") {
+        const field = parts[1];
+        if (field === "platformName") {
+          copy.systemName = value;
+        } else {
+          (copy as any)[field] = value;
+        }
+      } else if (parts[0] === "users" && parts[1] === "permissions") {
+        const page = parts[2];
+        const role = parts[3];
+        if (!copy.permissions) {
+          copy.permissions = {};
+        }
+        if (!copy.permissions[page]) {
+          copy.permissions[page] = {};
+        }
+        copy.permissions[page][role] = value;
+      } else if (parts.length === 2) {
+        const field = parts[1];
+        (copy as any)[field] = value;
+      } else {
+        (copy as any)[path] = value;
       }
+      return copy;
+    });
+
+    if (path === "appearance.theme" && onThemeChange) {
+      onThemeChange(value);
     }
   };
 
+  const isDirty = useMemo(() => {
+    return JSON.stringify(liveSettings) !== JSON.stringify(draftSettings);
+  }, [liveSettings, draftSettings]);
+
+  const saveLiveSettings = () => {
+    setLiveSettings(draftSettings);
+    triggerToast("PLATFORM ADMINISTRATOR PREFERENCES PERSISTED SUCCESSFULLY!", "success");
+  };
+
+  const discardDraftSettings = () => {
+    setDraftSettings(liveSettings);
+    setShowConfirmReset(false);
+    triggerToast("DRAFT OVERRIDES DISCARDED SUCCESSFULLY.", "info");
+  };
+
+  const handleDownloadSettings = () => {
+    triggerToast("SERIALIZING CORE v3 CONFIG STATE...", "info");
+    try {
+      const dataStr =
+        "data:text/json;charset=utf-8," +
+        encodeURIComponent(JSON.stringify(draftSettings, null, 2));
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `hybrid_cloud_soc_config_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      triggerToast("PLATFORM CONFIGURATIONS EXPORTED SUCCESSFULLY!", "success");
+    } catch (err) {
+      triggerToast("FAILED TO SERIALIZE SETTINGS STORAGE DATA", "warning");
+    }
+  };
+
+  const activeCategoryLabel = useMemo(() => {
+    switch (activeCategory) {
+      case "general":
+        return "GENERAL SYSTEM";
+      case "appearance":
+        return "APPEARANCE";
+      case "detection":
+        return "DETECTION POLICIES";
+      case "alerts":
+        return "ALERT MANAGEMENT";
+      case "integrations":
+        return "INTEGRATIONS CONFIG";
+      case "access":
+        return "USERS & ACCESS CONTROL";
+      case "reporting":
+        return "REPORTING CONFIG";
+      case "backup":
+        return "BACKUP & RECOVERY";
+      case "compliance":
+        return "AUDIT & COMPLIANCE";
+      default:
+        return activeCategory.toUpperCase();
+    }
+  }, [activeCategory]);
+
   return (
-    <div className="flex bg-background h-screen overflow-hidden select-none">
+    <motion.div
+      key="settings"
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="flex bg-background h-full overflow-hidden select-none w-full font-sans settings-page-container"
+    >
       {/* Settings Side Nav */}
       <SettingsSidebar />
 
       {/* Main Settings Portal */}
       <main className="flex-1 flex flex-col relative overflow-hidden bg-background">
         {/* Sticky Header / Breadcrumbs */}
-        <header className="p-6 border-b border-border flex items-center justify-between bg-background/85 backdrop-blur-md z-10">
-          <div className="flex items-center gap-3">
-             <div className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                CORE <ChevronRight size={10} className="text-muted-foreground/65" /> 
-                SETTINGS <ChevronRight size={10} className="text-muted-foreground/65" /> 
-                <span className="text-cyan-500 font-bold">{activeCategory.toUpperCase()}</span>
-             </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-             <div className="relative group w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <input 
-                  type="text"
-                  placeholder="SEARCH SETTINGS..."
-                  className="w-full bg-muted/60 border border-border rounded-lg pl-9 pr-4 py-2 text-[10px] font-mono font-black uppercase tracking-widest focus:outline-none focus:ring-1 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all"
-                />
-             </div>
-             <button 
-               onClick={() => alert("Settings configuration downloaded!")}
-               className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
-             >
-                <Download size={17} />
-             </button>
-             <button 
-               onClick={() => alert("Config shared successfully!")}
-               className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
-             >
-                <Share2 size={17} />
-             </button>
-          </div>
-        </header>
+        <SettingsHeader
+          activeCategoryLabel={activeCategoryLabel}
+          searchQuery={searchQuery}
+          onSearchChange={(val) => {
+            setSearchQuery(val);
+            if (val) {
+              triggerToast(`FILTERING MODULES FOR KEYWORD: "${val.toUpperCase()}"`, "info");
+            }
+          }}
+          onDownload={handleDownloadSettings}
+          onShare={() => triggerToast("CONFIGURATION LINK CO-SHARED SUCCESSFULLY!", "success")}
+        />
 
         {/* Dynamic Content Surface */}
-        <div className={cn(
-          "flex-1 overflow-y-auto custom-scrollbar p-10 pb-32",
-          isCategoryEmpty && "overflow-hidden flex flex-col justify-center items-center"
-        )}>
-           <div className={cn("mx-auto w-full", isCategoryEmpty ? "max-w-2xl h-auto" : "max-w-5xl")}>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24">
+          <div className="w-full space-y-6">
+            <Suspense
+              fallback={
+                /* LOADING MODULE SKELETON */
+                <div className="space-y-6 animate-pulse p-4">
+                  <div className="h-6 w-1/3 bg-muted rounded-md mb-2" />
+                  <div className="h-3 w-1/2 bg-muted rounded-md mb-8" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="h-45 bg-muted/65 rounded-xl border border-border" />
+                    <div className="h-45 bg-muted/65 rounded-xl border border-border" />
+                    <div className="h-45 bg-muted/65 rounded-xl border border-border md:col-span-2" />
+                  </div>
+                </div>
+              }
+            >
               <AnimatePresence mode="wait">
-                 <motion.div
-                   key={activeCategory}
-                   initial={{ opacity: 0, y: 8 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   exit={{ opacity: 0, y: -8 }}
-                   transition={{ duration: 0.2 }}
-                   className={cn(isCategoryEmpty ? "w-full" : "")}
-                 >
-                    {renderContent()}
-                 </motion.div>
+                <motion.div
+                  key={activeCategory}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {activeCategory === "general" && (
+                    <GeneralSettings
+                      data={{
+                        platformName: draftSettings.systemName,
+                        organization: draftSettings.organization,
+                        environment: draftSettings.environment,
+                        timezone: draftSettings.timezone,
+                        language: draftSettings.language,
+                        refreshInterval: draftSettings.refreshInterval,
+                      }}
+                      onChange={updateDraft}
+                    />
+                  )}
+
+                  {activeCategory === "appearance" && (
+                    <AppearanceSettings
+                      data={{
+                        theme: draftSettings.theme,
+                        density: draftSettings.density,
+                        sidebarMode: draftSettings.sidebarMode,
+                        animations: draftSettings.animations,
+                        severityColorCritical: draftSettings.severityColorCritical,
+                        severityColorHigh: draftSettings.severityColorHigh,
+                        severityColorMedium: draftSettings.severityColorMedium,
+                        severityColorLow: draftSettings.severityColorLow,
+                      }}
+                      onChange={updateDraft}
+                    />
+                  )}
+
+                  {activeCategory === "detection" && (
+                    <DetectionPolicies
+                      data={{
+                        ai1Threshold: draftSettings.ai1Threshold,
+                        ai2aConfidence: draftSettings.ai2aConfidence,
+                        ai2bThreshold: draftSettings.ai2bThreshold,
+                        consensusThreshold: draftSettings.consensusThreshold,
+                        thresholdCritical: draftSettings.thresholdCritical,
+                        thresholdHigh: draftSettings.thresholdHigh,
+                        thresholdMedium: draftSettings.thresholdMedium,
+                        thresholdLow: draftSettings.thresholdLow,
+                      }}
+                      onChange={updateDraft}
+                    />
+                  )}
+
+                  {activeCategory === "alerts" && (
+                    <AlertManagement
+                      data={{
+                        alertRetention: draftSettings.alertRetention,
+                        alertAutoClose: draftSettings.alertAutoClose,
+                        alertAutoCloseDuration: draftSettings.alertAutoCloseDuration,
+                        soundCritical: draftSettings.soundCritical,
+                        soundHigh: draftSettings.soundHigh,
+                        soundMedium: draftSettings.soundMedium,
+                        soundLow: draftSettings.soundLow,
+                        channelEmail: draftSettings.channelEmail,
+                        channelSlack: draftSettings.channelSlack,
+                        channelTeams: draftSettings.channelTeams,
+                        escalateDelayCritical: draftSettings.escalateDelayCritical,
+                        escalateDelayHigh: draftSettings.escalateDelayHigh,
+                        escalateDelayMedium: draftSettings.escalateDelayMedium,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
+
+                  {activeCategory === "integrations" && (
+                    <Integrations
+                      data={{
+                        zeekStatus: draftSettings.zeekStatus,
+                        zeekEndpointUrl: draftSettings.zeekEndpointUrl,
+                        suricataStatus: draftSettings.suricataStatus,
+                        suricataRulesUrl: draftSettings.suricataRulesUrl,
+                        suricataRulesSyncInterval: draftSettings.suricataRulesSyncInterval,
+                        awsSqsUrl: draftSettings.awsSqsUrl,
+                        awsSqsStatus: draftSettings.awsSqsStatus,
+                        postgresHost: draftSettings.postgresHost,
+                        postgresPort: draftSettings.postgresPort,
+                        postgresDb: draftSettings.postgresDb,
+                        postgresStatus: draftSettings.postgresStatus,
+                        websocketUrl: draftSettings.websocketUrl,
+                        websocketMaxRetry: draftSettings.websocketMaxRetry,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
+
+                  {activeCategory === "access" && (
+                    <AccessControl
+                      data={{
+                        sessionTimeout: draftSettings.sessionTimeout,
+                        mfaRequired: draftSettings.mfaRequired,
+                        passwordRotationValue: draftSettings.passwordRotationValue,
+                        operatorUsers: draftSettings.operatorUsers,
+                        permissions: draftSettings.permissions,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
+
+                  {activeCategory === "reporting" && (
+                    <Reporting
+                      data={{
+                        reportFormat: draftSettings.reportFormat,
+                        reportSchedule: draftSettings.reportSchedule,
+                        reportAutoGenerate: draftSettings.reportAutoGenerate,
+                        reportRetentionMonths: draftSettings.reportRetentionMonths,
+                        reportStoragePath: draftSettings.reportStoragePath,
+                        emailSubscribers: draftSettings.emailSubscribers,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
+
+                  {activeCategory === "backup" && (
+                    <BackupRecovery
+                      onToast={triggerToast}
+                    />
+                  )}
+
+                  {activeCategory === "compliance" && (
+                    <AuditCompliance
+                      data={{
+                        auditLogRetention: draftSettings.auditLogRetention,
+                        trackConfigChanges: draftSettings.trackConfigChanges,
+                        complianceMapping: draftSettings.complianceMapping,
+                        mitreTrackingEnabled: draftSettings.mitreTrackingEnabled,
+                        enableDailyPolicyValidation: draftSettings.enableDailyPolicyValidation,
+                      }}
+                      onChange={updateDraft}
+                      onToast={triggerToast}
+                    />
+                  )}
+                </motion.div>
               </AnimatePresence>
-           </div>
+            </Suspense>
+          </div>
         </div>
 
         {/* Global Save Bar (Unsaved Changes Detection) */}
-        <AnimatePresence>
-          {isDirty && (
-            <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-2xl px-6 py-4 bg-card border border-border rounded-2xl shadow-2xl z-50 flex items-center justify-between"
-            >
-              <div className="flex items-center gap-4">
-                 <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 animate-pulse border border-orange-500/20">
-                    <span className="text-lg font-black font-mono">!</span>
-                 </div>
-                 <div>
-                    <h4 className="text-[11px] font-mono font-black text-foreground uppercase tracking-widest leading-none">Unsaved Configuration Changes</h4>
-                    <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider mt-2">System state will only persist after commit</p>
-                 </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                 <button 
-                   onClick={resetDraft}
-                   className="px-5 py-2.5 bg-muted text-muted-foreground text-[10px] font-mono font-black uppercase tracking-widest rounded-xl hover:text-foreground hover:bg-muted/80 transition-all flex items-center gap-2 cursor-pointer border border-border"
-                 >
-                    <RotateCcw size={14} /> Discard
-                 </button>
-                 <button 
-                   onClick={saveChanges}
-                   className="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-mono font-black uppercase tracking-widest rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all flex items-center gap-2 cursor-pointer"
-                 >
-                    <Save size={14} /> Commit Changes
-                 </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <SettingsSaveBar
+          isDirty={isDirty}
+          onDiscard={() => setShowConfirmReset(true)}
+          onSave={saveLiveSettings}
+        />
+
+        {/* TOAST PANEL WRAPPER */}
+        <SettingsToastPanel toasts={toasts} />
+
+        {/* CONFIRMATION DISCARD MODAL */}
+        <SettingsDiscardModal
+          isOpen={showConfirmReset}
+          onClose={() => setShowConfirmReset(false)}
+          onConfirm={discardDraftSettings}
+        />
       </main>
-    </div>
+    </motion.div>
   );
 }
+
+export default SettingsPage;

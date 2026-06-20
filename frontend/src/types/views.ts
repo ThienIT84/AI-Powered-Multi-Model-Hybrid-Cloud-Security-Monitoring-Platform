@@ -3,13 +3,13 @@ export type AppView =
   | "alerts"
   | "network"
   | "endpoints"
+  | "cloud"
+  | "threat-intel"
   | "integrations"
   | "playbooks"
   | "reports"
   | "settings"
-  | "cloud"
   | "ai-threat-detection"
   | "attack-surface"
   | "mitre-attack"
-  | "case-management"
-  | "threat-intel";
+  | "case-management";

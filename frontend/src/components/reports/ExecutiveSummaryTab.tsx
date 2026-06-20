@@ -1,474 +1,189 @@
-import React, { useState, useEffect } from "react";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from "recharts";
-import { 
-  Server, 
-  HardDrive, 
-  Database, 
-  Globe, 
-  ArrowUpRight, 
-  Cpu, 
-  Layers, 
-  ToggleLeft, 
-  ToggleRight, 
-  Info, 
-  Search, 
-  ArrowUpDown,
-  AlertOctagon,
-  AlertTriangle,
-  CheckCircle2
-} from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
-import { CYBER_COLORS, TREND_DATASETS, ASSETS_DATASETS } from "./reportsConfig";
+import React from "react";
+import { ShieldCheck, Heart, AlertCircle, Terminal, HelpCircle } from "lucide-react";
+import { CalculatedKPIs } from "./types";
+import { ExecutiveRiskOverview } from "./ExecutiveRiskOverview";
+import { ThreatActivitySummary } from "./ThreatActivitySummary";
 
 interface ExecutiveSummaryTabProps {
-  timeframe: string;
+  calculatedKPIs: CalculatedKPIs;
+  selectedAttackTypes: string[];
 }
 
-type SortField = "name" | "alerts" | "risk" | "status";
-type SortOrder = "asc" | "desc";
+export const ExecutiveSummaryTab: React.FC<ExecutiveSummaryTabProps> = React.memo(({
+  calculatedKPIs,
+  selectedAttackTypes,
+}) => {
+  // Extract top threat type or use standard fallback
+  const topThreat = selectedAttackTypes[0] || "SQL Injection Probe (SQLi)";
 
-export function ExecutiveSummaryTab({ timeframe }: ExecutiveSummaryTabProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isEmptyStateTriggered, setIsEmptyStateTriggered] = useState(false);
-
-  // Table Sorting and Filtering State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<SortField>("risk");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
-
-  // Trigger a realistic pipeline load transition on timeframe switch
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [timeframe]);
-
-  const activeTrendData = TREND_DATASETS[timeframe] || TREND_DATASETS["30d"];
-  const activeAssetsData = ASSETS_DATASETS[timeframe] || ASSETS_DATASETS["30d"];
-
-  // Custom tooltips with high-tech styles to fit Splunk/Elastic aesthetics
-  const renderCustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card/95 border border-border p-3 rounded-lg shadow-2xl backdrop-blur-md text-[10px] font-mono leading-relaxed text-left">
-          <div className="border-b border-border pb-1.5 mb-1.5 flex items-center justify-between gap-4">
-            <span className="text-muted-foreground font-bold uppercase">TIMESTAMP: {label}</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-          </div>
-          <div className="space-y-1">
-            {payload.map((item: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground font-bold uppercase flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  {item.name}:
-                </span>
-                <span className="text-foreground font-bold">{item.value} alerts</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
+  // Strategic Executive recommendations as requested
+  const recommendations = [
+    {
+      title: "Improve Public-Facing Web Gateways Security Controls",
+      desc: "Harden ingress paths and restrict unsanctioned parameters queries to suppress persistent SQLi and XSS probes.",
+      impact: "HIGH",
+      relevance: "MITRE T1190 Mitigation"
+    },
+    {
+      title: "Consolidate Multi-Cloud IAM Privileges & S3 Rules",
+      desc: "Perform a deep-dive audit of active AWS S3 bucket permissions to enforce zero public read permissions and mitigate credential exposure risk.",
+      impact: "CRITICAL",
+      relevance: "CIS Benchmark Compliance"
+    },
+    {
+      title: "Harden Bastion Hosts & Secure Shell SSH Gateways",
+      desc: "Enforce multi-factor authentication (MFA) and rate-limit access to isolate recurring automated credential brute-forcing probes.",
+      impact: "HIGH",
+      relevance: "Access Control Posture"
     }
-    return null;
-  };
-
-  // Handle Sort Function
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(prev => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortOrder("desc");
-    }
-  };
-
-  // Perform filtering & sorting on assets data
-  const filteredAndSortedAssets = activeAssetsData
-    .filter(asset => {
-      const matchQuery = searchQuery.toLowerCase();
-      return (
-        asset.name.toLowerCase().includes(matchQuery) ||
-        asset.status.toLowerCase().includes(matchQuery) ||
-        asset.platform.toLowerCase().includes(matchQuery) ||
-        asset.type.toLowerCase().includes(matchQuery)
-      );
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      if (sortField === "name") {
-        comparison = a.name.localeCompare(b.name);
-      } else if (sortField === "alerts") {
-        comparison = a.alerts - b.alerts;
-      } else if (sortField === "risk") {
-        comparison = a.risk - b.risk;
-      } else if (sortField === "status") {
-        comparison = a.status.localeCompare(b.status);
-      }
-
-      return sortOrder === "desc" ? -comparison : comparison;
-    });
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Simulation Controls for Enterprise verification */}
-      <div className="flex items-center justify-between gap-4 bg-muted/40 p-3 border border-border rounded-xl text-[10px] font-mono text-muted-foreground">
-        <div className="flex items-center gap-1.5 uppercase">
-          <Info className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-          <span>REAL-TIME SIMULATION HUB • SYSTEM STATE INGESTION IS ACTIVE</span>
-        </div>
-        <button
-          onClick={() => setIsEmptyStateTriggered(!isEmptyStateTriggered)}
-          className="flex items-center gap-1.5 hover:text-foreground transition cursor-pointer font-bold focus:outline-none"
-        >
-          {isEmptyStateTriggered ? (
-            <>
-              <ToggleRight className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
-              <span className="text-cyan-600 dark:text-cyan-400 uppercase">SIMULATING EMPTY STATE</span>
-            </>
-          ) : (
-            <>
-              <ToggleLeft className="w-4 h-4 text-muted-foreground" />
-              <span className="uppercase text-muted-foreground">FORCE EMPTY STATE TEST</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Threat Intensity Line Chart Wrapper */}
-        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5 flex flex-col justify-between shadow-lg h-115 relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-20 h-px bg-cyan-500/20" />
-          <div className="flex justify-between items-start gap-4">
-            <div>
-              <span className="text-[9px] font-mono font-bold text-muted-foreground tracking-[0.2em] uppercase block mb-1">
-                ALERT INTENSITY BY SEVERITY (01/05 → 30/05)
+    <div className="space-y-6 animate-fadeIn" id="executive-summary-tab">
+      
+      {/* 1. Header Hero Banner */}
+      <div className="bg-linear-to-r from-cyan-500/10 via-slate-950/10 to-indigo-500/10 border border-cyan-500/15 rounded-2xl p-5 md:p-6 relative overflow-hidden backdrop-blur-md">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5 font-mono">
+            <span className="px-2 py-0.5 bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 rounded text-[7.5px] font-black uppercase tracking-wider block w-fit">
+              Strategic Executive Assessment
+            </span>
+            <h3 className="text-base md:text-lg font-black text-foreground tracking-tight uppercase">
+              CISO Executive Assessment Briefing
+            </h3>
+            <p className="text-[9.5px] text-zinc-500 uppercase tracking-normal leading-relaxed max-w-2xl font-semibold">
+              Consolidated operational indicators, system compliance, and security threat vectors under continuous Bayesian intelligence monitoring.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 font-mono shrink-0">
+            <div className="bg-background/80 px-3.5 py-2 rounded-xl border border-border/80 text-right">
+              <span className="text-[7px] text-zinc-500 font-extrabold uppercase tracking-widest block">Operational SLA</span>
+              <span className="text-[10px] uppercase text-emerald-400 font-black flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" /> CONSENSUS STABLE
               </span>
-              <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
-                Threat Volume Correlation Chart
-              </h3>
             </div>
-            <div className="flex items-center gap-1.5 font-mono text-[8px] text-muted-foreground uppercase px-2 py-0.5 bg-muted border border-border rounded">
-              <span className="w-1.5 h-1.5 bg-cyan-455 dark:bg-cyan-400 rounded-full animate-pulse" />
-              <span>UPDATED LIVE</span>
-            </div>
-          </div>
-
-          <div className="flex-1 w-full mt-6 text-[10px] font-mono relative">
-            <AnimatePresence mode="wait">
-              {isLoading ? (
-                // Recharts loading skeleton state
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 flex flex-col justify-end space-y-4 pb-2 bg-transparent"
-                >
-                  <div className="flex justify-between items-end h-45 px-4 gap-4">
-                    {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                      <div
-                        key={n}
-                        className="w-full bg-muted rounded-md animate-pulse"
-                        style={{ height: `${20 + n * 10}%` }}
-                      >
-                        <div className="w-full h-full bg-linear-to-t from-cyan-950/20 via-transparent to-transparent" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="h-4 bg-muted/40 rounded-md w-full animate-pulse" />
-                </motion.div>
-              ) : isEmptyStateTriggered ? (
-                // Recharts empty block state
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center border border-dashed border-border rounded-lg bg-card"
-                >
-                  <Cpu className="w-8 h-8 text-muted-foreground animate-pulse mb-2.5" />
-                  <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest block">
-                    NO CORRESPONDING SEVERITY LOGS FOUND
-                  </span>
-                  <p className="text-[9px] text-muted-foreground leading-normal max-w-xs uppercase mt-1">
-                    Please modify timeframe filter. No database ingestion gaps detected for selection.
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.99 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="w-full h-full offset-legend"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={activeTrendData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#64748b" opacity={0.11} />
-                      <XAxis dataKey="time" stroke="#94a3b8" tickLine={false} style={{ fontSize: "9px" }} />
-                      <YAxis stroke="#94a3b8" tickLine={false} style={{ fontSize: "9px" }} />
-                      <Tooltip content={renderCustomTooltip} />
-                      <Legend 
-                        verticalAlign="top" 
-                        height={32} 
-                        iconType="circle" 
-                        iconSize={7}
-                        wrapperStyle={{ 
-                          paddingBottom: '15px', 
-                          fontSize: '9px', 
-                          fontFamily: 'monospace', 
-                          fontWeight: '800' 
-                        }} 
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="Critical"
-                        name="Critical (Red spikes)"
-                        stroke={CYBER_COLORS.critical}
-                        strokeWidth={2.5}
-                        dot={{ r: 3, strokeWidth: 1 }}
-                        activeDot={{ r: 5 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="High"
-                        name="High (Orange)"
-                        stroke={CYBER_COLORS.high}
-                        strokeWidth={2}
-                        dot={{ r: 2, strokeWidth: 1 }}
-                        activeDot={{ r: 4 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="Medium"
-                        name="Medium (Yellow)"
-                        stroke={CYBER_COLORS.medium}
-                        strokeWidth={2}
-                        dot={{ r: 2, strokeWidth: 1 }}
-                        activeDot={{ r: 4 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="Low"
-                        name="Low (Blue baseline)"
-                        stroke={CYBER_COLORS.low}
-                        strokeWidth={2}
-                        dot={{ r: 2, strokeWidth: 1 }}
-                        activeDot={{ r: 4 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Sortable & Filterable Cloud Assets Table Container */}
-        <div className="bg-card border border-border rounded-xl p-5 flex flex-col shadow-lg h-115 relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-20 h-px bg-red-500/20" />
-          
-          <div className="flex flex-col gap-2 mb-4">
-            <div>
-              <span className="text-[9px] font-mono font-bold text-muted-foreground tracking-[0.2em] uppercase block mb-1">
-                CRITICAL CLOUD INVENTORY
-              </span>
-              <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
-                Asset Risk Analysis Table
-              </h3>
-            </div>
-
-            {/* In-container Filter Input */}
-            <div className="relative mt-1">
-              <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-muted-foreground">
-                <Search className="h-3 w-3" />
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter assets, platforms, status..."
-                className="w-full bg-muted/65 placeholder-muted-foreground/60 text-foreground text-[10px] font-mono pl-8 pr-3 py-1.5 rounded-lg border border-border focus:ring-1 focus:ring-cyan-500/20 focus:border-cyan-500/30 outline-none leading-relaxed transition-all"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery("")}
-                  className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-muted-foreground hover:text-foreground text-[9px] font-mono font-black"
-                >
-                  CLEAR
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Interactive Cloud Inventory Table */}
-          <div className="flex-1 overflow-auto custom-scrollbar border border-border/70 rounded-lg bg-background/30 text-[10px] font-mono">
-            <AnimatePresence mode="wait">
-              {isLoading ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="p-4 space-y-3"
-                >
-                  {[1, 2, 3, 4].map((n) => (
-                    <div key={n} className="h-9 bg-muted/50 rounded animate-pulse" />
-                  ))}
-                </motion.div>
-              ) : isEmptyStateTriggered || filteredAndSortedAssets.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-full flex flex-col items-center justify-center p-6 text-center"
-                >
-                  <Layers className="w-7 h-7 text-muted-foreground animate-pulse mb-2" />
-                  <span className="text-[9px] font-mono font-bold text-muted-foreground uppercase tracking-widest block">
-                    NO COMPROMISED ASSETS FOUND
-                  </span>
-                  <span className="text-[8px] text-muted-foreground leading-normal uppercase block mt-1">
-                    ALL VM SENSORS SECURE AND RECONCILED
-                  </span>
-                </motion.div>
-              ) : (
-                <motion.table
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="w-full text-left border-collapse"
-                >
-                  <thead>
-                    <tr className="bg-muted border-b border-border text-[8px] tracking-wider text-muted-foreground font-black uppercase sticky top-0 z-10">
-                      <th 
-                        className="py-2.5 px-3 cursor-pointer hover:bg-muted/80 transition-colors select-none"
-                        onClick={() => handleSort("name")}
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>ASSET</span>
-                          <ArrowUpDown className={`w-2.5 h-2.5 shrink-0 ${sortField === "name" ? "text-cyan-400" : "text-muted-foreground/45"}`} />
-                        </div>
-                      </th>
-                      <th 
-                        className="py-2.5 px-2 cursor-pointer hover:bg-muted/80 transition-colors select-none"
-                        onClick={() => handleSort("alerts")}
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>ALERTS</span>
-                          <ArrowUpDown className={`w-2.5 h-2.5 shrink-0 ${sortField === "alerts" ? "text-cyan-400" : "text-muted-foreground/45"}`} />
-                        </div>
-                      </th>
-                      <th 
-                        className="py-2.5 px-2 cursor-pointer hover:bg-muted/80 transition-colors select-none"
-                        onClick={() => handleSort("risk")}
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>RISK INDEX</span>
-                          <ArrowUpDown className={`w-2.5 h-2.5 shrink-0 ${sortField === "risk" ? "text-cyan-400" : "text-muted-foreground/45"}`} />
-                        </div>
-                      </th>
-                      <th 
-                        className="py-2.5 px-2 cursor-pointer hover:bg-muted/80 transition-colors select-none"
-                        onClick={() => handleSort("status")}
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>STATUS</span>
-                          <ArrowUpDown className={`w-2.5 h-2.5 shrink-0 ${sortField === "status" ? "text-cyan-400" : "text-muted-foreground/45"}`} />
-                        </div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAndSortedAssets.map((asset, i) => {
-                      const getIcon = () => {
-                        if (asset.type.includes("Machine")) return Server;
-                        if (asset.type.includes("Store")) return HardDrive;
-                        if (asset.type.includes("DB")) return Database;
-                        return Globe;
-                      };
-                      const Icon = getIcon();
-
-                      // SPECIFIED RISK COLOR HIGHLIGHT RULE:
-                      // Risk Index > 90% -> Red Highlight
-                      // 70 - 90% -> Orange Warning
-                      // < 70% -> Stable state (Green decoration)
-                      let riskBadgeClass = "";
-                      let riskIcon = null;
-                      if (asset.risk > 90) {
-                        riskBadgeClass = "text-red-500 bg-red-500/10 border-red-500/20 font-black shadow-[0_0_8px_rgba(239,68,68,0.15)]";
-                        riskIcon = <AlertOctagon className="w-2.5 h-2.5 inline mr-1 text-red-500 align-middle" />;
-                      } else if (asset.risk >= 70) {
-                        riskBadgeClass = "text-orange-500 bg-orange-500/10 border-orange-500/25 font-bold";
-                        riskIcon = <AlertTriangle className="w-2.5 h-2.5 inline mr-1 text-orange-500 align-middle" />;
-                      } else {
-                        riskBadgeClass = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20 font-bold";
-                        riskIcon = <CheckCircle2 className="w-2.5 h-2.5 inline mr-1 text-emerald-500 align-middle" />;
-                      }
-
-                      return (
-                        <tr 
-                          key={i} 
-                          className="border-b border-border/50 hover:bg-muted/20 transition-colors leading-relaxed group/row"
-                        >
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2">
-                              <span className="p-1 bg-background border border-border rounded group-hover/row:border-cyan-500/25 shrink-0 text-cyan-400">
-                                <Icon className="w-3 h-3" />
-                              </span>
-                              <div className="min-w-0">
-                                <div className="font-bold text-foreground truncate max-w-27.5" title={asset.name}>
-                                  {asset.name}
-                                </div>
-                                <div className="text-[7.5px] text-muted-foreground tracking-wide font-black uppercase">
-                                  {asset.platform} • {asset.type.replace("Virtual Machine", "VM").replace("Relational DB", "RDS")}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-2 font-black text-foreground">
-                            {asset.alerts}
-                          </td>
-                          <td className="py-2.5 px-2">
-                            <span className={`inline-block px-1.5 py-0.5 rounded border text-[8px] uppercase font-black font-mono tracking-wider ${riskBadgeClass}`}>
-                              {riskIcon}
-                              {asset.risk}%
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-2">
-                            <span 
-                              className={`text-[7.5px] font-mono font-black uppercase tracking-wider px-1 py-0.5 rounded border ${
-                                asset.status === "Investigating"
-                                  ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                                  : asset.status === "Monitoring"
-                                  ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                                  : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
-                              }`}
-                            >
-                              {asset.status}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </motion.table>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="border-t border-border pt-3.5 mt-2 shrink-0">
-            <button className="w-full flex items-center justify-center gap-2 p-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg text-[9px] font-mono font-bold uppercase tracking-widest border border-border transition duration-200 cursor-pointer">
-              <span>QUERY ENTERPRISE INVENTORY</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
       </div>
+
+      {/* 2. Executive KPI Cards (Total Alerts, Critical Alerts, Open Cases, Resolved Cases, Average Risk Score, SLA Compliance) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 font-mono select-none">
+        {/* Card 1: Total Alerts */}
+        <div className="bg-card border border-border/50 rounded-xl p-4 space-y-1 hover:border-cyan-500/20 transition duration-150">
+          <span className="text-[7.5px] text-zinc-500 font-black uppercase tracking-widest block">Total Alerts</span>
+          <span className="text-xl font-black text-foreground block leading-none pt-1">
+            {calculatedKPIs.totalAlerts.toLocaleString()}
+          </span>
+          <span className="text-[7.5px] text-zinc-500 uppercase block font-semibold leading-normal pt-1 break-all">
+            Analyzed events stream
+          </span>
+        </div>
+
+        {/* Card 2: Critical Alerts */}
+        <div className="bg-card border border-rose-500/20 rounded-xl p-4 space-y-1 hover:border-rose-500/40 transition duration-150">
+          <span className="text-[7.5px] text-rose-500 font-black uppercase tracking-widest block">Critical Alerts</span>
+          <span className="text-xl font-black text-rose-500 block leading-none pt-1">
+            {calculatedKPIs.criticalAlerts.toLocaleString()}
+          </span>
+          <span className="text-[7.5px] text-zinc-500 uppercase block font-semibold leading-normal pt-1">
+            Immediate focus
+          </span>
+        </div>
+
+        {/* Card 3: Open Cases */}
+        <div className="bg-card border border-amber-500/20 rounded-xl p-4 space-y-1 hover:border-amber-500/40 transition duration-150">
+          <span className="text-[7.5px] text-amber-500 font-black uppercase tracking-widest block">Open Cases</span>
+          <span className="text-xl font-black text-amber-500 block leading-none pt-1">
+            12
+          </span>
+          <span className="text-[7.5px] text-zinc-500 uppercase block font-semibold leading-normal pt-1">
+            Mitigation active
+          </span>
+        </div>
+
+        {/* Card 4: Resolved Cases */}
+        <div className="bg-card border border-emerald-500/20 rounded-xl p-4 space-y-1 hover:border-emerald-500/45 transition duration-150">
+          <span className="text-[7.5px] text-emerald-400 font-black uppercase tracking-widest block">Resolved Cases</span>
+          <span className="text-xl font-black text-emerald-400 block leading-none pt-1">
+            302
+          </span>
+          <span className="text-[7.5px] text-zinc-500 uppercase block font-semibold leading-normal pt-1">
+            Mitigations verified
+          </span>
+        </div>
+
+        {/* Card 5: Average Risk Score */}
+        <div className="bg-card border border-border/50 rounded-xl p-4 space-y-1 hover:border-cyan-500/20 transition duration-155">
+          <span className="text-[7.5px] text-zinc-500 font-black uppercase tracking-widest block">Avg Risk Score</span>
+          <span className="text-xl font-black text-foreground block leading-none pt-1">
+            {calculatedKPIs.averageRisk}%
+          </span>
+          <span className="text-[7.5px] text-zinc-500 uppercase block font-semibold leading-normal pt-1">
+            Perimeter average
+          </span>
+        </div>
+
+        {/* Card 6: SLA Compliance */}
+        <div className="bg-card border border-border/50 rounded-xl p-4 space-y-1 hover:border-cyan-500/20 transition duration-150">
+          <span className="text-[7.5px] text-zinc-500 font-black uppercase tracking-widest block">SLA Compliance</span>
+          <span className="text-xl font-black text-cyan-400 block leading-none pt-1">
+            94.8%
+          </span>
+          <span className="text-[7.5px] text-zinc-500 uppercase block font-semibold leading-normal pt-1">
+            90.0% Standard target
+          </span>
+        </div>
+      </div>
+
+      {/* 3. Security Risk Overview Component */}
+      <ExecutiveRiskOverview />
+
+      {/* 4. Top Threat Summary */}
+      <ThreatActivitySummary 
+        topThreatType={topThreat}
+        affectedAssetsCount={14}
+        criticalIncidentsCount={calculatedKPIs.criticalAlerts}
+        threatTrend="Increasing (+12.4% vs 24h)"
+      />
+
+      {/* 5. Executive Strategic Recommendations */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-4 font-mono text-[9px]">
+        <div className="flex items-center gap-2 border-b border-border/20 pb-2.5 select-none">
+          <ShieldCheck size={14} className="text-purple-500 animate-pulse" />
+          <h3 className="text-xs font-black uppercase text-foreground tracking-widest leading-none">
+            Strategic CISO Security Recommendations
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {recommendations.map((rec, idx) => (
+            <div key={idx} className="p-4 bg-secondary/10 border border-border/30 rounded-xl space-y-2 flex flex-col justify-between hover:border-border/60 transition-all">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[7.5px] uppercase font-black text-cyan-400 block tracking-wider px-1.5 py-0.5 bg-cyan-400/10 border border-cyan-400/15 rounded">
+                    {rec.relevance}
+                  </span>
+                  <span className="text-[7px] uppercase font-black text-rose-500 block">
+                    {rec.impact} IMPACT
+                  </span>
+                </div>
+                <h4 className="text-[9.5px] font-black uppercase text-foreground leading-tight">
+                  {rec.title}
+                </h4>
+                <p className="text-[8px] text-zinc-500 uppercase leading-relaxed font-semibold">
+                  {rec.desc}
+                </p>
+              </div>
+
+              <div className="border-t border-border/10 pt-2 text-[7px] uppercase text-zinc-550 font-semibold block text-right mt-1">
+                Security Control Reference: ADVISORY-SEC-{100 + idx}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
-}
+});
