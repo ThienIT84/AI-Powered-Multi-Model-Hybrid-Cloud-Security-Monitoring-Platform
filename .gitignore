@@ -1,0 +1,45 @@
+# Dataset artifacts (generated)
+/Dataset/**/runs/
+/Dataset/**/merged/
+/Dataset/**/reports/
+/Dataset/**/campaign_logs/
+/Dataset/**/processed_v3/
+/Dataset/**/events/
+/Dataset/**/runs_quarantine/
+/Dataset/**/attack_merged/
+/Dataset/**/reports_attack/
+/Dataset/**/reports_normal/
+/Dataset/**/reports_topup/
+
+# Final merged datasets
+/Dataset/**/final_dataset/merged/
+
+# AI2A modeling outputs and Python caches
+/Dataset/tools/ai2a_modeling/reports/
+/Dataset/tools/ai2a_modeling/artifacts/
+/Dataset/tools/ai2b_modeling/reports/
+/Dataset/tools/ai2b_modeling/artifacts/
+__pycache__/
+*.pyc
+*:Zone.Identifier
+
+# Top-level copied/generated run artifacts
+/campaign_logs/
+/events/
+/processed_v3/
+/reports_attack/
+/reports_normal/
+/reports_v3/
+/runs/
+/runs_quarantine_attack/
+/attack_merged/
+/normal_merged/
+/archive_p10_calibration/
+/downloads/
+/tmp/
+
+# Packaged capture/modeling archives
+/a12_*.tar.gz
+/a12_*.zip
+/a12_v*.tar.gz
+/a12_v*.zip
