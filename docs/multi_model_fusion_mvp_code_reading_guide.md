@@ -468,14 +468,11 @@ Fusion: network alert
 ### Backend mode
 
 ```bash
-cd backend
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+conda run -n interior_ai env PYTHONPATH=backend \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Nếu đã đứng ở repo root và môi trường Python đã có dependency, có thể chạy ngắn:
+Nếu đang dùng shell đã activate sẵn `interior_ai`, có thể chạy ngắn từ repo root:
 
 ```bash
 PYTHONPATH=backend uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -484,7 +481,8 @@ PYTHONPATH=backend uvicorn app.main:app --host 0.0.0.0 --port 8000
 ### Backend real AI2B mode from repo root
 
 ```bash
-PYTHONPATH=backend AI2B_PREDICTOR_MODE=real uvicorn app.main:app --host 0.0.0.0 --port 8000
+conda run -n interior_ai env PYTHONPATH=backend AI2B_PREDICTOR_MODE=real \
+  uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### Trigger demo events

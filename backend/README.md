@@ -17,17 +17,14 @@ contract.
 ## Run
 
 ```bash
-cd backend
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+conda run -n interior_ai env PYTHONPATH=backend \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 For a quick replay:
 
 ```bash
-python scripts/replay_demo.py
+conda run -n interior_ai python backend/scripts/replay_demo.py
 ```
 
 Frontend API mode:
@@ -36,4 +33,3 @@ Frontend API mode:
 cd frontend
 VITE_DATA_MODE=api VITE_API_BASE_URL=http://localhost:8000 VITE_WS_URL=ws://localhost:8000/ws/alerts pnpm dev
 ```
-

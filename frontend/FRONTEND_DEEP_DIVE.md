@@ -22,11 +22,8 @@ This note documents the current React + Vite frontend under `frontend/`. It focu
 Terminal 1, backend:
 
 ```bash
-cd backend
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+conda run -n interior_ai env PYTHONPATH=backend \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Useful backend checks:
