@@ -24,6 +24,16 @@ This note documents the current React + Vite frontend under `frontend/`. It focu
 - `VITE_WS_URL` (WebSocket API)
 - `VITE_MOCK_WS_URL` (local mock socket url; default `.env.example` uses `ws://localhost:3001`)
 
+### Demo login
+Frontend authentication is a local demo implemented by `src/components/auth/authService.ts`.
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@defense.soc` | `Password123!` |
+| SOC Analyst | `analyst@defense.soc` | `Password123!` |
+
+These credentials are local demo data seeded into browser `localStorage`; they are not backend or production secrets.
+
 ## Entry and Layout
 - HTML entry: `index.html` mounts `#root`.
 - React entry: `src/main.tsx` renders `App`.

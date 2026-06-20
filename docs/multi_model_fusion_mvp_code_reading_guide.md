@@ -504,6 +504,15 @@ pnpm dev
 
 Mock mode does not need the backend. It uses `frontend/server.ts` to stream initial alerts plus a new alert and traffic point every 2 seconds. The realtime state is owned once in `frontend/src/App.tsx`; pages receive `alerts` and `isConnected` as props.
 
+Frontend demo login:
+
+```text
+Admin:       admin@defense.soc / Password123!
+SOC Analyst: analyst@defense.soc / Password123!
+```
+
+These are local demo accounts seeded by `frontend/src/components/auth/authService.ts` into browser `localStorage`; they are safe for local testing docs and are not production credentials.
+
 Nếu `pnpm` trên WSL bị lỗi shim, chạy theo cách Node/npm mà môi trường của bạn hỗ trợ. Trong lần verify này, TypeScript được chạy bằng:
 
 ```bash

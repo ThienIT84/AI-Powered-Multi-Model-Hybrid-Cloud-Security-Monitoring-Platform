@@ -46,6 +46,17 @@ In API mode, start the backend first. The frontend listens to the backend WebSoc
 
 Realtime state is owned by `App.tsx`, which calls `useSocket()` once and passes alerts into pages. Page components should not open their own WebSocket streams, otherwise mock updates can duplicate or reset out of sync.
 
+## Demo Login
+
+Local frontend auth is a demo/localStorage simulation, not production authentication. These accounts are safe to document for local testing:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@defense.soc` | `Password123!` |
+| SOC Analyst | `analyst@defense.soc` | `Password123!` |
+
+New accounts created from the register page are also stored in browser `localStorage`.
+
 ## Commands
 
 ```bash
