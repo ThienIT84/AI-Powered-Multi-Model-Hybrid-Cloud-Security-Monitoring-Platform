@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { appConfig } from "./config";
 import { Alert, BackendAlertDTO, TrafficData } from "./types";
+import { mapBackendAlertToAlert } from "./lib/alertMapper";
 
-function mapBackendAlertToAlert(raw: any): Alert {
+function coerceIncomingAlert(raw: any): Alert {
+  if (raw?.source_ip || raw?.attack_type || raw?.ai_analysis) {
+    return mapBackendAlertToAlert(raw as BackendAlertDTO);
+  }
+
+  const legacyAiDecision = normalizeLegacyAiDecision(raw);
+
   return {
     ...raw,
     destinationIp: raw.destIp || raw.destinationIp || "",
@@ -23,9 +30,52 @@ function mapBackendAlertToAlert(raw: any): Alert {
     },
     zeekData: raw.zeekData || {},
     suricataData: raw.suricataData || {},
-    aiDecision: raw.aiDecision || {},
+    aiDecision: legacyAiDecision,
     decisionFlow: raw.decisionFlow || [],
     status: raw.status || "new"
+  };
+}
+
+function normalizeLegacyAiDecision(raw: any) {
+  const attackType = raw.attackType || "Normal";
+  const confidence = raw.confidence !== undefined ? raw.confidence : (raw.confidenceScore || 0);
+  if (!raw.aiDecision || typeof raw.aiDecision.ai1 === "object") {
+    return raw.aiDecision || {};
+  }
+  return {
+    ai1: {
+      verdict: raw.aiDecision.ai1 || (raw.riskScore > 35 ? "ANOMALY" : "NORMAL"),
+      anomalyScore: confidence,
+      status: "completed",
+      source: "mock",
+      modelVersion: "AI1_LEGACY_MOCK",
+      inputScope: "ZEEK_CONN_FLOW",
+    },
+    ai2a: {
+      attackType: raw.aiDecision.ai2a || attackType,
+      confidenceScore: confidence,
+      status: "completed",
+      source: "mock",
+      modelVersion: "AI2A_LEGACY_MOCK",
+      inputScope: "ZEEK_CONN_FLOW",
+    },
+    ai2b: {
+      webAttackType: raw.aiDecision.ai2b || attackType,
+      confidenceScore: confidence,
+      status: "completed",
+      source: "mock",
+      modelVersion: "AI2B_LEGACY_MOCK",
+      inputScope: "HTTP_URI_QUERY",
+    },
+    fusion: {
+      confidenceScore: confidence,
+      riskScore: raw.riskScore || 0,
+      reason: "Legacy frontend mock alert normalized into the multi-model contract.",
+      mode: "SIMULATED_FULL_MULTI_MODEL",
+      contributors: ["AI1", "AI2A", "AI2B"],
+      excludedModels: {},
+      decisionVersion: "FUSION_V1_RULE_BASED",
+    },
   };
 }
 
@@ -57,13 +107,13 @@ export function useSocket() {
       
       switch (message.type) {
         case "INITIAL_DATA":
-          setAlerts((message.data as BackendAlertDTO[]).map(mapBackendAlertToAlert));
+          setAlerts((message.data as unknown[]).map(coerceIncomingAlert));
           break;
         case "NEW_ALERT":
-          setAlerts((prev) => [mapBackendAlertToAlert(message.data), ...prev].slice(0, 50));
+          setAlerts((prev) => [coerceIncomingAlert(message.data), ...prev].slice(0, 50));
           break;
         case "alert.created":
-          setAlerts((prev) => [mapBackendAlertToAlert(message.data), ...prev].slice(0, 50));
+          setAlerts((prev) => [coerceIncomingAlert(message.data), ...prev].slice(0, 50));
           break;
         case "TRAFFIC_UPDATE":
           setTraffic((prev) => [...prev, message.data].slice(-100));

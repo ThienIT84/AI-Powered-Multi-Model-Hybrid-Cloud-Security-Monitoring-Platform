@@ -47,19 +47,40 @@ export interface BackendAiAnalysisDTO {
   ai1?: {
     verdict: string;
     anomaly_score: number;
+    status?: string;
+    source?: string;
+    model_version?: string;
+    input_scope?: string;
+    reason?: string;
   };
   ai2a?: {
     attack_type: string;
     confidence_score: number;
+    status?: string;
+    source?: string;
+    model_version?: string;
+    input_scope?: string;
+    reason?: string;
   };
   ai2b?: {
     web_attack_type: string;
     confidence_score: number;
+    probabilities?: Record<string, number>;
+    status?: string;
+    source?: string;
+    model_version?: string;
+    release_candidate?: string;
+    input_scope?: string;
+    reason?: string;
   };
   fusion?: {
     confidence_score: number;
     risk_score: number;
     reason: string;
+    mode?: string;
+    contributors?: string[];
+    excluded_models?: Record<string, string>;
+    decision_version?: string;
   };
 }
 
@@ -139,19 +160,40 @@ export interface AiDecision {
   ai1?: {
     verdict: string;
     anomalyScore: number;
+    status?: string;
+    source?: string;
+    modelVersion?: string;
+    inputScope?: string;
+    reason?: string;
   };
   ai2a?: {
     attackType: string;
     confidenceScore: number;
+    status?: string;
+    source?: string;
+    modelVersion?: string;
+    inputScope?: string;
+    reason?: string;
   };
   ai2b?: {
     webAttackType: string;
     confidenceScore: number;
+    probabilities?: Record<string, number>;
+    status?: string;
+    source?: string;
+    modelVersion?: string;
+    releaseCandidate?: string;
+    inputScope?: string;
+    reason?: string;
   };
   fusion?: {
     confidenceScore: number;
     riskScore: number;
     reason: string;
+    mode?: string;
+    contributors?: string[];
+    excludedModels?: Record<string, string>;
+    decisionVersion?: string;
   };
 }
 
@@ -238,32 +280,60 @@ export type FusionAlert = {
 };
 
 export interface FusionAlertMeta {
-  ai1Result: "ANOMALY" | "NORMAL";
-  ai2aClass: "PortScan" | "DoS" | "BruteForce" | "Normal";
-  ai2bWeb: "XSS" | "SQLi" | "NONE";
+  ai1Result: string;
+  ai1Status: string;
+  ai1Source: string;
+  ai2aClass: string;
+  ai2aStatus: string;
+  ai2aSource: string;
+  ai2bWeb: string;
+  ai2bStatus: string;
+  ai2bSource: string;
   suricataEvidence: string;
   fusionDecision: string;
+  fusionMode: string;
 }
 
 export function getAlertFusionMeta(alert: Alert): FusionAlertMeta {
   const isAnomaly = alert.riskScore > 35;
-  const ai1Result = isAnomaly ? "ANOMALY" : "NORMAL";
+  const ai1Status = alert.aiDecision.ai1?.status ?? "completed";
+  const ai2aStatus = alert.aiDecision.ai2a?.status ?? "completed";
+  const ai2bStatus = alert.aiDecision.ai2b?.status ?? "completed";
+  const ai1Source = alert.aiDecision.ai1?.source ?? "legacy";
+  const ai2aSource = alert.aiDecision.ai2a?.source ?? "legacy";
+  const ai2bSource = alert.aiDecision.ai2b?.source ?? "legacy";
 
-  let ai2aClass: "PortScan" | "DoS" | "BruteForce" | "Normal" = "Normal";
+  const ai1Completed = isModelResultPresent(ai1Status);
+  const ai2aCompleted = isModelResultPresent(ai2aStatus);
+  const ai2bCompleted = isModelResultPresent(ai2bStatus);
+
+  const ai1Result = ai1Completed
+    ? normalizeAi1Verdict(alert.aiDecision.ai1?.verdict) ?? (isAnomaly ? "ANOMALY" : "NORMAL")
+    : "NORMAL";
+
+  let ai2aClass = "Normal";
   const attackLower = (alert.attackType || "").toLowerCase();
-  if (attackLower.includes("scan")) {
-    ai2aClass = "PortScan";
-  } else if (attackLower.includes("ddos") || attackLower.includes("botnet") || attackLower.includes("beacon")) {
-    ai2aClass = "DoS";
-  } else if (attackLower.includes("brute") || attackLower.includes("credential") || attackLower.includes("stuffing")) {
-    ai2aClass = "BruteForce";
+  if (ai2aCompleted) {
+    ai2aClass = normalizeAi2aLabel(alert.aiDecision.ai2a?.attackType) ?? "Normal";
+  } else if (!alert.aiDecision.ai2a) {
+    if (attackLower.includes("scan")) {
+      ai2aClass = "PortScan";
+    } else if (attackLower.includes("ddos") || attackLower.includes("botnet") || attackLower.includes("beacon")) {
+      ai2aClass = "DoS";
+    } else if (attackLower.includes("brute") || attackLower.includes("credential") || attackLower.includes("stuffing")) {
+      ai2aClass = "BruteForce";
+    }
   }
 
-  let ai2bWeb: "XSS" | "SQLi" | "NONE" = "NONE";
-  if (attackLower.includes("xss")) {
-    ai2bWeb = "XSS";
-  } else if (attackLower.includes("sql") || attackLower.includes("injection") || attackLower.includes("lfi") || attackLower.includes("command")) {
-    ai2bWeb = "SQLi";
+  let ai2bWeb = "NONE";
+  if (ai2bCompleted) {
+    ai2bWeb = normalizeAi2bLabel(alert.aiDecision.ai2b?.webAttackType) ?? "NONE";
+  } else if (!alert.aiDecision.ai2b) {
+    if (attackLower.includes("xss")) {
+      ai2bWeb = "XSS";
+    } else if (attackLower.includes("sql") || attackLower.includes("injection") || attackLower.includes("lfi") || attackLower.includes("command")) {
+      ai2bWeb = "SQLi";
+    }
   }
 
   let suricataEvidence = "NO MATCH";
@@ -280,9 +350,46 @@ export function getAlertFusionMeta(alert: Alert): FusionAlertMeta {
 
   return {
     ai1Result,
+    ai1Status,
+    ai1Source,
     ai2aClass,
+    ai2aStatus,
+    ai2aSource,
     ai2bWeb,
+    ai2bStatus,
+    ai2bSource,
     suricataEvidence,
-    fusionDecision
+    fusionDecision,
+    fusionMode: alert.aiDecision.fusion?.mode ?? "LEGACY_FRONTEND"
   };
+}
+
+function isModelResultPresent(status?: string) {
+  const normalized = (status ?? "").toLowerCase();
+  return normalized === "completed" || normalized === "simulated";
+}
+
+function normalizeAi1Verdict(value?: string) {
+  if (!value || value === "N/A") return undefined;
+  return value.toUpperCase().includes("ANOM") ? "ANOMALY" : "NORMAL";
+}
+
+function normalizeAi2aLabel(value?: string) {
+  if (!value || value === "N/A") return undefined;
+  const normalized = value.toLowerCase().replaceAll("_", " ");
+  if (normalized.includes("normal") || normalized === "none") return "Normal";
+  if (normalized.includes("scan")) return "PortScan";
+  if (normalized.includes("brute") || normalized.includes("credential")) return "BruteForce";
+  if (normalized.includes("dos") || normalized.includes("beacon") || normalized.includes("botnet")) return "DoS";
+  if (normalized.includes("web")) return "WEB_ATTACK";
+  return value;
+}
+
+function normalizeAi2bLabel(value?: string) {
+  if (!value || value === "N/A") return undefined;
+  const normalized = value.toLowerCase();
+  if (normalized.includes("xss") || normalized.includes("cross-site")) return "XSS";
+  if (normalized.includes("sql")) return "SQLi";
+  if (normalized.includes("none") || normalized.includes("normal")) return "NONE";
+  return value;
 }

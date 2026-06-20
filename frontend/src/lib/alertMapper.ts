@@ -84,18 +84,35 @@ export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
         ? {
             verdict: dto.ai_analysis.ai1.verdict,
             anomalyScore: dto.ai_analysis.ai1.anomaly_score,
+            status: dto.ai_analysis.ai1.status,
+            source: dto.ai_analysis.ai1.source,
+            modelVersion: dto.ai_analysis.ai1.model_version,
+            inputScope: dto.ai_analysis.ai1.input_scope,
+            reason: dto.ai_analysis.ai1.reason,
           }
         : undefined,
       ai2a: dto.ai_analysis?.ai2a
         ? {
             attackType: dto.ai_analysis.ai2a.attack_type,
             confidenceScore: dto.ai_analysis.ai2a.confidence_score,
+            status: dto.ai_analysis.ai2a.status,
+            source: dto.ai_analysis.ai2a.source,
+            modelVersion: dto.ai_analysis.ai2a.model_version,
+            inputScope: dto.ai_analysis.ai2a.input_scope,
+            reason: dto.ai_analysis.ai2a.reason,
           }
         : undefined,
       ai2b: dto.ai_analysis?.ai2b
         ? {
             webAttackType: dto.ai_analysis.ai2b.web_attack_type,
             confidenceScore: dto.ai_analysis.ai2b.confidence_score,
+            probabilities: dto.ai_analysis.ai2b.probabilities,
+            status: dto.ai_analysis.ai2b.status,
+            source: dto.ai_analysis.ai2b.source,
+            modelVersion: dto.ai_analysis.ai2b.model_version,
+            releaseCandidate: dto.ai_analysis.ai2b.release_candidate,
+            inputScope: dto.ai_analysis.ai2b.input_scope,
+            reason: dto.ai_analysis.ai2b.reason,
           }
         : undefined,
       fusion: dto.ai_analysis?.fusion
@@ -103,6 +120,10 @@ export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
             confidenceScore: dto.ai_analysis.fusion.confidence_score,
             riskScore: dto.ai_analysis.fusion.risk_score,
             reason: dto.ai_analysis.fusion.reason,
+            mode: dto.ai_analysis.fusion.mode,
+            contributors: dto.ai_analysis.fusion.contributors,
+            excludedModels: dto.ai_analysis.fusion.excluded_models,
+            decisionVersion: dto.ai_analysis.fusion.decision_version,
           }
         : undefined,
     },
@@ -185,18 +206,35 @@ export function mapAlertToBackendPayload(alert: Alert): BackendAlertDTO {
         ? {
             verdict: alert.aiDecision.ai1.verdict,
             anomaly_score: alert.aiDecision.ai1.anomalyScore,
+            status: alert.aiDecision.ai1.status,
+            source: alert.aiDecision.ai1.source,
+            model_version: alert.aiDecision.ai1.modelVersion,
+            input_scope: alert.aiDecision.ai1.inputScope,
+            reason: alert.aiDecision.ai1.reason,
           }
         : undefined,
       ai2a: alert.aiDecision.ai2a
         ? {
             attack_type: alert.aiDecision.ai2a.attackType,
             confidence_score: alert.aiDecision.ai2a.confidenceScore,
+            status: alert.aiDecision.ai2a.status,
+            source: alert.aiDecision.ai2a.source,
+            model_version: alert.aiDecision.ai2a.modelVersion,
+            input_scope: alert.aiDecision.ai2a.inputScope,
+            reason: alert.aiDecision.ai2a.reason,
           }
         : undefined,
       ai2b: alert.aiDecision.ai2b
         ? {
             web_attack_type: alert.aiDecision.ai2b.webAttackType,
             confidence_score: alert.aiDecision.ai2b.confidenceScore,
+            probabilities: alert.aiDecision.ai2b.probabilities,
+            status: alert.aiDecision.ai2b.status,
+            source: alert.aiDecision.ai2b.source,
+            model_version: alert.aiDecision.ai2b.modelVersion,
+            release_candidate: alert.aiDecision.ai2b.releaseCandidate,
+            input_scope: alert.aiDecision.ai2b.inputScope,
+            reason: alert.aiDecision.ai2b.reason,
           }
         : undefined,
       fusion: alert.aiDecision.fusion
@@ -204,6 +242,10 @@ export function mapAlertToBackendPayload(alert: Alert): BackendAlertDTO {
             confidence_score: alert.aiDecision.fusion.confidenceScore,
             risk_score: alert.aiDecision.fusion.riskScore,
             reason: alert.aiDecision.fusion.reason,
+            mode: alert.aiDecision.fusion.mode,
+            contributors: alert.aiDecision.fusion.contributors,
+            excluded_models: alert.aiDecision.fusion.excludedModels,
+            decision_version: alert.aiDecision.fusion.decisionVersion,
           }
         : undefined,
     },

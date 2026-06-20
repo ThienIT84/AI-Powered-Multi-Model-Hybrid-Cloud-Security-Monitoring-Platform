@@ -199,23 +199,41 @@ export function generateMockAlertDTO(index = Date.now()): BackendAlertDTO {
       ai1: {
         verdict: profile.attackType === "XSS" || profile.attackType === "SQL Injection" ? "NORMAL" : "ANOMALY",
         anomaly_score: Number((0.55 + Math.random() * 0.4).toFixed(2)),
+        status: "completed",
+        source: "mock",
+        model_version: "AI1_MOCK_V1",
+        input_scope: "ZEEK_CONN_FLOW",
       },
       ai2a: {
         attack_type: ["Port Scan", "DDoS", "Brute Force"].includes(profile.attackType)
           ? profile.attackType
           : "Normal",
         confidence_score: Number((0.68 + Math.random() * 0.26).toFixed(2)),
+        status: "completed",
+        source: "mock",
+        model_version: "AI2A_MOCK_V1",
+        input_scope: "ZEEK_CONN_FLOW",
       },
       ai2b: {
         web_attack_type: ["XSS", "SQL Injection"].includes(profile.attackType)
           ? profile.attackType
           : "Normal",
         confidence_score: confidenceScore,
+        probabilities: {},
+        status: "completed",
+        source: "mock",
+        model_version: "AI2B_MOCK_V1",
+        release_candidate: "AI2B_V1.4.9_RC",
+        input_scope: "HTTP_URI_QUERY",
       },
       fusion: {
         confidence_score: confidenceScore,
         risk_score: riskScore,
         reason: `${profile.detectedBy.join(" + ")} evidence confirmed ${profile.attackType}`,
+        mode: "SIMULATED_FULL_MULTI_MODEL",
+        contributors: profile.detectedBy.filter((name) => name.startsWith("AI")),
+        excluded_models: {},
+        decision_version: "FUSION_V1_RULE_BASED",
       },
     },
     decision_flow: [
