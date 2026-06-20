@@ -44,6 +44,31 @@ interface AlertDetailDrawerProps {
   onUpdateAlert?: (alertId: string, updates: Partial<Alert>) => void;
 }
 
+function ModelStatusRow({ name, label, status, source, scope }: { name: string; label: string; status: string; source: string; scope?: string }) {
+  const isUnavailable = ["not_applicable", "not_available", "not_run"].includes((status || "").toLowerCase());
+  return (
+    <div className="flex items-center justify-between gap-2 py-1.5 border-b border-border/30 last:border-b-0">
+      <div className="leading-none">
+        <span className="text-[8px] font-black text-foreground uppercase tracking-widest block">{name}</span>
+        <span className="text-[6.5px] text-muted-foreground uppercase tracking-wider">{scope || "scope not declared"}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className={cn(
+          "px-1.5 py-[0.5px] rounded border font-mono text-[7px] font-black uppercase",
+          isUnavailable
+            ? "border-slate-500/15 bg-slate-500/5 text-muted-foreground"
+            : source === "real"
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+              : "border-purple-500/20 bg-purple-500/10 text-purple-400"
+        )}>
+          {source === "real" ? "REAL" : source?.toUpperCase() || "LEGACY"}
+        </span>
+        <span className="text-[7px] font-mono font-black text-cyan-500 uppercase max-w-30 truncate">{isUnavailable ? status : label}</span>
+      </div>
+    </div>
+  );
+}
+
 export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "decision_flow" | "explainability" | "mitre" | "raw_logs">("overview");
   const [copied, setCopied] = useState(false);
@@ -222,6 +247,36 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetail
               <div className="pt-2 border-t border-border/30">
                 <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Affected Asset context</span>
                 <span className="text-[8.5px] text-muted-foreground/90 font-medium">AWS-DB-PROD-01 (Host Operating System: Ubuntu Linux 22.04 LTS)</span>
+              </div>
+            </div>
+
+            <div className="bg-background/60 border border-border/80 rounded-xl p-3.5">
+              <span className="text-[7.5px] font-black text-muted-foreground uppercase tracking-widest block border-b border-border/30 pb-1.5 mb-1.5">
+                MULTI-MODEL ADAPTER STATUS
+              </span>
+              <ModelStatusRow
+                name="AI1 Analysis"
+                label={meta.ai1Result}
+                status={meta.ai1Status}
+                source={meta.ai1Source}
+                scope={alert.aiDecision.ai1?.inputScope}
+              />
+              <ModelStatusRow
+                name="AI2A Analysis"
+                label={meta.ai2aClass}
+                status={meta.ai2aStatus}
+                source={meta.ai2aSource}
+                scope={alert.aiDecision.ai2a?.inputScope}
+              />
+              <ModelStatusRow
+                name="AI2B Analysis"
+                label={meta.ai2bWeb}
+                status={meta.ai2bStatus}
+                source={meta.ai2bSource}
+                scope={alert.aiDecision.ai2b?.inputScope}
+              />
+              <div className="pt-2 mt-1.5 border-t border-border/30 text-[7px] font-mono text-muted-foreground uppercase">
+                Fusion Mode: <span className="text-cyan-500 font-black">{meta.fusionMode}</span>
               </div>
             </div>
 

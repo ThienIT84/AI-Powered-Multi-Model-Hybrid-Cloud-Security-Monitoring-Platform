@@ -23,6 +23,53 @@ interface AlertTableProps {
   onUpdateAlert?: (alertId: string, updates: Partial<Alert>) => void;
 }
 
+function formatModelCell(value: string, status: string, source: string) {
+  const normalizedStatus = (status || "completed").toLowerCase();
+  const normalizedSource = (source || "legacy").toLowerCase();
+  if (normalizedStatus === "not_applicable") return "— N/A";
+  if (normalizedStatus === "not_available") return "○ UNAVAIL";
+  if (normalizedStatus === "not_run") return "○ NOT RUN";
+  if (normalizedStatus === "failed") return "! FAILED";
+  if (normalizedStatus === "timeout") return "! TIMEOUT";
+  if (normalizedStatus === "simulated" || normalizedSource === "mock" || normalizedSource === "simulated") {
+    return `M ${value}`;
+  }
+  if (normalizedSource === "real") return `✓ ${value}`;
+  return value;
+}
+
+function modelBadgeClass(value: string, status: string, source: string) {
+  const normalizedStatus = (status || "completed").toLowerCase();
+  const normalizedSource = (source || "legacy").toLowerCase();
+  const normalizedValue = (value || "").toLowerCase();
+  if (normalizedStatus === "failed" || normalizedStatus === "timeout") {
+    return "border-red-500/25 bg-red-500/10 text-red-500";
+  }
+  if (normalizedStatus === "not_applicable" || normalizedStatus === "not_available" || normalizedStatus === "not_run") {
+    return "border-slate-500/15 bg-slate-500/5 text-muted-foreground";
+  }
+  if (normalizedSource === "mock" || normalizedSource === "simulated" || normalizedStatus === "simulated") {
+    return "border-purple-500/20 bg-purple-500/10 text-purple-400";
+  }
+  if (normalizedValue.includes("normal") || normalizedValue.includes("none")) {
+    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-500";
+  }
+  return "border-red-500/25 bg-red-500/10 text-red-400";
+}
+
+function ModelBadge({ value, status, source, center = false }: { value: string; status: string; source: string; center?: boolean }) {
+  return (
+    <div className={cn("flex", center ? "justify-center" : "items-center")}>
+      <span className={cn(
+        "px-1.5 py-[0.5px] rounded border font-mono text-[7px] font-black tracking-widest uppercase truncate max-w-28",
+        modelBadgeClass(value, status, source)
+      )}>
+        {formatModelCell(value, status, source)}
+      </span>
+    </div>
+  );
+}
+
 export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert }: AlertTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 15; 
@@ -322,64 +369,17 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                        
                        {/* Column 4: AI1_RESULT */}
                        <td className="px-3 py-1 text-center select-none">
-                          <div className="flex justify-center">
-                            {meta.ai1Result === "ANOMALY" ? (
-                              <span className="px-1.5 py-[0.5px] rounded border border-red-500/20 bg-red-500/10 text-red-500 font-mono text-[7px] font-black tracking-widest">
-                                {meta.ai1Result}
-                              </span>
-                            ) : (
-                              <span className="px-1.5 py-[0.5px] rounded border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 font-mono text-[7px] font-black tracking-widest">
-                                {meta.ai1Result}
-                              </span>
-                            )}
-                          </div>
+                          <ModelBadge value={meta.ai1Result} status={meta.ai1Status} source={meta.ai1Source} center />
                        </td>
                        
                        {/* Column 5: AI2A_CLASS */}
                        <td className="px-3 py-1 select-none">
-                          <div className="flex items-center gap-1">
-                            {meta.ai2aClass === "PortScan" && (
-                              <span className="px-1.5 py-[0.5px] rounded bg-orange-500/10 border border-orange-500/25 text-orange-500 font-bold text-[7.5px]">
-                                {meta.ai2aClass}
-                              </span>
-                            )}
-                            {meta.ai2aClass === "DoS" && (
-                              <span className="px-1.5 py-[0.5px] rounded bg-red-500/10 border border-red-500/25 text-red-500 font-bold text-[7.5px]">
-                                {meta.ai2aClass}
-                              </span>
-                            )}
-                            {meta.ai2aClass === "BruteForce" && (
-                              <span className="px-1.5 py-[0.5px] rounded bg-red-500/10 border border-red-500/25 text-red-400 font-bold text-[7.5px]">
-                                {meta.ai2aClass}
-                              </span>
-                            )}
-                            {meta.ai2aClass === "Normal" && (
-                              <span className="px-1.5 py-[0.5px] rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 text-[7.5px]">
-                                {meta.ai2aClass}
-                              </span>
-                            )}
-                          </div>
+                          <ModelBadge value={meta.ai2aClass} status={meta.ai2aStatus} source={meta.ai2aSource} />
                        </td>
                        
                        {/* Column 6: AI2B_WEB */}
                        <td className="px-3 py-1 text-center select-none">
-                          <div className="flex justify-center">
-                            {meta.ai2bWeb === "XSS" && (
-                              <span className="px-1.5 py-[0.5px] rounded bg-red-500/10 border border-red-500/25 text-red-400 font-black text-[7.5px]">
-                                {meta.ai2bWeb}
-                              </span>
-                            )}
-                            {meta.ai2bWeb === "SQLi" && (
-                              <span className="px-1.5 py-[0.5px] rounded bg-red-500/10 border border-red-500/25 text-red-400 font-black text-[7.5px]">
-                                {meta.ai2bWeb}
-                              </span>
-                            )}
-                            {meta.ai2bWeb === "NONE" && (
-                              <span className="px-1.5 py-[0.5px] rounded bg-blue-500/5 border border-blue-500/10 text-muted-foreground/80 font-mono text-[7px]">
-                                {meta.ai2bWeb}
-                              </span>
-                            )}
-                          </div>
+                          <ModelBadge value={meta.ai2bWeb} status={meta.ai2bStatus} source={meta.ai2bSource} center />
                        </td>
 
                        {/* Column 7: Suricata evidence */}

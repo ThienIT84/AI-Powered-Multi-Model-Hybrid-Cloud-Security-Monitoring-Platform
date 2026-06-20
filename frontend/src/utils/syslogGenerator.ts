@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SyslogEvent, LogSource, SeverityLevel } from "../components/network/networksConfig";
+import { SyslogEvent, LogSource, SeverityLevel } from "../components/network/NetworkConfig";
 import { randomIP } from "./networkGenerator";
 
 const HOSTNAMES = [

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { NetworkLog, ProtocolType, NetworkStatus } from "../components/network/networksConfig";
+import { NetworkLog, ProtocolType, NetworkStatus } from "../components/network/NetworkConfig";
 
 // Realistic IP blocks for internal and external networks
 const INTERNAL_IPS = [
