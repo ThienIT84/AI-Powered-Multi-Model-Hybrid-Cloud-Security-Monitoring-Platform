@@ -18,6 +18,34 @@ This note documents the current React + Vite frontend under `frontend/`. It focu
 - `pnpm start` (runs bundled server)
 - `pnpm lint` (tsc)
 
+### Full-stack local run
+Terminal 1, backend:
+
+```bash
+cd backend
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Useful backend checks:
+
+```bash
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/api/replay/demo
+```
+
+Terminal 2, frontend API mode:
+
+```bash
+cd frontend
+VITE_DATA_MODE=api \
+VITE_API_BASE_URL=http://localhost:8000 \
+VITE_WS_URL=ws://localhost:8000/ws/alerts \
+pnpm dev
+```
+
 ### Environment
 - `VITE_DATA_MODE=mock|api`
 - `VITE_API_BASE_URL` (REST base)

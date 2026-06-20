@@ -32,7 +32,26 @@ VITE_DATA_MODE=mock pnpm dev
 
 In mock mode, the frontend connects to `VITE_MOCK_WS_URL` and receives initial alerts plus live alert/traffic updates from the local Express/WebSocket server. The default mock socket is `ws://localhost:3001`.
 
-Backend API mode:
+Backend API mode requires two terminals.
+
+Terminal 1, start backend:
+
+```bash
+cd backend
+python -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Optional backend smoke checks:
+
+```bash
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/api/replay/demo
+```
+
+Terminal 2, start frontend in API mode:
 
 ```bash
 cd frontend
