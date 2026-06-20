@@ -467,10 +467,21 @@ Fusion: network alert
 
 ### Backend mode
 
+Từ repo root:
+
 ```bash
-conda run -n interior_ai env PYTHONPATH=backend \
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+Nếu terminal đang đứng trong `backend/`:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=. \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Lưu ý: backend server sẽ giữ terminal. Nếu nhìn như “treo” và không thấy log, thường là do thiếu `--no-capture-output` hoặc đang dùng sai `PYTHONPATH` so với thư mục hiện tại.
 
 Nếu đang dùng shell đã activate sẵn `interior_ai`, có thể chạy ngắn từ repo root:
 
@@ -481,7 +492,7 @@ PYTHONPATH=backend uvicorn app.main:app --host 0.0.0.0 --port 8000
 ### Backend real AI2B mode from repo root
 
 ```bash
-conda run -n interior_ai env PYTHONPATH=backend AI2B_PREDICTOR_MODE=real \
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend AI2B_PREDICTOR_MODE=real \
   uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 

@@ -36,10 +36,21 @@ Backend API mode requires two terminals.
 
 Terminal 1, start backend:
 
+From the repo root:
+
 ```bash
-conda run -n interior_ai env PYTHONPATH=backend \
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+If the terminal is already inside `backend/`, use:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=. \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The backend process keeps the terminal open while it serves requests. If no logs appear, make sure `--no-capture-output` is present.
 
 Optional backend smoke checks:
 

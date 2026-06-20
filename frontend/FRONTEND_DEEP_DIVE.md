@@ -21,10 +21,21 @@ This note documents the current React + Vite frontend under `frontend/`. It focu
 ### Full-stack local run
 Terminal 1, backend:
 
+From the repo root:
+
 ```bash
-conda run -n interior_ai env PYTHONPATH=backend \
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+If already inside `backend/`:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=. \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+This terminal is expected to remain occupied because `uvicorn` is serving the backend. `--no-capture-output` prevents `conda run` from hiding live server logs.
 
 Useful backend checks:
 
