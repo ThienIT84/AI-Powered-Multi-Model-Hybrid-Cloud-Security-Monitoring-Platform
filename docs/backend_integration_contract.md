@@ -191,6 +191,12 @@ Suggested real AI1/AI2A fields:
 
 AI1/AI2A adapter nên `supports(event) = true` khi có `evidence.flow`.
 
+AI2A real adapter có ràng buộc riêng: model freeze hiện tại dùng 41 frozen
+features của release candidate `rf_v2_1_full_safe_plus_ssh_minimal`. Backend
+không được tự đoán lại 41 feature từ raw `conn.log`. Nếu flow evidence chưa có
+đủ frozen feature vector, AI2A real trả `not_available` với reason rõ ràng.
+Raw Zeek replay bridge chỉ parse/correlate logs rồi POST event vào `/api/events`.
+
 ### Suricata Evidence
 
 Optional evidence cho Fusion:
@@ -258,6 +264,10 @@ Backend rules:
 - `not_available`: adapter/model artifact is not configured or unavailable.
 - `failed`: adapter crashed or prediction failed.
 - `simulated`: intentionally simulated output.
+
+AI2A threshold note: release candidate dùng threshold frozen `0.9`; nếu
+`max_proba < 0.9`, label thresholded là `unknown`. Fusion không được xem
+`unknown` là attack label.
 - `mock`: development output, never present as real model evidence.
 - Router-generated `not_applicable` hiện đang dùng `source = "replay"` theo code hiện tại. Nếu muốn đổi sang `source = "router"`, đó là task code/schema riêng và phải cập nhật enum/frontend mapper.
 
@@ -505,25 +515,30 @@ AI2B real load policy:
 Currently implemented:
 
 ```bash
-AI2B_PREDICTOR_MODE=mock   # default
-AI2B_PREDICTOR_MODE=real   # load frozen AI2B V1.4.9 RC
-```
-
-Recommended next env vars for backend team:
-
-```bash
-AI1_MODE=mock|real|unavailable
-AI2A_MODE=mock|real|unavailable
+AI1_PREDICTOR_MODE=mock|real|unavailable
+AI2A_PREDICTOR_MODE=mock|real|unavailable
 AI2B_PREDICTOR_MODE=mock|real|unavailable
 ```
 
-Recommended MVP default for demo:
+Recommended MVP default for demo with real AI2B:
 
 ```bash
-AI1_MODE=mock
-AI2A_MODE=mock
+AI1_PREDICTOR_MODE=mock
+AI2A_PREDICTOR_MODE=mock
 AI2B_PREDICTOR_MODE=real
 ```
+
+Recommended MVP default when testing AI2A real behavior:
+
+```bash
+AI1_PREDICTOR_MODE=mock
+AI2A_PREDICTOR_MODE=real
+AI2B_PREDICTOR_MODE=mock
+```
+
+`real` mode must not silently fall back to mock. If a frozen artifact, feature
+schema, or canary check fails, the adapter must return `not_available` or
+`failed` with a clear reason.
 
 ## 9. Run Commands
 
@@ -536,7 +551,15 @@ PYTHONPATH=backend uvicorn app.main:app --host 0.0.0.0 --port 8000
 Backend real AI2B mode:
 
 ```bash
-PYTHONPATH=backend AI2B_PREDICTOR_MODE=real uvicorn app.main:app --host 0.0.0.0 --port 8000
+PYTHONPATH=backend AI1_PREDICTOR_MODE=mock AI2A_PREDICTOR_MODE=mock AI2B_PREDICTOR_MODE=real \
+  uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Backend real AI2A mode:
+
+```bash
+PYTHONPATH=backend AI1_PREDICTOR_MODE=mock AI2A_PREDICTOR_MODE=real AI2B_PREDICTOR_MODE=mock \
+  uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Replay demo:
@@ -630,14 +653,13 @@ For this backend handoff, keep the final alert DTO stable.
 
 Priority order:
 
-1. Add `AI1_MODE` and `AI2A_MODE` env config.
-2. Implement `UnavailableAdapter` or mode handling for unavailable AI1/AI2A.
-3. Add real AI1 adapter when model artifact/input schema is available.
-4. Add real AI2A adapter when model artifact/input schema is available.
-5. Add persistent alert store if needed for demo recording.
-6. Add replay parser for Zeek `conn.log` and `http.log`.
-7. Add API request validation with Pydantic models if time allows.
-8. Add production CORS/auth only if deployment requires it.
+1. Add real AI1 adapter when model artifact/input schema is available.
+2. Wire exact raw Zeek `conn.log` -> frozen AI2A 41-feature extractor if the
+   original release extractor is made available.
+3. Add persistent alert store if needed for demo recording.
+4. Extend replay bridge with pacing/batch mode if needed for local lab demos.
+5. Add API request validation with Pydantic models if time allows.
+6. Add production CORS/auth only if deployment requires it.
 
 Do not block MVP on final AI2B holdout `133-136`. Holdout remains future validation.
 

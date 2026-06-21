@@ -6,7 +6,9 @@ Tài liệu này chia việc cụ thể cho backend member. Mục tiêu là làm
 event -> router -> model adapters -> fusion -> final alert DTO -> WebSocket/dashboard
 ```
 
-AI2B có thể là adapter thật đầu tiên, nhưng kiến trúc không được biến thành AI2B-only backend.
+AI2B là adapter HTTP thật đầu tiên cho SQLI/XSS. AI2A real adapter cũng đã có
+theo hướng fail-safe, nhưng chỉ predict khi flow event đã mang đủ frozen
+41-feature vector. Kiến trúc không được biến thành AI2B-only backend.
 
 ## Source Of Truth
 
@@ -41,8 +43,8 @@ Mục tiêu: backend có thể bật/tắt từng model rõ ràng bằng env var
 Env vars cần hỗ trợ:
 
 ```bash
-AI1_MODE=mock|real|unavailable
-AI2A_MODE=mock|real|unavailable
+AI1_PREDICTOR_MODE=mock|real|unavailable
+AI2A_PREDICTOR_MODE=mock|real|unavailable
 AI2B_PREDICTOR_MODE=mock|real|unavailable
 ```
 
@@ -64,6 +66,7 @@ Done khi:
 
 - Có thể start backend với AI1/AI2A unavailable.
 - Có thể start backend với AI2B unavailable.
+- `AI2A_PREDICTOR_MODE=real` load AI2A release candidate nếu artifact đủ, nhưng không fallback mock khi artifact lỗi.
 - `AI2B_PREDICTOR_MODE=real` vẫn giữ nguyên logic load artifact hiện có.
 
 ## B2. Add UnavailableAdapter
@@ -89,9 +92,11 @@ Implementation suggestion:
 class UnavailableAdapter:
     name: str
     input_scope: str
+    supported_scope: str
 
     def supports(self, event):
-        # Return true only when this model would normally support the event.
+        # Return true only when this model would normally support the event:
+        # flow for AI1/AI2A, http for AI2B.
         ...
 
     def build_input(self, event):
@@ -120,6 +125,7 @@ HTTP event + AI2B unavailable -> AI2B not_available
 Flow event + AI1 unavailable -> AI1 not_available
 AI2B real artifact load fail -> not_available, no silent mock fallback
 AI2B inference exception -> failed
+AI2A real missing frozen 41-feature vector -> not_available, no guessed feature extraction
 ```
 
 Command:
@@ -187,6 +193,33 @@ AI2B training/build/stress scripts
 
 Backend member không cần train lại AI2B, không tune threshold, không sửa holdout protocol. AI2B backend chỉ load frozen artifact hoặc báo unavailable/failed rõ ràng.
 
+## B7. AI2A Real Adapter And Replay Bridge Guardrails
+
+AI2A release candidate:
+
+```text
+rf_v2_1_full_safe_plus_ssh_minimal
+threshold = 0.9
+```
+
+Rules:
+
+- Không viết lại 41 feature bằng công thức đoán trong backend.
+- Adapter AI2A chỉ predict khi `evidence.flow` đã có đủ frozen feature vector.
+- Raw `conn.log` replay chỉ parser/correlate thành event; nếu chưa có extractor chính xác thì AI2A trả `not_available`.
+- Threshold logic phải giữ behavior release: `max_proba < 0.9` => label `unknown`.
+- `unknown` không được xem là attack label trong Fusion.
+
+Replay dry-run:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/replay_local_lab_logs.py \
+  --conn-log /path/to/conn.log \
+  --http-log /path/to/http.log \
+  --dry-run
+```
+
 ## Suggested Branch And Review Checklist
 
 Branch:
@@ -204,4 +237,3 @@ Checklist trước khi gửi PR:
 - `not_applicable` và `not_available` được test riêng.
 - Không có silent fallback từ real model sang mock.
 - Không sửa AI2B modeling/holdout files.
-
