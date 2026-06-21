@@ -30,7 +30,7 @@ class FusionService:
             return self._web_attack("SQL Injection", ai2b_conf, outputs, contributors, completed_any, excluded)
         if ai2b_label == "XSS":
             return self._web_attack("Cross-Site Scripting", ai2b_conf, outputs, contributors, completed_any, excluded)
-        if ai2a_label and ai2a_label not in {"NORMAL", "NONE"} and ai1_label == "ANOMALY":
+        if ai2a_label and ai2a_label not in {"NORMAL", "NONE", "UNKNOWN"} and ai1_label == "ANOMALY":
             risk = max(72, int(max(ai2a_conf, ai1_conf) * 100))
             return FusionOutput(
                 mode=self._mode(outputs, contributors, completed_any),
@@ -109,4 +109,3 @@ class FusionService:
         if completed_any and all(outputs.get(name, {}).get("source") in {"mock", "replay"} for name in completed_any):
             return "SIMULATED_FULL_MULTI_MODEL" if len(completed_any) == 3 else "SIMULATED_PARTIAL"
         return "NO_AI_AVAILABLE"
-

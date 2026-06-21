@@ -10,9 +10,19 @@ http evidence      -> AI2B
 suricata evidence  -> Fusion rule evidence
 ```
 
-AI2B is the first real adapter candidate. AI1 and AI2A can run as mock,
-simulated, unavailable, or real adapters later without changing the dashboard
-contract.
+AI2B and AI2A can be selected independently through adapter modes. AI1 is
+mock/unavailable in this MVP until a real adapter is supplied.
+
+Adapter modes:
+
+```bash
+AI1_PREDICTOR_MODE=mock|unavailable|real
+AI2A_PREDICTOR_MODE=mock|unavailable|real
+AI2B_PREDICTOR_MODE=mock|unavailable|real
+```
+
+`real` never falls back to mock. If a frozen artifact cannot be loaded, the
+adapter reports `not_available` in the API response.
 
 ## Run
 
@@ -37,6 +47,30 @@ For a quick replay:
 ```bash
 conda run -n interior_ai python backend/scripts/replay_demo.py
 ```
+
+Run with AI2A real and AI2B mock:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  AI1_PREDICTOR_MODE=mock AI2A_PREDICTOR_MODE=real AI2B_PREDICTOR_MODE=mock \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Replay local Zeek logs through the public `/api/events` path. Use `--dry-run`
+first to verify parser/correlation counts without creating alerts:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/replay_local_lab_logs.py \
+  --conn-log /path/to/conn.log \
+  --http-log /path/to/http.log \
+  --dry-run
+```
+
+Important: the AI2A real adapter only predicts when the flow evidence already
+contains the frozen 41-feature vector used by the release candidate. Raw
+`conn.log` replay is parsed and correlated, but the backend does not guess or
+recreate those 41 features unless the exact extractor is wired in.
 
 Frontend API mode:
 
