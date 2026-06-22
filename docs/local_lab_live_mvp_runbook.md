@@ -8,24 +8,36 @@ Kali -> Victim/Web VM -> Zeek http.log -> Backend /api/events -> AI2B/Fusion -> 
 
 Replay Zeek logs chỉ là fallback/debug, không phải luồng demo chính.
 
+IP/lab defaults lấy từ `Dataset/tools/attack_profiles/attack_012_web_semantic/configs/run_plan_attack_a12.yaml`:
+
+```text
+Kali attacker: 10.10.10.10
+Victim/Web:    192.168.1.10
+Zeek sensor:   192.168.1.20
+Zeek iface:    ens33
+Web root:      /ai2a_p11_app/
+```
+
+Backend và frontend chạy trên máy dev/host của bạn. Tailer cũng chạy trên máy dev/host; nó đọc `http.log` từ Zeek VM qua SSH stream.
+
 ## 1. Kiểm Tra Lab Trước Khi Chạy Backend
 
-Trên Victim/Web VM, xác nhận web service đang listen port `80`:
+Trên Victim/Web VM `192.168.1.10`, xác nhận web service đang listen port `80`:
 
 ```bash
 sudo ss -ltnp | grep ':80'
 ```
 
-Trên Zeek VM, xác nhận sensor nhìn thấy traffic Kali -> Victim:
+Trên Zeek VM `192.168.1.20`, xác nhận sensor nhìn thấy traffic Kali -> Victim:
 
 ```bash
-sudo tcpdump -ni any 'host <KALI_IP> and host <VICTIM_IP> and tcp port 80'
+sudo tcpdump -ni ens33 'host 10.10.10.10 and host 192.168.1.10 and tcp port 80'
 ```
 
 Trên Kali, gửi thử request tới Victim:
 
 ```bash
-curl -v "http://<VICTIM_IP>/"
+curl -v "http://192.168.1.10/ai2a_p11_app/"
 ```
 
 Nếu `tcpdump` không thấy SYN/HTTP traffic, sửa network/interface trước. Chưa cần debug backend.
@@ -64,46 +76,77 @@ pnpm dev
 
 Mở URL mà Vite in ra, đăng nhập bằng tài khoản demo đã ghi trong frontend docs.
 
-## 4. Start Zeek HTTP Tailer
+## 4. Tìm Zeek http.log Đang Ghi
 
-Trỏ `--http-log` tới file `http.log` hiện tại của Zeek. Ví dụ:
-
-```bash
-conda run -n interior_ai env PYTHONPATH=backend \
-  python backend/scripts/tail_zeek_http_to_backend.py \
-  --http-log /path/to/zeek/current/http.log \
-  --api-url http://localhost:8000/api/events
-```
-
-Nếu muốn test trên log có sẵn mà không POST backend:
+Từ máy dev hoặc Kali, tìm các file `http.log` trên Zeek VM:
 
 ```bash
-conda run -n interior_ai env PYTHONPATH=backend \
-  python backend/scripts/tail_zeek_http_to_backend.py \
-  --http-log /path/to/zeek/current/http.log \
-  --from-start \
-  --limit 5 \
-  --dry-run
+ssh zeek@192.168.1.20 'find /home/zeek/fcaj-ai2a-normal -name http.log -type f | sort | tail -20'
 ```
 
-## 5. Gửi Traffic Từ Kali
+Nếu chưa thấy, tìm rộng hơn:
+
+```bash
+ssh zeek@192.168.1.20 'find /opt/zeek /home/zeek -name http.log -type f 2>/dev/null | sort | tail -20'
+```
+
+Chọn file đang tăng khi Kali gửi request. Gọi path đó là:
+
+```text
+ZEEK_HTTP_LOG_PATH
+```
+
+## 5. Start Zeek HTTP Tailer Qua SSH Stream
+
+Tailer chạy trên máy dev/host, nhưng đọc log từ Zeek VM qua `ssh tail -F`:
+
+```bash
+ssh zeek@192.168.1.20 "tail -F <ZEEK_HTTP_LOG_PATH>" \
+| conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+    python backend/scripts/tail_zeek_http_to_backend.py \
+    --http-log - \
+    --api-url http://localhost:8000/api/events
+```
+
+Ý nghĩa:
+
+```text
+tail -F chạy trên Zeek VM
+Python tailer chạy trên máy dev
+Backend vẫn là http://localhost:8000 trên máy dev
+```
+
+Lưu ý: với pipe/stdin, dùng `conda run --no-capture-output`; dạng `conda run` thường có thể không truyền stdin ổn định.
+
+Test stdin dry-run không cần SSH:
+
+```bash
+printf '#fields\tts\tuid\tid.orig_h\tid.resp_h\tmethod\turi\n1.0\tC1\t10.10.10.10\t192.168.1.10\tGET\t/ai2a_p11_app/search?q=x\n' \
+| conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+    python backend/scripts/tail_zeek_http_to_backend.py \
+    --http-log - \
+    --limit 1 \
+    --dry-run
+```
+
+## 6. Gửi Traffic Từ Kali
 
 Normal HTTP:
 
 ```bash
-curl -v "http://<VICTIM_IP>/"
+curl -v "http://192.168.1.10/ai2a_p11_app/"
 ```
 
 SQL Injection demo:
 
 ```bash
-curl -v "http://<VICTIM_IP>/search?q=%27%20OR%201%3D1--"
+curl -v "http://192.168.1.10/ai2a_p11_app/search?q=%27%20OR%201%3D1--"
 ```
 
 XSS demo:
 
 ```bash
-curl -v "http://<VICTIM_IP>/profile?bio=%3Cscript%3Ealert(1)%3C/script%3E"
+curl -v "http://192.168.1.10/ai2a_p11_app/search?q=%3Cscript%3Ealert(1)%3C/script%3E"
 ```
 
 Expected result:
@@ -114,7 +157,7 @@ Expected result:
 - Dashboard hiện alert SQL Injection hoặc Cross-Site Scripting.
 - Detail drawer hiển thị AI2B `completed` / `real`; AI1/AI2A theo mode demo.
 
-## 6. Fallback Replay Mode
+## 7. Fallback Replay Mode
 
 Nếu live lab/network có vấn đề nhưng đã có `http.log`, replay offline:
 
@@ -134,7 +177,7 @@ conda run -n interior_ai env PYTHONPATH=backend \
   --dry-run
 ```
 
-## 7. Scope Ghi Nhớ
+## 8. Scope Ghi Nhớ
 
 - Primary demo: live local lab.
 - Fallback demo: replay Zeek logs.
