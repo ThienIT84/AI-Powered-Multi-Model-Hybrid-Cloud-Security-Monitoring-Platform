@@ -75,14 +75,14 @@ recreate those 41 features unless the exact extractor is wired in.
 Tail a live Zeek `http.log` into the backend for the local lab MVP:
 
 ```bash
-ssh zeek@192.168.1.20 "tail -F <ZEEK_HTTP_LOG_PATH>" \
+ssh zeek@192.168.1.20 "tail -n 0 -F <ZEEK_HTTP_LOG_PATH>" \
 | conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
     python backend/scripts/tail_zeek_http_to_backend.py \
     --http-log - \
     --api-url http://localhost:8000/api/events
 ```
 
-Use `--no-capture-output` for stdin/pipe mode so `conda run` does not swallow the stream. Use `--http-log - --limit 1 --dry-run` to verify stdin parsing without POSTing.
+Use `tail -n 0 -F` so old rows are not replayed when the stream starts. Use `--no-capture-output` for stdin/pipe mode so `conda run` does not swallow the stream. Use `--http-log - --limit 1 --dry-run` to verify stdin parsing without POSTing.
 
 Frontend API mode:
 

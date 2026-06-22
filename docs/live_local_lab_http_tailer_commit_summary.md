@@ -65,14 +65,14 @@ conda run -n interior_ai env PYTHONPATH=backend \
 Command chính cho lab VM, đọc log từ Zeek VM `192.168.1.20`:
 
 ```bash
-ssh zeek@192.168.1.20 "tail -F <ZEEK_HTTP_LOG_PATH>" \
+ssh zeek@192.168.1.20 "tail -n 0 -F <ZEEK_HTTP_LOG_PATH>" \
 | conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
     python backend/scripts/tail_zeek_http_to_backend.py \
     --http-log - \
     --api-url http://localhost:8000/api/events
 ```
 
-Với stdin/pipe mode, dùng `--no-capture-output` để `conda run` truyền stream ổn định.
+Với stdin/pipe mode, dùng `--no-capture-output` để `conda run` truyền stream ổn định. Dùng `tail -n 0 -F` để không replay 10 dòng cũ khi bắt đầu stream.
 
 Dry-run:
 

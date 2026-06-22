@@ -98,10 +98,10 @@ ZEEK_HTTP_LOG_PATH
 
 ## 5. Start Zeek HTTP Tailer Qua SSH Stream
 
-Tailer chạy trên máy dev/host, nhưng đọc log từ Zeek VM qua `ssh tail -F`:
+Tailer chạy trên máy dev/host, nhưng đọc log từ Zeek VM qua `ssh tail -n 0 -F`:
 
 ```bash
-ssh zeek@192.168.1.20 "tail -F <ZEEK_HTTP_LOG_PATH>" \
+ssh zeek@192.168.1.20 "tail -n 0 -F <ZEEK_HTTP_LOG_PATH>" \
 | conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
     python backend/scripts/tail_zeek_http_to_backend.py \
     --http-log - \
@@ -111,10 +111,12 @@ ssh zeek@192.168.1.20 "tail -F <ZEEK_HTTP_LOG_PATH>" \
 Ý nghĩa:
 
 ```text
-tail -F chạy trên Zeek VM
+tail -n 0 -F chạy trên Zeek VM
 Python tailer chạy trên máy dev
 Backend vẫn là http://localhost:8000 trên máy dev
 ```
+
+`tail -F` mặc định sẽ in 10 dòng cuối có sẵn. Dùng `tail -n 0 -F` để chỉ gửi các request mới phát sinh sau khi tailer bắt đầu.
 
 Lưu ý: với pipe/stdin, dùng `conda run --no-capture-output`; dạng `conda run` thường có thể không truyền stdin ổn định.
 
