@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 from app.adapters.ai2a_real import RealAI2AAdapter, threshold_label
@@ -7,6 +9,7 @@ from app.adapters.mock import MockAI1Adapter, MockAI2BAdapter
 from app.contracts import ModelStatus
 from app.dependencies import build_orchestrator
 from app.replay import ZeekConnParser, ZeekHttpParser, ZeekUidCorrelator
+from app.replay.zeek import parse_zeek_line
 from app.services.fusion import FusionService
 from app.services.orchestrator import EventOrchestrator
 
@@ -190,3 +193,49 @@ def test_zeek_tsv_fields_parser(tmp_path: Path) -> None:
             "history": "",
         }
     ]
+
+
+def test_zeek_parse_line_supports_incremental_tailer_rows() -> None:
+    row, fields = parse_zeek_line("#fields\tts\tuid\tid.orig_h\tid.resp_h\tmethod\turi\n")
+
+    assert row is None
+    assert fields == ["ts", "uid", "id.orig_h", "id.resp_h", "method", "uri"]
+
+    row, fields = parse_zeek_line("1.0\tC1\t10.0.0.1\t10.0.0.2\tGET\t/search?q=x\n", fields)
+
+    assert fields == ["ts", "uid", "id.orig_h", "id.resp_h", "method", "uri"]
+    assert row == {
+        "ts": "1.0",
+        "uid": "C1",
+        "id.orig_h": "10.0.0.1",
+        "id.resp_h": "10.0.0.2",
+        "method": "GET",
+        "uri": "/search?q=x",
+    }
+
+
+def test_http_tailer_accepts_stdin_dash() -> None:
+    payload = (
+        "#fields\tts\tuid\tid.orig_h\tid.resp_h\tmethod\turi\n"
+        "1.0\tC1\t10.10.10.10\t192.168.1.10\tGET\t/ai2a_p11_app/search?q=x\n"
+    )
+    script = Path(__file__).resolve().parents[1] / "scripts" / "tail_zeek_http_to_backend.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--http-log",
+            "-",
+            "--limit",
+            "1",
+            "--dry-run",
+        ],
+        input=payload,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    assert '"http_log": "stdin"' in result.stdout
+    assert '"status": "dry_run_event"' in result.stdout
+    assert "/ai2a_p11_app/search?q=x" in result.stdout
