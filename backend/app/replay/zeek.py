@@ -38,20 +38,9 @@ class ZeekLogParser:
         fields: list[str] | None = None
         rows: list[dict[str, Any]] = []
         for raw_line in path.read_text(encoding="utf-8").splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-            if line.startswith("#fields"):
-                fields = line.split("\t")[1:]
-                continue
-            if line.startswith("#"):
-                continue
-            if line.startswith("{"):
-                rows.append(json.loads(line))
-                continue
-            if fields:
-                values = line.split("\t")
-                rows.append(dict(zip(fields, values, strict=False)))
+            row, fields = parse_zeek_line(raw_line, fields)
+            if row is not None:
+                rows.append(row)
         return rows
 
 
@@ -63,6 +52,22 @@ class ZeekConnParser(ZeekLogParser):
 class ZeekHttpParser(ZeekLogParser):
     def parse_http(self, path: str | Path) -> list[dict[str, Any]]:
         return [normalize_http_row(row) for row in self.parse(path)]
+
+
+def parse_zeek_line(raw_line: str, fields: list[str] | None = None) -> tuple[dict[str, Any] | None, list[str] | None]:
+    line = raw_line.strip()
+    if not line:
+        return None, fields
+    if line.startswith("#fields"):
+        return None, line.split("\t")[1:]
+    if line.startswith("#"):
+        return None, fields
+    if line.startswith("{"):
+        return json.loads(line), fields
+    if fields:
+        values = line.split("\t")
+        return dict(zip(fields, values, strict=False)), fields
+    return None, fields
 
 
 def normalize_conn_row(row: dict[str, Any]) -> dict[str, Any]:

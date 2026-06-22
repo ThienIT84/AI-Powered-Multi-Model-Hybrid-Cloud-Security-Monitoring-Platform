@@ -72,6 +72,17 @@ contains the frozen 41-feature vector used by the release candidate. Raw
 `conn.log` replay is parsed and correlated, but the backend does not guess or
 recreate those 41 features unless the exact extractor is wired in.
 
+Tail a live Zeek `http.log` into the backend for the local lab MVP:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/tail_zeek_http_to_backend.py \
+  --http-log /path/to/zeek/current/http.log \
+  --api-url http://localhost:8000/api/events
+```
+
+Use `--from-start --limit 5 --dry-run` to verify parsing without POSTing.
+
 Frontend API mode:
 
 ```bash

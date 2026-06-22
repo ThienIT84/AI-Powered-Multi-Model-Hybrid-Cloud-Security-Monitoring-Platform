@@ -89,7 +89,42 @@ Các adapter này phục vụ demo/dev. Chúng không giả vờ là model thậ
 - AI1/AI2A `supports()` chỉ true khi có `evidence.flow`.
 - AI2B `supports()` chỉ true khi có HTTP `method` và `uri`.
 
-### Bước 4: Real AI2B adapter
+### Bước 4: Real AI2A adapter
+
+Đọc file:
+
+```text
+backend/app/adapters/ai2a_real.py
+```
+
+File này load AI2A release candidate:
+
+```text
+rf_v2_1_full_safe_plus_ssh_minimal
+threshold = 0.9
+```
+
+Nó kiểm tra model/preprocessor/feature manifest bằng startup canary:
+
+- đúng 41 frozen features;
+- đúng class order từ `model.classes_`;
+- threshold frozen có tồn tại;
+- probability finite.
+
+Điểm quan trọng: adapter này không tự viết lại 41 feature từ raw `conn.log`.
+Nó chỉ predict khi `evidence.flow` đã chứa đủ frozen feature vector. Nếu event
+chỉ có vài field raw như `service`, `dst_port`, `orig_pkts`, adapter trả
+`not_available` với reason rõ ràng thay vì đoán bừa.
+
+Threshold behavior:
+
+```text
+max_proba < 0.9 -> label = unknown
+```
+
+Fusion không xem `unknown` là attack label.
+
+### Bước 5: Real AI2B adapter
 
 Đọc file:
 
@@ -115,9 +150,25 @@ model_version = AI2B_V1.4.8j
 release_candidate = AI2B_V1.4.9_RC
 ```
 
-Đây là adapter thật đầu tiên trong MVP.
+Đây là adapter HTTP thật cho SQLI/XSS.
 
-### Bước 5: Adapter registry / dependency wiring
+### Bước 6: Unavailable adapter
+
+Đọc file:
+
+```text
+backend/app/adapters/unavailable.py
+```
+
+File này giúp phân biệt:
+
+- `not_applicable`: event không có evidence mà model đó hỗ trợ.
+- `not_available`: model đáng lẽ hỗ trợ evidence này, nhưng artifact/config chưa sẵn sàng.
+
+Ví dụ HTTP-only event sẽ làm AI1/AI2A là `not_applicable`, không phải
+`not_available`.
+
+### Bước 7: Adapter registry / dependency wiring
 
 Đọc file:
 
@@ -130,12 +181,15 @@ File này tạo orchestrator và chọn adapter.
 Biến môi trường quan trọng:
 
 ```bash
+AI1_PREDICTOR_MODE=mock|real|unavailable
+AI2A_PREDICTOR_MODE=mock|real|unavailable
 AI2B_PREDICTOR_MODE=real
 ```
 
-Nếu bật `real`, backend dùng `RealAI2BAdapter`. Nếu không, AI2B dùng mock adapter.
+Nếu bật `real`, backend dùng adapter thật tương ứng. Nếu artifact lỗi, backend
+không fallback sang mock; adapter trả `not_available` hoặc `failed`.
 
-### Bước 6: Orchestrator
+### Bước 8: Orchestrator
 
 Đọc file:
 
@@ -171,7 +225,7 @@ build_alert(event, outputs, fusion)
 - `ai_analysis.fusion`
 - `decision_flow`
 
-### Bước 7: Fusion rule engine
+### Bước 9: Fusion rule engine
 
 Đọc file:
 
@@ -185,7 +239,7 @@ Luật chính:
 
 - AI2B `SQLI` -> final label `SQL Injection`.
 - AI2B `XSS` -> final label `Cross-Site Scripting`.
-- AI1 `ANOMALY` + AI2A non-normal -> `Suspicious Network Activity`.
+- AI1 `ANOMALY` + AI2A non-normal/non-unknown -> `Suspicious Network Activity`.
 - Chỉ AI1 anomaly -> `Network Anomaly`.
 - Không model nào xác nhận attack -> `Benign / No Confirmed Attack`.
 
@@ -196,7 +250,37 @@ Fusion mode:
 - `SIMULATED_FULL_MULTI_MODEL`: cả ba là mock/replay.
 - `NO_AI_AVAILABLE`: không model nào chạy được.
 
-### Bước 8: Store và WebSocket
+### Bước 10: Replay bridge cho local lab
+
+Đọc hai file:
+
+```text
+backend/app/replay/zeek.py
+backend/scripts/replay_local_lab_logs.py
+```
+
+`zeek.py` có:
+
+- `ZeekConnParser`: đọc Zeek `conn.log` JSON-lines hoặc `#fields` TSV.
+- `ZeekHttpParser`: đọc Zeek `http.log`.
+- `ZeekUidCorrelator`: ghép conn/http theo Zeek `uid`.
+- `ReplayEventBuilder`: tạo event `network_flow`, `http`, hoặc `combined`.
+
+CLI replay:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/replay_local_lab_logs.py \
+  --conn-log /path/to/conn.log \
+  --http-log /path/to/http.log \
+  --dry-run
+```
+
+`--dry-run` chỉ in số lượng event/correlation, không tạo alert. Khi bỏ
+`--dry-run`, script POST từng event vào `/api/events`, tức là đi qua đúng
+đường backend công khai thay vì gọi adapter trực tiếp.
+
+### Bước 11: Store và WebSocket
 
 Đọc hai file:
 
@@ -216,7 +300,7 @@ backend/app/services/websocket_manager.py
 }
 ```
 
-### Bước 9: API entrypoint
+### Bước 12: API entrypoint
 
 Đọc file:
 
@@ -242,12 +326,13 @@ WS   /ws/alerts
 
 `/api/replay/demo` tạo một số event mẫu để frontend nhận qua WebSocket.
 
-### Bước 10: Backend tests
+### Bước 13: Backend tests
 
-Đọc file:
+Đọc các file:
 
 ```text
 backend/tests/test_fusion_mvp.py
+backend/tests/test_ai2a_real_and_replay.py
 ```
 
 Các test chính:
@@ -255,6 +340,10 @@ Các test chính:
 - HTTP-only event không chạy AI1/AI2A.
 - Flow-only event không chạy AI2B.
 - Combined event chạy cả ba mock adapters.
+- AI2A real threshold `unknown` không bị fusion xem là attack.
+- AI2A real thiếu frozen 41 features trả `not_available`.
+- Zeek parser đọc JSON-lines và `#fields` TSV.
+- UID correlator tạo đúng `network_flow/http/combined`.
 
 ## 3. Thứ Tự Đọc Frontend
 
@@ -448,11 +537,15 @@ Input có `evidence.flow` nhưng không có `evidence.http`.
 Backend xử lý:
 
 ```text
-AI1 -> completed
-AI2A -> completed
+AI1 -> completed nếu adapter phù hợp
+AI2A -> completed nếu flow đã có frozen 41-feature vector
 AI2B -> not_applicable
 Fusion -> Suspicious Network Activity hoặc Network Anomaly
 ```
+
+Nếu chỉ gửi flow raw tối giản bằng `curl`, ví dụ chỉ có `service`, `dst_port`,
+`orig_pkts`, AI2A real sẽ trả `not_available` vì thiếu feature vector frozen.
+Đó là hành vi đúng, không phải mock và không phải model fail.
 
 Frontend hiển thị:
 
@@ -551,7 +644,19 @@ Kết quả:
 
 ```text
 ruff: PASS
-pytest: 3 passed
+pytest: 13 passed
+```
+
+AI2A modeling tests:
+
+```bash
+/home/tran_thien/miniconda3/bin/conda run -n interior_ai pytest Dataset/tools/ai2a_modeling/tests -q
+```
+
+Kết quả:
+
+```text
+83 passed, 11 skipped
 ```
 
 Frontend:
@@ -581,20 +686,25 @@ Fusion mode -> DEGRADED_AI2B_ONLY
 1. backend/app/contracts.py
 2. backend/app/adapters/base.py
 3. backend/app/adapters/mock.py
-4. backend/app/adapters/ai2b_real.py
-5. backend/app/dependencies.py
-6. backend/app/services/orchestrator.py
-7. backend/app/services/fusion.py
-8. backend/app/services/store.py
-9. backend/app/services/websocket_manager.py
-10. backend/app/main.py
-11. backend/tests/test_fusion_mvp.py
-12. frontend/src/types.ts
-13. frontend/src/lib/alertMapper.ts
-14. frontend/src/useSocket.ts
-15. frontend/src/components/alerts/AlertTable.tsx
-16. frontend/src/components/alerts/AlertDetailDrawer.tsx
-17. frontend/src/mocks/securityData.ts
+4. backend/app/adapters/ai2a_real.py
+5. backend/app/adapters/ai2b_real.py
+6. backend/app/adapters/unavailable.py
+7. backend/app/dependencies.py
+8. backend/app/services/orchestrator.py
+9. backend/app/services/fusion.py
+10. backend/app/replay/zeek.py
+11. backend/scripts/replay_local_lab_logs.py
+12. backend/app/services/store.py
+13. backend/app/services/websocket_manager.py
+14. backend/app/main.py
+15. backend/tests/test_fusion_mvp.py
+16. backend/tests/test_ai2a_real_and_replay.py
+17. frontend/src/types.ts
+18. frontend/src/lib/alertMapper.ts
+19. frontend/src/useSocket.ts
+20. frontend/src/components/alerts/AlertTable.tsx
+21. frontend/src/components/alerts/AlertDetailDrawer.tsx
+22. frontend/src/mocks/securityData.ts
 ```
 
 Nếu chỉ có 30 phút để hiểu nhanh, đọc:
@@ -614,7 +724,9 @@ frontend/src/components/alerts/AlertTable.tsx
 Các phần chưa được làm, để tránh hiểu nhầm:
 
 - Chưa tích hợp real AI1 adapter.
-- Chưa tích hợp real AI2A adapter.
+- Chưa có raw Zeek `conn.log` -> frozen AI2A 41-feature extractor chính thức.
+  AI2A real adapter đã có, nhưng chỉ predict khi event đã mang đủ frozen
+  feature vector.
 - Chưa có long-lived correlation window nhiều event.
 - Chưa lưu database bền vững; store hiện là in-memory.
 - Chưa dùng final holdout `133-136` để quyết định dashboard integration.
