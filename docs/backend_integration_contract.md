@@ -193,9 +193,10 @@ AI1/AI2A adapter nên `supports(event) = true` khi có `evidence.flow`.
 
 AI2A real adapter có ràng buộc riêng: model freeze hiện tại dùng 41 frozen
 features của release candidate `rf_v2_1_full_safe_plus_ssh_minimal`. Backend
-không được tự đoán lại 41 feature từ raw `conn.log`. Nếu flow evidence chưa có
-đủ frozen feature vector, AI2A real trả `not_available` với reason rõ ràng.
-Raw Zeek replay bridge chỉ parse/correlate logs rồi POST event vào `/api/events`.
+không được tự đoán lại 41 feature từ flow JSON tối giản. Replay bridge và live
+`conn.log` tailer đã enrich Zeek conn rows thành frozen 41-feature vector trước
+khi POST vào `/api/events`. Nếu flow evidence chưa có đủ frozen feature vector,
+AI2A real trả `not_available` với reason rõ ràng.
 
 ### Suricata Evidence
 
@@ -654,8 +655,8 @@ For this backend handoff, keep the final alert DTO stable.
 Priority order:
 
 1. Add real AI1 adapter when model artifact/input schema is available.
-2. Wire exact raw Zeek `conn.log` -> frozen AI2A 41-feature extractor if the
-   original release extractor is made available.
+2. Add live combined correlation between independent HTTP and conn tailers when
+   needed for a single fused alert from two live streams.
 3. Add persistent alert store if needed for demo recording.
 4. Extend replay bridge with pacing/batch mode if needed for local lab demos.
 5. Add API request validation with Pydantic models if time allows.

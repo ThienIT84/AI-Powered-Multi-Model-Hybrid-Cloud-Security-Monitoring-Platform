@@ -131,7 +131,43 @@ printf '#fields\tts\tuid\tid.orig_h\tid.resp_h\tmethod\turi\n1.0\tC1\t10.10.10.1
     --dry-run
 ```
 
-## 6. Gửi Traffic Từ Kali
+## 6. Start Zeek Conn Tailer Cho AI2A Qua SSH Stream
+
+Nếu muốn AI2A real nhận flow realtime từ `conn.log`, chạy thêm terminal này trên máy dev/host:
+
+```bash
+ssh zeek@192.168.17.20 "grep '^#fields' /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log; tail -n 0 -F /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log" \
+| conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+    python backend/scripts/tail_zeek_conn_to_backend.py \
+    --conn-log - \
+    --api-url http://localhost:8000/api/events
+```
+
+Ý nghĩa:
+
+```text
+grep '^#fields' gửi header TSV một lần để parser biết tên cột.
+tail -n 0 -F chỉ gửi các conn row mới phát sinh.
+tail_zeek_conn_to_backend.py enrich flow thành frozen AI2A 41-feature vector.
+Backend /api/events gọi AI2A real nếu AI2A_PREDICTOR_MODE=real.
+Các SSH temporal counters được buffer theo timestamp; các row cùng timestamp
+không được dùng làm prior context cho nhau.
+```
+
+Dry-run không cần SSH:
+
+```bash
+printf '#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tservice\tduration\torig_bytes\tresp_bytes\torig_pkts\tresp_pkts\torig_ip_bytes\tconn_state\thistory\n1.0\tC1\t10.10.10.10\t38932\t192.168.1.10\t22\ttcp\tssh\t0.5\t100\t50\t5\t5\t300\tSF\tShADadFf\n' \
+| conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+    python backend/scripts/tail_zeek_conn_to_backend.py \
+    --conn-log - \
+    --limit 1 \
+    --dry-run
+```
+
+Lưu ý: HTTP tailer và conn tailer hiện tạo event riêng. Live correlation gom HTTP + flow cùng UID thành một alert duy nhất để sau.
+
+## 7. Gửi Traffic Từ Kali
 
 Normal HTTP:
 
@@ -158,42 +194,177 @@ Expected result:
 - Backend WebSocket gửi alert mới.
 - Dashboard hiện alert SQL Injection hoặc Cross-Site Scripting.
 - Detail drawer hiển thị AI2B `completed` / `real`; AI1/AI2A theo mode demo.
+- Nếu conn tailer cũng đang chạy và backend bật `AI2A_PREDICTOR_MODE=real`, dashboard sẽ có thêm flow event với AI2A `completed` / `real` hoặc `unknown` nếu confidence dưới threshold `0.9`.
 
-## 7. Fallback Replay Mode
+## 8. Replay Demo Mode Cho AI2A Và AI2B
 
-Nếu live lab/network có vấn đề nhưng đã có `http.log` hoặc `conn.log`, replay offline:
+Replay mode dùng khi bạn đã có log Zeek và muốn phát lại vào backend. Script
+`replay_local_lab_logs.py` **không tự SSH và không tự copy log**. Nó chỉ đọc
+file log đã nằm trên máy host/dev.
 
-```bash
-conda run -n interior_ai env PYTHONPATH=backend \
-  python backend/scripts/replay_local_lab_logs.py \
-  --http-log /path/to/http.log \
-  --api-url http://localhost:8000/api/events
+Luồng replay:
+
+```text
+Zeek VM http.log/conn.log
+-> scp về host/dev
+-> replay_local_lab_logs.py đọc file local
+-> POST /api/events
+-> AI2A/AI2B/Fusion
+-> Dashboard
 ```
 
-Nếu có `conn.log`, replay bridge sẽ enrich flow thành frozen AI2A 41-feature vector trước khi POST:
+### 8.1. Copy log từ Zeek VM về host/dev
+
+Từ repo root trên máy host/dev:
 
 ```bash
-conda run -n interior_ai env PYTHONPATH=backend \
-  AI2A_PREDICTOR_MODE=real \
-  python backend/scripts/replay_local_lab_logs.py \
-  --conn-log /path/to/conn.log \
-  --api-url http://localhost:8000/api/events
+mkdir -p tmp/zeek_logs/live_mvp
+
+scp zeek@192.168.17.20:/home/zeek/fcaj-ai2a-normal/live_mvp/http.log \
+  tmp/zeek_logs/live_mvp/http.log
+
+scp zeek@192.168.17.20:/home/zeek/fcaj-ai2a-normal/live_mvp/conn.log \
+  tmp/zeek_logs/live_mvp/conn.log
 ```
 
-Dry-run trước khi POST:
+Sau khi copy, file nằm ở:
+
+```text
+tmp/zeek_logs/live_mvp/http.log
+tmp/zeek_logs/live_mvp/conn.log
+```
+
+Nếu bạn đang dùng path log khác trên Zeek VM, thay phần
+`/home/zeek/fcaj-ai2a-normal/live_mvp/...` bằng path thật.
+
+### 8.2. Dry-run trước khi bắn vào backend
+
+Dry-run chỉ parse/correlate, không tạo alert:
 
 ```bash
 conda run -n interior_ai env PYTHONPATH=backend \
   python backend/scripts/replay_local_lab_logs.py \
-  --http-log /path/to/http.log \
+  --conn-log tmp/zeek_logs/live_mvp/conn.log \
+  --http-log tmp/zeek_logs/live_mvp/http.log \
   --dry-run
 ```
 
-## 8. Scope Ghi Nhớ
+Expected summary có các field kiểu:
+
+```text
+conn_rows
+ai2a_feature_enriched_flows
+http_rows
+combined_events
+flow_only_events
+http_only_events
+```
+
+`ai2a_feature_enriched_flows > 0` nghĩa là `conn.log` đã được enrich thành
+frozen AI2A 41-feature vector.
+
+### 8.3. Replay AI2B-only từ `http.log`
+
+Backend nên chạy với AI2B real:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  AI1_PREDICTOR_MODE=mock \
+  AI2A_PREDICTOR_MODE=mock \
+  AI2B_PREDICTOR_MODE=real \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Replay:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/replay_local_lab_logs.py \
+  --http-log tmp/zeek_logs/live_mvp/http.log \
+  --api-url http://localhost:8000/api/events
+```
+
+Kết quả mong đợi:
+
+- HTTP evidence đi vào AI2B.
+- AI2B hiển thị `completed` / `real` trong dashboard detail.
+- SQLI/XSS URI nếu có trong `http.log` sẽ tạo SQL Injection hoặc Cross-Site Scripting alert.
+
+### 8.4. Replay AI2A-only từ `conn.log`
+
+Backend nên chạy với AI2A real:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  AI1_PREDICTOR_MODE=mock \
+  AI2A_PREDICTOR_MODE=real \
+  AI2B_PREDICTOR_MODE=mock \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Replay:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/replay_local_lab_logs.py \
+  --conn-log tmp/zeek_logs/live_mvp/conn.log \
+  --api-url http://localhost:8000/api/events
+```
+
+Kết quả mong đợi:
+
+- `conn.log` được parse thành flow evidence.
+- Replay bridge thêm `ai2a_features` đủ 41 feature vào `evidence.flow`.
+- AI2A hiển thị `completed` / `real` nếu model artifact load được.
+- Nếu confidence dưới frozen threshold `0.9`, label có thể là `unknown`; đây là đúng release logic, không phải lỗi.
+
+### 8.5. Replay combined AI2A + AI2B
+
+Backend chạy cả AI2A real và AI2B real:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  AI1_PREDICTOR_MODE=mock \
+  AI2A_PREDICTOR_MODE=real \
+  AI2B_PREDICTOR_MODE=real \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Replay cả `conn.log` và `http.log`:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/replay_local_lab_logs.py \
+  --conn-log tmp/zeek_logs/live_mvp/conn.log \
+  --http-log tmp/zeek_logs/live_mvp/http.log \
+  --api-url http://localhost:8000/api/events
+```
+
+Kết quả mong đợi:
+
+- Nếu `conn.log` và `http.log` có cùng Zeek `uid`, backend tạo `combined` event.
+- AI2A xử lý flow side.
+- AI2B xử lý HTTP side.
+- Fusion tạo final alert và dashboard hiển thị contributors theo model thật sự completed.
+
+## 9. Scope Ghi Nhớ
 
 - Primary demo: live local lab.
-- Fallback demo: replay Zeek logs.
+- Replay demo: copy `conn.log`/`http.log` về host rồi phát lại qua `/api/events`.
 - AI2B real là model chính cho HTTP SQLI/XSS trong MVP.
 - AI2A real chạy được từ `conn.log` replay nhờ backend enrich frozen 41-feature vector.
-- Live `conn.log` tailer cho AI2A chưa phải primary path; ưu tiên replay `conn.log` hoặc combined replay khi cần demo AI2A.
+- Live `conn.log` tailer cho AI2A đã có, nhưng hiện tạo flow alert riêng; live combined correlation theo UID sẽ làm sau.
+- AI2A không phải SSH-only. Release candidate `rf_v2_1_full_safe_plus_ssh_minimal`
+  là flow-level multi-class detector: SSH temporal minimal là phần temporal được
+  giữ trong 41 feature, còn `http_beaconing_indicator` và
+  `web_initial_access_indicator` vẫn được detect bằng nhóm `full_safe` flow
+  features đã tối ưu.
+- Theo AI2A final report, selected candidate có validation/holdout evidence đáng
+  chú ý:
+  - `ssh_bruteforce_indicator`: validation recall `0.985`, holdout recall `0.883`.
+  - `http_beaconing_indicator`: validation recall `0.950`, holdout recall `0.726`, holdout PR-AUC `0.970`.
+  - `web_initial_access_indicator`: validation recall `0.862`, holdout recall `0.831`.
+- Nếu cần nói về DoS/DDoS trong báo cáo hoặc demo, dùng đúng label/taxonomy của
+  AI2A release report. Không tự gọi là `DDoS` nếu release artifact không có class
+  tên đó.
 - Không quay lại training/holdout trong demo MVP này.

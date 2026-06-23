@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -10,10 +11,31 @@ from app.adapters.ai2a_real import RealAI2AAdapter, threshold_label
 from app.adapters.mock import MockAI1Adapter, MockAI2BAdapter
 from app.contracts import ModelStatus
 from app.dependencies import build_orchestrator
-from app.replay import AI2AFlowFeatureExtractor, FROZEN_AI2A_FEATURES, ZeekConnParser, ZeekHttpParser, ZeekUidCorrelator
+from app.replay import (
+    AI2AFlowFeatureExtractor,
+    AI2AStreamingFlowFeatureExtractor,
+    FROZEN_AI2A_FEATURES,
+    ZeekConnParser,
+    ZeekHttpParser,
+    ZeekUidCorrelator,
+)
 from app.replay.zeek import parse_zeek_line
 from app.services.fusion import FusionService
 from app.services.orchestrator import EventOrchestrator
+
+SCRIPTS_ROOT = Path(__file__).resolve().parents[1] / "scripts"
+if str(SCRIPTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_ROOT))
+
+from tail_zeek_conn_to_backend import StreamingConnTailState  # noqa: E402
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+AI2A_FEATURE_MANIFEST = (
+    REPO_ROOT
+    / "Dataset/tools/ai2a_modeling/artifacts/temporal_v2_1/20260603T080212Z/"
+    / "rf_v2_1_full_safe_plus_ssh_minimal/feature_manifest.json"
+)
 
 
 def test_threshold_label_abstains_below_frozen_threshold() -> None:
@@ -109,6 +131,14 @@ def test_ai2a_real_predicts_when_frozen_feature_vector_is_complete() -> None:
     assert output.source == "real"
     assert output.label == "ssh_bruteforce_indicator"
     assert output.confidence == 0.97
+
+
+def test_backend_ai2a_feature_order_matches_release_manifest() -> None:
+    manifest = json.loads(AI2A_FEATURE_MANIFEST.read_text(encoding="utf-8"))
+
+    assert manifest["experiment"] == "rf_v2_1_full_safe_plus_ssh_minimal"
+    assert manifest["input_features"] == FROZEN_AI2A_FEATURES
+    assert len(manifest["input_features"]) == 41
 
 
 def test_ai2a_unknown_label_does_not_trigger_network_attack_with_ai1_anomaly() -> None:
@@ -265,6 +295,100 @@ def test_ai2a_feature_extractor_resets_temporal_state_between_replay_sessions() 
     assert second[0]["ai2a_features"]["ssh_count_60s_same_src"] == 0
 
 
+def test_ai2a_streaming_extractor_matches_batch_temporal_boundaries() -> None:
+    first_batch = [
+        {
+            "uid": "C1",
+            "ts": "1.0",
+            "src_ip": "10.10.10.10",
+            "dst_ip": "192.168.1.10",
+            "dst_port": 22,
+            "proto": "tcp",
+            "service": "ssh",
+            "conn_state": "SF",
+        },
+        {
+            "uid": "C2",
+            "ts": "1.0",
+            "src_ip": "10.10.10.10",
+            "dst_ip": "192.168.1.10",
+            "dst_port": 22,
+            "proto": "tcp",
+            "service": "ssh",
+            "conn_state": "S0",
+        },
+    ]
+    second_batch = [
+        {
+            "uid": "C3",
+            "ts": "2.0",
+            "src_ip": "10.10.10.10",
+            "dst_ip": "192.168.1.10",
+            "dst_port": 22,
+            "proto": "tcp",
+            "service": "ssh",
+            "conn_state": "SF",
+        }
+    ]
+
+    extractor = AI2AStreamingFlowFeatureExtractor()
+    first = extractor.enrich_batch(first_batch)
+    second = extractor.enrich_batch(second_batch)
+    by_uid = {flow["uid"]: flow["ai2a_features"] for flow in [*first, *second]}
+
+    assert by_uid["C1"]["ssh_count_60s_same_src"] == 0
+    assert by_uid["C2"]["ssh_count_60s_same_src"] == 0
+    assert by_uid["C3"]["ssh_count_60s_same_src"] == 2
+    assert by_uid["C3"]["ssh_non_success_conn_count_60s_same_src_dst"] == 1
+
+
+def test_conn_tail_state_buffers_equal_timestamp_rows_until_timestamp_changes() -> None:
+    state = StreamingConnTailState()
+    first = {
+        "uid": "C1",
+        "ts": "1.0",
+        "src_ip": "10.10.10.10",
+        "dst_ip": "192.168.1.10",
+        "dst_port": 22,
+        "proto": "tcp",
+        "service": "ssh",
+        "conn_state": "SF",
+    }
+    same_timestamp = {
+        "uid": "C2",
+        "ts": "1.0",
+        "src_ip": "10.10.10.10",
+        "dst_ip": "192.168.1.10",
+        "dst_port": 22,
+        "proto": "tcp",
+        "service": "ssh",
+        "conn_state": "S0",
+    }
+    next_timestamp = {
+        "uid": "C3",
+        "ts": "2.0",
+        "src_ip": "10.10.10.10",
+        "dst_ip": "192.168.1.10",
+        "dst_port": 22,
+        "proto": "tcp",
+        "service": "ssh",
+        "conn_state": "SF",
+    }
+
+    assert state.push(first) == []
+    assert state.push(same_timestamp) == []
+
+    ready = state.push(next_timestamp)
+    ready_by_uid = {flow["uid"]: flow["ai2a_features"] for flow in ready}
+    assert set(ready_by_uid) == {"C1", "C2"}
+    assert ready_by_uid["C1"]["ssh_count_60s_same_src"] == 0
+    assert ready_by_uid["C2"]["ssh_count_60s_same_src"] == 0
+
+    final = state.flush()
+    assert final[0]["uid"] == "C3"
+    assert final[0]["ai2a_features"]["ssh_count_60s_same_src"] == 2
+
+
 def test_zeek_json_uid_correlation_builds_combined_and_single_scope_events(tmp_path: Path) -> None:
     conn_log = tmp_path / "conn.log"
     http_log = tmp_path / "http.log"
@@ -378,6 +502,55 @@ def test_http_tailer_accepts_stdin_dash() -> None:
     assert '"http_log": "stdin"' in result.stdout
     assert '"status": "dry_run_event"' in result.stdout
     assert "/ai2a_p11_app/search?q=x" in result.stdout
+
+
+def test_conn_tailer_accepts_stdin_dash_and_enriches_ai2a_features() -> None:
+    payload = (
+        "#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tservice\tduration\torig_bytes\tresp_bytes\torig_pkts\tresp_pkts\torig_ip_bytes\tconn_state\thistory\n"
+        "1.0\tC1\t10.10.10.10\t38932\t192.168.1.10\t22\ttcp\tssh\t0.5\t100\t50\t5\t5\t300\tSF\tShADadFf\n"
+    )
+    script = Path(__file__).resolve().parents[1] / "scripts" / "tail_zeek_conn_to_backend.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--conn-log",
+            "-",
+            "--limit",
+            "1",
+            "--dry-run",
+        ],
+        input=payload,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    assert '"conn_log": "stdin"' in result.stdout
+    assert '"status": "dry_run_event"' in result.stdout
+    assert '"ai2a_features"' in result.stdout
+    assert '"ssh_has_prior_same_src_dst": 0' in result.stdout
+
+
+def test_conn_tailer_stdin_without_fields_header_emits_no_rows() -> None:
+    payload = "1.0\tC1\t10.10.10.10\t38932\t192.168.1.10\t22\ttcp\tssh\n"
+    script = Path(__file__).resolve().parents[1] / "scripts" / "tail_zeek_conn_to_backend.py"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--conn-log",
+            "-",
+            "--dry-run",
+        ],
+        input=payload,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    assert '"status": "tail_started"' in result.stdout
+    assert '"emitted": 0' in result.stdout
 
 
 def test_replay_script_enriches_conn_rows_with_ai2a_features(tmp_path: Path) -> None:

@@ -206,7 +206,10 @@ Rules:
 
 - Không viết lại 41 feature bằng công thức đoán trong backend.
 - Adapter AI2A chỉ predict khi `evidence.flow` đã có đủ frozen feature vector.
-- Raw `conn.log` replay chỉ parser/correlate thành event; nếu chưa có extractor chính xác thì AI2A trả `not_available`.
+- Raw `conn.log` replay/live tailer dùng extractor đã kiểm thử để enrich Zeek flow
+  thành đúng frozen 41-feature vector trước khi POST `/api/events`.
+- Event flow tự viết tay mà thiếu `ai2a_features` vẫn phải trả `not_available`,
+  không fallback mock và không đoán feature.
 - Threshold logic phải giữ behavior release: `max_proba < 0.9` => label `unknown`.
 - `unknown` không được xem là attack label trong Fusion.
 
