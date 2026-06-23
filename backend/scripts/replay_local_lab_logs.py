@@ -10,7 +10,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.replay import ZeekConnParser, ZeekHttpParser, ZeekUidCorrelator  # noqa: E402
+from app.replay import AI2AFlowFeatureExtractor, ZeekConnParser, ZeekHttpParser, ZeekUidCorrelator  # noqa: E402
 
 
 def main() -> None:
@@ -23,6 +23,8 @@ def main() -> None:
     args = parser.parse_args()
 
     flows = ZeekConnParser().parse_flows(args.conn_log) if args.conn_log else []
+    if flows:
+        flows = AI2AFlowFeatureExtractor().enrich_flows(flows)
     http_rows = ZeekHttpParser().parse_http(args.http_log) if args.http_log else []
     events = ZeekUidCorrelator().correlate(flows, http_rows)
     if args.limit > 0:
@@ -37,6 +39,7 @@ def main() -> None:
     summary = {
         "dry_run": args.dry_run,
         "conn_rows": len(flows),
+        "ai2a_feature_enriched_flows": sum(1 for flow in flows if "ai2a_features" in flow),
         "http_rows": len(http_rows),
         "events": len(events),
         "combined_events": sum(1 for event in events if event["event_type"] == "combined"),

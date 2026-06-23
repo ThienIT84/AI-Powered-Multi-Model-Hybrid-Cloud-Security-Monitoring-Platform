@@ -67,10 +67,11 @@ conda run -n interior_ai env PYTHONPATH=backend \
   --dry-run
 ```
 
-Important: the AI2A real adapter only predicts when the flow evidence already
-contains the frozen 41-feature vector used by the release candidate. Raw
-`conn.log` replay is parsed and correlated, but the backend does not guess or
-recreate those 41 features unless the exact extractor is wired in.
+Important: the AI2A real adapter predicts only when flow evidence contains the
+frozen 41-feature vector used by the release candidate. `conn.log` replay now
+enriches normalized Zeek flow rows with that vector before posting to
+`/api/events`; direct hand-written flow JSON without `ai2a_features` still
+returns `not_available` instead of guessing.
 
 Tail a live Zeek `http.log` into the backend for the local lab MVP:
 

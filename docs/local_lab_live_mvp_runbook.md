@@ -161,12 +161,22 @@ Expected result:
 
 ## 7. Fallback Replay Mode
 
-Nếu live lab/network có vấn đề nhưng đã có `http.log`, replay offline:
+Nếu live lab/network có vấn đề nhưng đã có `http.log` hoặc `conn.log`, replay offline:
 
 ```bash
 conda run -n interior_ai env PYTHONPATH=backend \
   python backend/scripts/replay_local_lab_logs.py \
   --http-log /path/to/http.log \
+  --api-url http://localhost:8000/api/events
+```
+
+Nếu có `conn.log`, replay bridge sẽ enrich flow thành frozen AI2A 41-feature vector trước khi POST:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  AI2A_PREDICTOR_MODE=real \
+  python backend/scripts/replay_local_lab_logs.py \
+  --conn-log /path/to/conn.log \
   --api-url http://localhost:8000/api/events
 ```
 
@@ -184,5 +194,6 @@ conda run -n interior_ai env PYTHONPATH=backend \
 - Primary demo: live local lab.
 - Fallback demo: replay Zeek logs.
 - AI2B real là model chính cho HTTP SQLI/XSS trong MVP.
-- AI2A real adapter đã có, nhưng raw `conn.log` chưa tự sinh đủ frozen 41-feature vector trong backend.
+- AI2A real chạy được từ `conn.log` replay nhờ backend enrich frozen 41-feature vector.
+- Live `conn.log` tailer cho AI2A chưa phải primary path; ưu tiên replay `conn.log` hoặc combined replay khi cần demo AI2A.
 - Không quay lại training/holdout trong demo MVP này.
