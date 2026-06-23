@@ -60,17 +60,37 @@ Replay local Zeek logs through the public `/api/events` path. Use `--dry-run`
 first to verify parser/correlation counts without creating alerts:
 
 ```bash
+mkdir -p tmp/zeek_logs/live_mvp
+scp zeek@192.168.17.20:/home/zeek/fcaj-ai2a-normal/live_mvp/http.log tmp/zeek_logs/live_mvp/http.log
+scp zeek@192.168.17.20:/home/zeek/fcaj-ai2a-normal/live_mvp/conn.log tmp/zeek_logs/live_mvp/conn.log
+
 conda run -n interior_ai env PYTHONPATH=backend \
   python backend/scripts/replay_local_lab_logs.py \
-  --conn-log /path/to/conn.log \
-  --http-log /path/to/http.log \
+  --conn-log tmp/zeek_logs/live_mvp/conn.log \
+  --http-log tmp/zeek_logs/live_mvp/http.log \
   --dry-run
 ```
 
-Important: the AI2A real adapter only predicts when the flow evidence already
-contains the frozen 41-feature vector used by the release candidate. Raw
-`conn.log` replay is parsed and correlated, but the backend does not guess or
-recreate those 41 features unless the exact extractor is wired in.
+Important: the AI2A real adapter predicts only when flow evidence contains the
+frozen 41-feature vector used by the release candidate. `conn.log` replay now
+enriches normalized Zeek flow rows with that vector before posting to
+`/api/events`; direct hand-written flow JSON without `ai2a_features` still
+returns `not_available` instead of guessing.
+
+AI2A capability note: the selected release candidate
+`rf_v2_1_full_safe_plus_ssh_minimal` is a flow-level multi-class detector, not
+an SSH-only model. The final 41-feature schema keeps a minimal SSH temporal pack,
+while HTTP beaconing and web initial access are still learned from the optimized
+`full_safe` flow features. The release report shows validation/holdout support
+for `http_beaconing_indicator`, `web_initial_access_indicator`, and
+`ssh_bruteforce_indicator`; use exact release labels instead of introducing a
+new `DDoS` label unless the project taxonomy maps it explicitly.
+Reference holdout recall for the selected candidate is approximately `0.726`
+for HTTP beaconing, `0.831` for web initial access, and `0.883` for SSH brute
+force.
+
+Replay mode reads local files on the host. Live mode streams from the Zeek VM
+with `ssh tail`.
 
 Tail a live Zeek `http.log` into the backend for the local lab MVP:
 
@@ -83,6 +103,22 @@ ssh zeek@192.168.1.20 "tail -n 0 -F <ZEEK_HTTP_LOG_PATH>" \
 ```
 
 Use `tail -n 0 -F` so old rows are not replayed when the stream starts. Use `--no-capture-output` for stdin/pipe mode so `conda run` does not swallow the stream. Use `--http-log - --limit 1 --dry-run` to verify stdin parsing without POSTing.
+
+Tail a live Zeek `conn.log` into AI2A real inference:
+
+```bash
+ssh zeek@192.168.17.20 "grep '^#fields' /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log; tail -n 0 -F /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log" \
+| conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+    python backend/scripts/tail_zeek_conn_to_backend.py \
+    --conn-log - \
+    --api-url http://localhost:8000/api/events
+```
+
+The conn tailer enriches each flow with the frozen AI2A 41-feature vector before
+POSTing. It is intentionally separate from the HTTP tailer; live UID correlation
+between the two streams is a later step. Temporal SSH counters are buffered by
+Zeek timestamp so rows with the same timestamp do not become prior context for
+each other.
 
 Frontend API mode:
 

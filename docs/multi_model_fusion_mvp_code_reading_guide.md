@@ -111,10 +111,12 @@ Nó kiểm tra model/preprocessor/feature manifest bằng startup canary:
 - threshold frozen có tồn tại;
 - probability finite.
 
-Điểm quan trọng: adapter này không tự viết lại 41 feature từ raw `conn.log`.
-Nó chỉ predict khi `evidence.flow` đã chứa đủ frozen feature vector. Nếu event
-chỉ có vài field raw như `service`, `dst_port`, `orig_pkts`, adapter trả
-`not_available` với reason rõ ràng thay vì đoán bừa.
+Điểm quan trọng: adapter này không nhận flow raw tối giản. Nó chỉ predict khi
+`evidence.flow` đã chứa đủ frozen feature vector. Replay bridge và live
+`conn.log` tailer hiện đã enrich Zeek conn rows thành đúng 41 feature trước khi
+POST vào `/api/events`. Nếu bạn tự gửi event bằng `curl` chỉ có vài field raw như
+`service`, `dst_port`, `orig_pkts`, adapter vẫn trả `not_available` với reason rõ
+ràng thay vì đoán bừa.
 
 Threshold behavior:
 
@@ -279,6 +281,10 @@ conda run -n interior_ai env PYTHONPATH=backend \
 `--dry-run` chỉ in số lượng event/correlation, không tạo alert. Khi bỏ
 `--dry-run`, script POST từng event vào `/api/events`, tức là đi qua đúng
 đường backend công khai thay vì gọi adapter trực tiếp.
+
+Với `conn.log`, replay bridge enrich flow thành frozen AI2A 41-feature vector.
+Với `http.log`, replay bridge tạo HTTP evidence cho AI2B. Nếu cả hai log có cùng
+Zeek `uid`, replay có thể tạo `combined` event.
 
 ### Bước 11: Store và WebSocket
 
@@ -724,9 +730,9 @@ frontend/src/components/alerts/AlertTable.tsx
 Các phần chưa được làm, để tránh hiểu nhầm:
 
 - Chưa tích hợp real AI1 adapter.
-- Chưa có raw Zeek `conn.log` -> frozen AI2A 41-feature extractor chính thức.
-  AI2A real adapter đã có, nhưng chỉ predict khi event đã mang đủ frozen
-  feature vector.
+- Live combined correlation giữa HTTP tailer và conn tailer chưa có. Hai tailer
+  hiện có thể tạo alert riêng; replay mode vẫn có thể ghép `conn.log`/`http.log`
+  theo UID trong cùng một lần chạy.
 - Chưa có long-lived correlation window nhiều event.
 - Chưa lưu database bền vững; store hiện là in-memory.
 - Chưa dùng final holdout `133-136` để quyết định dashboard integration.
