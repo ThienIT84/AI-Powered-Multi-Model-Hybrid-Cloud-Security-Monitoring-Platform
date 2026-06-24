@@ -3,7 +3,7 @@
 Runbook này dùng cho demo MVP theo luồng chính:
 
 ```text
-Kali -> Victim/Web VM -> Zeek http.log -> Backend /api/events -> AI2B/Fusion -> Dashboard
+Kali -> Victim/Web VM -> Zeek http.log/conn.log -> Backend /api/events -> AI2A/AI2B/Fusion -> Dashboard
 ```
 
 Replay Zeek logs chỉ là fallback/debug, không phải luồng demo chính.
@@ -13,7 +13,8 @@ IP/lab defaults lấy từ `Dataset/tools/attack_profiles/attack_012_web_semanti
 ```text
 Kali attacker: 10.10.10.10
 Victim/Web:    192.168.1.10
-Zeek sensor:   192.168.1.20
+Zeek sensor:   192.168.1.20  (data-plane/capture IP)
+Zeek SSH:      192.168.17.20 (host/dev SSH management IP)
 Zeek iface:    ens33
 Web root:      /ai2a_p11_app/
 ```
@@ -28,7 +29,7 @@ Trên Victim/Web VM `192.168.1.10`, xác nhận web service đang listen port `8
 sudo ss -ltnp | grep ':80'
 ```
 
-Trên Zeek VM `192.168.1.20`, xác nhận sensor nhìn thấy traffic Kali -> Victim:
+Trên Zeek VM, xác nhận sensor/data-plane interface nhìn thấy traffic Kali -> Victim:
 
 ```bash
 sudo tcpdump -ni ens33 'host 10.10.10.10 and host 192.168.1.10 and tcp port 80'
@@ -42,14 +43,55 @@ curl -v "http://192.168.1.10/ai2a_p11_app/"
 
 Nếu `tcpdump` không thấy SYN/HTTP traffic, sửa network/interface trước. Chưa cần debug backend.
 
-## 2. Start Backend
+## 2. Start Zeek Live Capture Trên Zeek VM
+
+Phần này phải chạy trên **Zeek VM**, không chạy trên Kali và không chạy trên máy host/dev.
+
+Từ máy dev/host, SSH vào Zeek VM bằng management IP:
+
+```bash
+ssh zeek@192.168.17.20
+```
+
+Trên Zeek VM, tạo thư mục live demo và chạy Zeek trên interface capture `ens33`:
+
+```bash
+cd /home/zeek/fcaj-ai2a-normal
+mkdir -p live_mvp
+cd live_mvp
+sudo zeek -i ens33
+```
+
+Terminal này phải tiếp tục chạy. Nếu bạn `Ctrl-C`, Zeek sẽ dừng ghi `conn.log` và `http.log`.
+
+Ở một terminal khác, kiểm tra log đã được tạo:
+
+```bash
+ssh zeek@192.168.17.20 'ls -lah /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log /home/zeek/fcaj-ai2a-normal/live_mvp/http.log 2>/dev/null'
+```
+
+Nếu `http.log` chưa xuất hiện ngay, gửi một HTTP request từ Kali tới Victim rồi kiểm lại:
+
+```bash
+curl -v "http://192.168.1.10/ai2a_p11_app/"
+```
+
+Kiểm log có tăng không:
+
+```bash
+ssh zeek@192.168.17.20 'stat /home/zeek/fcaj-ai2a-normal/live_mvp/http.log /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log'
+```
+
+Nếu `tcpdump` thấy packet nhưng `conn.log/http.log` không tăng, lỗi nằm ở Zeek process/interface/log directory, chưa phải backend/tailer.
+
+## 3. Start Backend
 
 Từ repo root:
 
 ```bash
 conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
   AI1_PREDICTOR_MODE=mock \
-  AI2A_PREDICTOR_MODE=mock \
+  AI2A_PREDICTOR_MODE=real \
   AI2B_PREDICTOR_MODE=real \
   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -62,7 +104,7 @@ Smoke test nhanh:
 curl -s http://localhost:8000/health
 ```
 
-## 3. Start Frontend API Mode
+## 4. Start Frontend API Mode
 
 Terminal khác:
 
@@ -76,64 +118,109 @@ pnpm dev
 
 Mở URL mà Vite in ra, đăng nhập bằng tài khoản demo đã ghi trong frontend docs.
 
-## 4. Tìm Zeek http.log Đang Ghi
+## 5. Kiểm Tra Zeek Log Đang Ghi
 
-Từ máy dev hoặc Kali, tìm các file `http.log` trên Zeek VM:
-
-```bash
-ssh zeek@192.168.1.20 'find /home/zeek/fcaj-ai2a-normal -name http.log -type f | sort | tail -20'
-```
-
-Nếu chưa thấy, tìm rộng hơn:
-
-```bash
-ssh zeek@192.168.1.20 'find /opt/zeek /home/zeek -name http.log -type f 2>/dev/null | sort | tail -20'
-```
-
-Chọn file đang tăng khi Kali gửi request. Gọi path đó là:
+Với live demo, path chuẩn là:
 
 ```text
-ZEEK_HTTP_LOG_PATH
+/home/zeek/fcaj-ai2a-normal/live_mvp/http.log
+/home/zeek/fcaj-ai2a-normal/live_mvp/conn.log
 ```
 
-## 5. Start Zeek HTTP Tailer Qua SSH Stream
-
-Tailer chạy trên máy dev/host, nhưng đọc log từ Zeek VM qua `ssh tail -n 0 -F`:
+Từ máy dev/host, kiểm nhanh:
 
 ```bash
-ssh zeek@192.168.1.20 "tail -n 0 -F <ZEEK_HTTP_LOG_PATH>" \
+ssh zeek@192.168.17.20 'tail -n 3 /home/zeek/fcaj-ai2a-normal/live_mvp/http.log 2>/dev/null; tail -n 3 /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log 2>/dev/null'
+```
+
+Nếu bạn dùng thư mục khác, thay `live_mvp` bằng đúng path đang được Zeek ghi.
+
+## 6. Start Correlated Zeek Tailer Qua SSH Stream
+
+Đây là luồng live demo chính. Correlated tailer đọc đồng thời `conn.log` và
+`http.log`, ghép theo:
+
+```text
+connection key  = sensor_id + uid
+transaction key = sensor_id + uid + trans_depth
+```
+
+Nhờ vậy một HTTP keep-alive connection có nhiều request sẽ không bị ghi đè URI.
+
+Chạy trên máy dev/host:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/tail_zeek_correlated_to_backend.py \
+  --zeek-ssh zeek@192.168.17.20 \
+  --sensor-id zeek-vm-01 \
+  --conn-log /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log \
+  --http-log /home/zeek/fcaj-ai2a-normal/live_mvp/http.log \
+  --api-url http://localhost:8000/api/events \
+  --allow-endpoint 10.10.10.10 \
+  --allow-endpoint 192.168.1.10 \
+  --require-both-endpoints \
+  --correlation-timeout 5.0
+```
+
+Ý nghĩa:
+
+```text
+tailer SSH vào Zeek VM để stream conn.log + http.log.
+sensor_id giúp tránh correlate nhầm nếu sau này có nhiều Zeek sensor.
+event_id deterministic giúp backend upsert, không tạo alert trùng.
+filter exact pair giữ Kali <-> Victim và loại Victim -> Internet background.
+```
+
+Nếu SSH dùng password, script sẽ hiện password prompt trực tiếp trong terminal.
+
+Correlated tailer có thể emit:
+
+```text
+combined  = có cả flow + HTTP evidence
+http_only = có HTTP trước, flow chưa tới trong correlation timeout
+flow_only = flow không có HTTP transaction tương ứng
+```
+
+Nếu `http_only` được emit trước rồi `conn.log` tới muộn, backend sẽ update cùng
+`event_id` và dashboard nhận `alert.updated`.
+
+Demo curl nên ép đóng connection để `conn.log` và `http.log` xuất hiện gọn hơn:
+
+```bash
+curl -v -H "Connection: close" "http://192.168.1.10/ai2a_p11_app/"
+```
+
+Local dry-run không cần SSH:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/tail_zeek_correlated_to_backend.py \
+  --conn-log tmp/zeek_logs/live_mvp/conn.log \
+  --http-log tmp/zeek_logs/live_mvp/http.log \
+  --from-start \
+  --dry-run \
+  --max-emitted-events 5 \
+  --allow-endpoint 10.10.10.10 \
+  --allow-endpoint 192.168.1.10 \
+  --require-both-endpoints
+```
+
+## 7. Debug Fallback: Tail HTTP Hoặc Conn Riêng
+
+Chỉ dùng hai tailer cũ khi cần debug riêng AI2B hoặc AI2A.
+
+AI2B HTTP-only debug:
+
+```bash
+ssh zeek@192.168.17.20 "grep '^#fields' /home/zeek/fcaj-ai2a-normal/live_mvp/http.log; tail -n 0 -F /home/zeek/fcaj-ai2a-normal/live_mvp/http.log" \
 | conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
     python backend/scripts/tail_zeek_http_to_backend.py \
     --http-log - \
     --api-url http://localhost:8000/api/events
 ```
 
-Ý nghĩa:
-
-```text
-tail -n 0 -F chạy trên Zeek VM
-Python tailer chạy trên máy dev
-Backend vẫn là http://localhost:8000 trên máy dev
-```
-
-`tail -F` mặc định sẽ in 10 dòng cuối có sẵn. Dùng `tail -n 0 -F` để chỉ gửi các request mới phát sinh sau khi tailer bắt đầu.
-
-Lưu ý: với pipe/stdin, dùng `conda run --no-capture-output`; dạng `conda run` thường có thể không truyền stdin ổn định.
-
-Test stdin dry-run không cần SSH:
-
-```bash
-printf '#fields\tts\tuid\tid.orig_h\tid.resp_h\tmethod\turi\n1.0\tC1\t10.10.10.10\t192.168.1.10\tGET\t/ai2a_p11_app/search?q=x\n' \
-| conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
-    python backend/scripts/tail_zeek_http_to_backend.py \
-    --http-log - \
-    --limit 1 \
-    --dry-run
-```
-
-## 6. Start Zeek Conn Tailer Cho AI2A Qua SSH Stream
-
-Nếu muốn AI2A real nhận flow realtime từ `conn.log`, chạy thêm terminal này trên máy dev/host:
+AI2A conn-only debug:
 
 ```bash
 ssh zeek@192.168.17.20 "grep '^#fields' /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log; tail -n 0 -F /home/zeek/fcaj-ai2a-normal/live_mvp/conn.log" \
@@ -143,60 +230,40 @@ ssh zeek@192.168.17.20 "grep '^#fields' /home/zeek/fcaj-ai2a-normal/live_mvp/con
     --api-url http://localhost:8000/api/events
 ```
 
-Ý nghĩa:
+Trong demo chính, ưu tiên `tail_zeek_correlated_to_backend.py`.
 
-```text
-grep '^#fields' gửi header TSV một lần để parser biết tên cột.
-tail -n 0 -F chỉ gửi các conn row mới phát sinh.
-tail_zeek_conn_to_backend.py enrich flow thành frozen AI2A 41-feature vector.
-Backend /api/events gọi AI2A real nếu AI2A_PREDICTOR_MODE=real.
-Các SSH temporal counters được buffer theo timestamp; các row cùng timestamp
-không được dùng làm prior context cho nhau.
-```
-
-Dry-run không cần SSH:
-
-```bash
-printf '#fields\tts\tuid\tid.orig_h\tid.orig_p\tid.resp_h\tid.resp_p\tproto\tservice\tduration\torig_bytes\tresp_bytes\torig_pkts\tresp_pkts\torig_ip_bytes\tconn_state\thistory\n1.0\tC1\t10.10.10.10\t38932\t192.168.1.10\t22\ttcp\tssh\t0.5\t100\t50\t5\t5\t300\tSF\tShADadFf\n' \
-| conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
-    python backend/scripts/tail_zeek_conn_to_backend.py \
-    --conn-log - \
-    --limit 1 \
-    --dry-run
-```
-
-Lưu ý: HTTP tailer và conn tailer hiện tạo event riêng. Live correlation gom HTTP + flow cùng UID thành một alert duy nhất để sau.
-
-## 7. Gửi Traffic Từ Kali
+## 8. Gửi Traffic Từ Kali
 
 Normal HTTP:
 
 ```bash
-curl -v "http://192.168.1.10/ai2a_p11_app/"
+curl -v -H "Connection: close" "http://192.168.1.10/ai2a_p11_app/"
 ```
 
 SQL Injection demo:
 
 ```bash
-curl -v "http://192.168.1.10/ai2a_p11_app/search?q=%27%20OR%201%3D1--"
+curl -v -H "Connection: close" "http://192.168.1.10/ai2a_p11_app/search?q=%27%20OR%201%3D1--"
 ```
 
-XSS demo:
+XSS demo payload nên dùng payload event-handler encoded, vì đây là style AI2B
+frozen candidate nhận ổn hơn `script>alert(1)</script>` đơn giản:
 
 ```bash
-curl -v "http://192.168.1.10/ai2a_p11_app/search?q=%3Cscript%3Ealert(1)%3C/script%3E"
+curl -v -H "Connection: close" "http://192.168.1.10/ai2a_p11_app/search?q=%3Cimg%20src=x%20onerror=alert(1)%3E"
 ```
 
 Expected result:
 
 - Zeek `http.log` có URI tương ứng.
-- Tailer in `status=posted`.
+- Correlated tailer in `status=posted`.
 - Backend WebSocket gửi alert mới.
 - Dashboard hiện alert SQL Injection hoặc Cross-Site Scripting.
-- Detail drawer hiển thị AI2B `completed` / `real`; AI1/AI2A theo mode demo.
-- Nếu conn tailer cũng đang chạy và backend bật `AI2A_PREDICTOR_MODE=real`, dashboard sẽ có thêm flow event với AI2A `completed` / `real` hoặc `unknown` nếu confidence dưới threshold `0.9`.
+- Detail drawer hiển thị AI2B `completed` / `real`.
+- Nếu `conn.log` và `http.log` cùng `uid` có mặt trong correlation lifecycle,
+  alert là `combined` và có cả AI2A flow side + AI2B HTTP side.
 
-## 8. Replay Demo Mode Cho AI2A Và AI2B
+## 9. Replay Demo Mode Cho AI2A Và AI2B
 
 Replay mode dùng khi bạn đã có log Zeek và muốn phát lại vào backend. Script
 `replay_local_lab_logs.py` **không tự SSH và không tự copy log**. Nó chỉ đọc
@@ -213,7 +280,7 @@ Zeek VM http.log/conn.log
 -> Dashboard
 ```
 
-### 8.1. Copy log từ Zeek VM về host/dev
+### 9.1. Copy log từ Zeek VM về host/dev
 
 Từ repo root trên máy host/dev:
 
@@ -237,7 +304,7 @@ tmp/zeek_logs/live_mvp/conn.log
 Nếu bạn đang dùng path log khác trên Zeek VM, thay phần
 `/home/zeek/fcaj-ai2a-normal/live_mvp/...` bằng path thật.
 
-### 8.2. Dry-run trước khi bắn vào backend
+### 9.2. Dry-run trước khi bắn vào backend
 
 Dry-run chỉ parse/correlate, không tạo alert:
 
@@ -263,7 +330,7 @@ http_only_events
 `ai2a_feature_enriched_flows > 0` nghĩa là `conn.log` đã được enrich thành
 frozen AI2A 41-feature vector.
 
-### 8.3. Replay AI2B-only từ `http.log`
+### 9.3. Replay AI2B-only từ `http.log`
 
 Backend nên chạy với AI2B real:
 
@@ -290,7 +357,7 @@ Kết quả mong đợi:
 - AI2B hiển thị `completed` / `real` trong dashboard detail.
 - SQLI/XSS URI nếu có trong `http.log` sẽ tạo SQL Injection hoặc Cross-Site Scripting alert.
 
-### 8.4. Replay AI2A-only từ `conn.log`
+### 9.4. Replay AI2A-only từ `conn.log`
 
 Backend nên chạy với AI2A real:
 
@@ -318,7 +385,7 @@ Kết quả mong đợi:
 - AI2A hiển thị `completed` / `real` nếu model artifact load được.
 - Nếu confidence dưới frozen threshold `0.9`, label có thể là `unknown`; đây là đúng release logic, không phải lỗi.
 
-### 8.5. Replay combined AI2A + AI2B
+### 9.5. Replay combined AI2A + AI2B
 
 Backend chạy cả AI2A real và AI2B real:
 
@@ -347,13 +414,68 @@ Kết quả mong đợi:
 - AI2B xử lý HTTP side.
 - Fusion tạo final alert và dashboard hiển thị contributors theo model thật sự completed.
 
-## 9. Scope Ghi Nhớ
+### 9.6. Replay AI2A A10 Mixed Chain Capability Demo
+
+Nếu muốn chứng minh AI2A real phát hiện flow-level campaign tốt hơn `live_mvp`
+ngắn, dùng A10 mixed chain log đã thu thập trước đó:
+
+```bash
+mkdir -p tmp/zeek_logs/a10_mixed_chain
+
+scp zeek@192.168.17.20:/home/zeek/fcaj-ai2a-normal/runs/a10_008_callback_augmented_chain/conn.log \
+  tmp/zeek_logs/a10_mixed_chain/conn.log
+
+scp zeek@192.168.17.20:/home/zeek/fcaj-ai2a-normal/runs/a10_008_callback_augmented_chain/http.log \
+  tmp/zeek_logs/a10_mixed_chain/http.log
+```
+
+Backend mode:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  AI1_PREDICTOR_MODE=mock \
+  AI2A_PREDICTOR_MODE=real \
+  AI2B_PREDICTOR_MODE=mock \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Replay:
+
+```bash
+conda run -n interior_ai env PYTHONPATH=backend \
+  python backend/scripts/replay_local_lab_logs.py \
+  --conn-log tmp/zeek_logs/a10_mixed_chain/conn.log \
+  --http-log tmp/zeek_logs/a10_mixed_chain/http.log \
+  --api-url http://localhost:8000/api/events
+```
+
+Kỳ vọng với sample A10 này:
+
+```text
+AI2A thresholded detections:
+- 6 x HTTP Beaconing / Callback
+- 2 x Controlled Exfiltration
+
+AI2A unknown rows remain low/benign because threshold 0.9 is still enforced.
+```
+
+Đây là capability replay/demo, không phải final holdout metric. Không hạ
+threshold, không train lại model, không dùng raw label dưới threshold để tạo
+alert.
+
+## 10. Scope Ghi Nhớ
 
 - Primary demo: live local lab.
 - Replay demo: copy `conn.log`/`http.log` về host rồi phát lại qua `/api/events`.
 - AI2B real là model chính cho HTTP SQLI/XSS trong MVP.
 - AI2A real chạy được từ `conn.log` replay nhờ backend enrich frozen 41-feature vector.
-- Live `conn.log` tailer cho AI2A đã có, nhưng hiện tạo flow alert riêng; live combined correlation theo UID sẽ làm sau.
+- Fusion MVP cho phép AI2A real tự raise alert khi label đã vượt threshold
+  frozen `0.9`; `unknown` vẫn là abstain và không được xem là attack.
+- Live correlated tailer là luồng demo chính: nó correlate theo
+  `sensor_id + uid + trans_depth`, emit deterministic `event_id`, và backend
+  upsert để tránh duplicate alert.
+- Hai tailer riêng `tail_zeek_http_to_backend.py` và
+  `tail_zeek_conn_to_backend.py` chỉ là debug fallback.
 - AI2A không phải SSH-only. Release candidate `rf_v2_1_full_safe_plus_ssh_minimal`
   là flow-level multi-class detector: SSH temporal minimal là phần temporal được
   giữ trong 41 feature, còn `http_beaconing_indicator` và

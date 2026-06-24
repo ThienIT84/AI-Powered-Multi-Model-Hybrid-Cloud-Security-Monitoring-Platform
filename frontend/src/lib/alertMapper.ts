@@ -62,6 +62,10 @@ export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
     },
     rawPayload: dto.raw_payload,
     zeekData: {
+      sensorId: dto.zeek_evidence?.sensor_id,
+      correlationId: dto.zeek_evidence?.correlation_id,
+      transactionId: dto.zeek_evidence?.transaction_id,
+      correlationStatus: dto.zeek_evidence?.correlation_status,
       uri: dto.zeek_evidence?.uri,
       method: dto.zeek_evidence?.method,
       userAgent: dto.zeek_evidence?.user_agent,
@@ -184,6 +188,10 @@ export function mapAlertToBackendPayload(alert: Alert): BackendAlertDTO {
     },
     raw_payload: alert.rawPayload,
     zeek_evidence: {
+      sensor_id: alert.zeekData.sensorId,
+      correlation_id: alert.zeekData.correlationId,
+      transaction_id: alert.zeekData.transactionId,
+      correlation_status: alert.zeekData.correlationStatus,
       uri: alert.zeekData.uri,
       method: alert.zeekData.method,
       user_agent: alert.zeekData.userAgent,

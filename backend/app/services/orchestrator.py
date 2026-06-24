@@ -60,6 +60,10 @@ def build_alert(event: dict[str, Any], outputs: dict[str, dict[str, Any]], fusio
         "mitre": mitre,
         "raw_payload": http.get("uri") or suricata.get("signature") or "",
         "zeek_evidence": {
+            "sensor_id": event.get("sensor_id") or None,
+            "correlation_id": event.get("correlation_id"),
+            "transaction_id": event.get("transaction_id") or None,
+            "correlation_status": event.get("correlation_status") or None,
             "uri": http.get("uri"),
             "method": http.get("method"),
             "user_agent": http.get("user_agent"),
@@ -188,4 +192,3 @@ def title_severity(value: str) -> str:
         "MEDIUM": "Medium",
         "LOW": "Low",
     }.get(value.upper(), "Low")
-

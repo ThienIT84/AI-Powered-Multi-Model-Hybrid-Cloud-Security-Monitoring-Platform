@@ -108,6 +108,7 @@ def normalize_http_row(row: dict[str, Any]) -> dict[str, Any]:
         "ts": _first(row, "ts", default=""),
         "source_ip": str(src_ip),
         "destination_ip": str(dst_ip),
+        "trans_depth": _to_int(_first(row, "trans_depth", default=1)) or 1,
         "method": str(_first(row, "method", default="GET")),
         "host": _first(row, "host", default=None),
         "uri": str(_first(row, "uri", default="/")),
@@ -136,6 +137,10 @@ class ReplayEventBuilder:
         *,
         flow: dict[str, Any] | None = None,
         http: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        sensor_id: str | None = None,
+        transaction_id: str | None = None,
+        correlation_status: str | None = None,
     ) -> dict[str, Any]:
         if not flow and not http:
             raise ValueError("Replay event requires at least flow or http evidence")
@@ -145,8 +150,11 @@ class ReplayEventBuilder:
         return {
             "schema_version": "1.0",
             "event_type": event_type,
-            "event_id": f"zeek-{uid}",
+            "event_id": event_id or f"zeek-{uid}",
+            "sensor_id": sensor_id or "",
             "correlation_id": uid,
+            "transaction_id": transaction_id or "",
+            "correlation_status": correlation_status or event_type,
             "timestamp": _timestamp(source.get("ts")),
             "source_ip": str(source.get("source_ip") or "0.0.0.0"),
             "destination_ip": str(source.get("destination_ip") or "0.0.0.0"),

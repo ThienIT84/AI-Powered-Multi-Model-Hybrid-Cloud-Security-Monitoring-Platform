@@ -24,6 +24,10 @@ export interface BackendMitreDTO {
 }
 
 export interface BackendZeekEvidenceDTO {
+  sensor_id?: string;
+  correlation_id?: string;
+  transaction_id?: string;
+  correlation_status?: string;
   uri?: string;
   method?: string;
   user_agent?: string;
@@ -137,6 +141,10 @@ export interface TimelineEvent {
 }
 
 export interface ZeekData {
+  sensorId?: string;
+  correlationId?: string;
+  transactionId?: string;
+  correlationStatus?: string;
   uri?: string;
   method?: string;
   userAgent?: string;

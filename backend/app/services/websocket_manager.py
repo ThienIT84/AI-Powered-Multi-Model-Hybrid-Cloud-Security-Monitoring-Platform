@@ -16,8 +16,9 @@ class WebSocketManager:
         if websocket in self._connections:
             self._connections.remove(websocket)
 
-    async def broadcast_alert(self, alert: dict[str, Any]) -> None:
-        message = json.dumps({"type": "alert.created", "data": alert})
+    async def broadcast_alert(self, alert: dict[str, Any], *, created: bool = True) -> None:
+        message_type = "alert.created" if created else "alert.updated"
+        message = json.dumps({"type": message_type, "data": alert})
         dead: list[Any] = []
         for websocket in self._connections:
             try:
@@ -26,4 +27,3 @@ class WebSocketManager:
                 dead.append(websocket)
         for websocket in dead:
             self.disconnect(websocket)
-

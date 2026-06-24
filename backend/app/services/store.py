@@ -12,6 +12,22 @@ class AlertStore:
         self._items.appendleft(alert)
         return alert
 
+    def upsert(self, alert: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+        """Insert a new alert or replace an existing alert with the same id.
+
+        Returns (alert, created). The in-memory MVP store keeps newest items at
+        the front, so updates preserve the existing row position instead of
+        creating duplicates.
+        """
+        alert_id = alert.get("id")
+        if alert_id:
+            for index, existing in enumerate(self._items):
+                if existing.get("id") == alert_id:
+                    self._items[index] = alert
+                    return alert, False
+        self.add(alert)
+        return alert, True
+
     def list(self, limit: int = 50) -> list[dict[str, Any]]:
         return list(self._items)[:limit]
 
@@ -28,4 +44,3 @@ class AlertStore:
             "medium": sum(1 for item in items if str(item.get("severity", "")).lower() == "medium"),
             "low": sum(1 for item in items if str(item.get("severity", "")).lower() == "low"),
         }
-

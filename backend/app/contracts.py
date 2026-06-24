@@ -87,6 +87,9 @@ def normalize_event(raw: dict[str, Any]) -> dict[str, Any]:
         "event_type": event_type,
         "event_id": str(raw.get("event_id") or f"evt-{uuid4().hex[:12]}"),
         "correlation_id": str(raw.get("correlation_id") or raw.get("event_id") or f"corr-{uuid4().hex[:12]}"),
+        "transaction_id": str(raw.get("transaction_id") or ""),
+        "sensor_id": str(raw.get("sensor_id") or ""),
+        "correlation_status": str(raw.get("correlation_status") or event_type),
         "timestamp": str(raw.get("timestamp") or utc_now()),
         "source_ip": str(raw.get("source_ip") or "0.0.0.0"),
         "destination_ip": str(raw.get("destination_ip") or "0.0.0.0"),
@@ -119,4 +122,3 @@ def default_model_output(model_name: str, status: str, reason: str, *, input_sco
         input_scope=input_scope,
         reason=reason,
     )
-
