@@ -79,6 +79,14 @@ function normalizeLegacyAiDecision(raw: any) {
   };
 }
 
+function upsertAlert(alerts: Alert[], alert: Alert): Alert[] {
+  const existingIndex = alerts.findIndex((item) => item.id === alert.id);
+  if (existingIndex === -1) {
+    return [alert, ...alerts].slice(0, 50);
+  }
+  return alerts.map((item, index) => (index === existingIndex ? alert : item));
+}
+
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -110,10 +118,13 @@ export function useSocket() {
           setAlerts((message.data as unknown[]).map(coerceIncomingAlert));
           break;
         case "NEW_ALERT":
-          setAlerts((prev) => [coerceIncomingAlert(message.data), ...prev].slice(0, 50));
+          setAlerts((prev) => upsertAlert(prev, coerceIncomingAlert(message.data)));
           break;
         case "alert.created":
-          setAlerts((prev) => [coerceIncomingAlert(message.data), ...prev].slice(0, 50));
+          setAlerts((prev) => upsertAlert(prev, coerceIncomingAlert(message.data)));
+          break;
+        case "alert.updated":
+          setAlerts((prev) => upsertAlert(prev, coerceIncomingAlert(message.data)));
           break;
         case "TRAFFIC_UPDATE":
           setTraffic((prev) => [...prev, message.data].slice(-100));

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.adapters.mock import MockAI1Adapter, MockAI2AAdapter, MockAI2BAdapter
-from app.contracts import ModelStatus
+from app.contracts import ModelOutput, ModelSource, ModelStatus
 from app.services.fusion import FusionService
 from app.services.orchestrator import EventOrchestrator
 
@@ -64,3 +64,104 @@ def test_combined_event_uses_all_supported_mock_adapters() -> None:
     assert alert["attack_type"] == "Cross-Site Scripting"
     assert alert["ai_analysis"]["fusion"]["mode"] == "SIMULATED_FULL_MULTI_MODEL"
 
+
+class FixedFlowAdapter:
+    name = "AI2A"
+
+    def __init__(self, label: str, confidence: float = 0.95) -> None:
+        self.label = label
+        self.confidence = confidence
+
+    def supports(self, event: dict) -> bool:
+        return bool((event.get("evidence") or {}).get("flow"))
+
+    def build_input(self, event: dict) -> dict:
+        return dict((event.get("evidence") or {}).get("flow") or {})
+
+    def predict(self, model_input: dict):  # noqa: ANN001
+        return ModelOutput(
+            status=ModelStatus.COMPLETED.value,
+            source=ModelSource.REAL.value,
+            label=self.label,
+            confidence=self.confidence,
+            model_version="AI2A_TEST_REAL",
+            input_scope="ZEEK_CONN_FLOW_FEATURES",
+        )
+
+
+class FixedHttpAdapter:
+    name = "AI2B"
+
+    def __init__(self, label: str, confidence: float = 0.96) -> None:
+        self.label = label
+        self.confidence = confidence
+
+    def supports(self, event: dict) -> bool:
+        return bool((event.get("evidence") or {}).get("http"))
+
+    def build_input(self, event: dict) -> dict:
+        return dict((event.get("evidence") or {}).get("http") or {})
+
+    def predict(self, model_input: dict):  # noqa: ANN001
+        return ModelOutput(
+            status=ModelStatus.COMPLETED.value,
+            source=ModelSource.REAL.value,
+            label=self.label,
+            confidence=self.confidence,
+            model_version="AI2B_TEST_REAL",
+            input_scope="HTTP_URI_QUERY",
+        )
+
+
+def process_with_ai2a(label: str, *, ai2b_label: str = "NONE") -> dict:
+    orchestrator = EventOrchestrator(
+        {
+            "AI1": MockAI1Adapter(),
+            "AI2A": FixedFlowAdapter(label),
+            "AI2B": FixedHttpAdapter(ai2b_label),
+        },
+        FusionService(),
+    )
+    return orchestrator.process(
+        {
+            "event_type": "combined",
+            "source_ip": "10.10.10.10",
+            "destination_ip": "192.168.1.10",
+            "evidence": {
+                "flow": {"service": "http", "dst_port": 8080, "orig_pkts": 10},
+                "http": {"method": "GET", "uri": "/a10/callback?index=0"},
+            },
+        }
+    )
+
+
+def test_ai2a_real_beaconing_can_raise_degraded_alert_without_ai1_anomaly() -> None:
+    alert = process_with_ai2a("http_beaconing_indicator")
+
+    assert alert["attack_type"] == "HTTP Beaconing / Callback"
+    assert alert["severity"] == "High"
+    assert alert["ai_analysis"]["fusion"]["mode"] == "DEGRADED_AI2A_AI2B"
+    assert "AI2A" in alert["detected_by"]
+    assert "above threshold 0.90" in alert["ai_analysis"]["fusion"]["reason"]
+
+
+def test_ai2a_real_exfiltration_maps_to_explicit_final_label() -> None:
+    alert = process_with_ai2a("controlled_exfiltration", ai2b_label="NONE")
+
+    assert alert["attack_type"] == "Controlled Exfiltration"
+    assert alert["risk_score"] >= 80
+
+
+def test_ai2a_unknown_and_normal_remain_benign_without_ai1_anomaly() -> None:
+    unknown = process_with_ai2a("unknown")
+    normal = process_with_ai2a("normal")
+
+    assert unknown["attack_type"] == "Benign / No Confirmed Attack"
+    assert normal["attack_type"] == "Benign / No Confirmed Attack"
+
+
+def test_ai2b_web_attack_still_takes_priority_over_ai2a_attack() -> None:
+    alert = process_with_ai2a("controlled_exfiltration", ai2b_label="SQLI")
+
+    assert alert["attack_type"] == "SQL Injection"
+    assert "AI2B HTTP semantic detector" in alert["ai_analysis"]["fusion"]["reason"]

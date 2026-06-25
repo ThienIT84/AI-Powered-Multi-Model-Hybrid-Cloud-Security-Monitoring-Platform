@@ -26,8 +26,8 @@ def health() -> dict[str, str]:
 
 @app.post("/api/events")
 async def ingest_event(payload: dict[str, Any]) -> dict[str, Any]:
-    alert = store.add(orchestrator.process(payload))
-    await websockets.broadcast_alert(alert)
+    alert, created = store.upsert(orchestrator.process(payload))
+    await websockets.broadcast_alert(alert, created=created)
     return alert
 
 
@@ -48,8 +48,8 @@ async def ingest_http_event(payload: dict[str, Any]) -> dict[str, Any]:
             },
         }
     )
-    alert = store.add(orchestrator.process(event))
-    await websockets.broadcast_alert(alert)
+    alert, created = store.upsert(orchestrator.process(event))
+    await websockets.broadcast_alert(alert, created=created)
     return alert
 
 
@@ -68,9 +68,9 @@ async def replay_demo() -> dict[str, Any]:
     events = demo_events()
     alerts = []
     for event in events:
-        alert = store.add(orchestrator.process(event))
+        alert, created = store.upsert(orchestrator.process(event))
         alerts.append(alert)
-        await websockets.broadcast_alert(alert)
+        await websockets.broadcast_alert(alert, created=created)
     return {"created": len(alerts), "alerts": alerts}
 
 
@@ -121,4 +121,3 @@ def demo_events() -> list[dict[str, Any]]:
             },
         },
     ]
-

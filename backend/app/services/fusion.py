@@ -30,6 +30,8 @@ class FusionService:
             return self._web_attack("SQL Injection", ai2b_conf, outputs, contributors, completed_any, excluded)
         if ai2b_label == "XSS":
             return self._web_attack("Cross-Site Scripting", ai2b_conf, outputs, contributors, completed_any, excluded)
+        if self._is_ai2a_real_attack(outputs):
+            return self._ai2a_attack(ai2a_label, ai2a_conf, outputs, contributors, completed_any, excluded)
         if ai2a_label and ai2a_label not in {"NORMAL", "NONE", "UNKNOWN"} and ai1_label == "ANOMALY":
             risk = max(72, int(max(ai2a_conf, ai1_conf) * 100))
             return FusionOutput(
@@ -92,6 +94,40 @@ class FusionService:
             reason=f"AI2B HTTP semantic detector classified the request as {final_label}.",
         )
 
+    def _ai2a_attack(
+        self,
+        ai2a_label: str,
+        confidence: float,
+        outputs: dict[str, dict],
+        real_contributors: list[str],
+        completed_any: list[str],
+        excluded: dict[str, str],
+    ) -> FusionOutput:
+        final_label = AI2A_ATTACK_LABELS.get(ai2a_label, ai2a_label.replace("_", " ").title())
+        risk = min(95, max(68, int(confidence * 100)))
+        return FusionOutput(
+            mode=self._mode(outputs, real_contributors, completed_any),
+            final_label=final_label,
+            risk_score=risk,
+            severity="HIGH" if risk >= 80 else "MEDIUM",
+            contributors=self._contributors(outputs, real_contributors, completed_any),
+            excluded_models=excluded,
+            reason=(
+                f"AI2A frozen flow detector classified this flow as {final_label} "
+                "above threshold 0.90."
+            ),
+        )
+
+    def _is_ai2a_real_attack(self, outputs: dict[str, dict]) -> bool:
+        ai2a = outputs.get("AI2A", {})
+        label = str(ai2a.get("label") or "").upper()
+        return (
+            ai2a.get("status") == ModelStatus.COMPLETED.value
+            and ai2a.get("source") == "real"
+            and bool(label)
+            and label not in {"NORMAL", "NONE", "UNKNOWN"}
+        )
+
     def _contributors(self, outputs: dict[str, dict], real_contributors: list[str], completed_any: list[str]) -> list[str]:
         if real_contributors:
             return real_contributors
@@ -109,3 +145,16 @@ class FusionService:
         if completed_any and all(outputs.get(name, {}).get("source") in {"mock", "replay"} for name in completed_any):
             return "SIMULATED_FULL_MULTI_MODEL" if len(completed_any) == 3 else "SIMULATED_PARTIAL"
         return "NO_AI_AVAILABLE"
+
+
+AI2A_ATTACK_LABELS = {
+    "HTTP_BEACONING_INDICATOR": "HTTP Beaconing / Callback",
+    "CONTROLLED_EXFILTRATION": "Controlled Exfiltration",
+    "PORT_SCAN_OR_RECON": "Port Scan / Reconnaissance",
+    "COLLECTION_STAGING_INDICATOR": "Collection Staging",
+    "SUSPICIOUS_ADMIN": "Suspicious Admin Activity",
+    "SSH_BRUTEFORCE_INDICATOR": "SSH Brute Force",
+    "WEB_INITIAL_ACCESS_INDICATOR": "Web Initial Access",
+    "DNS_ANOMALY_INDICATOR": "DNS Anomaly",
+    "EAST_WEST_SIMULATION": "East-West Movement",
+}
