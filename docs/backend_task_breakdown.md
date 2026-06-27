@@ -6,9 +6,39 @@ Tài liệu này chia việc cụ thể cho backend member. Mục tiêu là làm
 event -> router -> model adapters -> fusion -> final alert DTO -> WebSocket/dashboard
 ```
 
-AI2B là adapter HTTP thật đầu tiên cho SQLI/XSS. AI2A real adapter cũng đã có
-theo hướng fail-safe, nhưng chỉ predict khi flow event đã mang đủ frozen
-41-feature vector. Kiến trúc không được biến thành AI2B-only backend.
+AI2B là adapter HTTP thật đầu tiên cho SQLI/XSS. AI2A real adapter đã có theo
+hướng fail-safe và predict khi flow event mang đủ frozen 41-feature vector. AI1
+real adapter cũng đã có ở mức integration-ready, nhưng cần AI1 team bàn giao
+artifact thật và `conn.log -> ai1_features` enrichment path để chạy completed
+real trên dữ liệu thật. Kiến trúc không được biến thành AI2B-only backend.
+
+## Current AI1 Status
+
+AI1 backend adapter hiện có:
+
+```text
+backend/app/adapters/ai1_real.py
+```
+
+Behavior đã được implement:
+
+```text
+no evidence.flow                  -> not_applicable
+flow but missing ai1_features     -> not_available
+missing/bad artifact              -> not_available
+invalid/non-normalized score      -> failed
+complete artifact + features      -> completed real NORMAL/ANOMALY
+```
+
+Vì vậy task còn lại của AI1 không phải là "tạo adapter từ đầu", mà là:
+
+```text
+1. bàn giao artifact bundle thật;
+2. chốt feature_manifest.json đầy đủ;
+3. chốt thresholds_frozen.json và score normalization;
+4. cung cấp smoke_samples.jsonl;
+5. enrich Zeek conn.log thành evidence.flow.ai1_features.
+```
 
 ## Source Of Truth
 
@@ -66,6 +96,7 @@ Done khi:
 
 - Có thể start backend với AI1/AI2A unavailable.
 - Có thể start backend với AI2B unavailable.
+- `AI1_PREDICTOR_MODE=real` dùng `RealAI1Adapter`, không fallback mock khi artifact lỗi.
 - `AI2A_PREDICTOR_MODE=real` load AI2A release candidate nếu artifact đủ, nhưng không fallback mock khi artifact lỗi.
 - `AI2B_PREDICTOR_MODE=real` vẫn giữ nguyên logic load artifact hiện có.
 
@@ -125,6 +156,10 @@ HTTP event + AI2B unavailable -> AI2B not_available
 Flow event + AI1 unavailable -> AI1 not_available
 AI2B real artifact load fail -> not_available, no silent mock fallback
 AI2B inference exception -> failed
+AI1 real missing artifact -> not_available, no silent mock fallback
+AI1 real missing ai1_features -> not_available
+AI1 real score outside [0, 1] -> failed
+AI1 real ANOMALY only -> Fusion Network Anomaly
 AI2A real missing frozen 41-feature vector -> not_available, no guessed feature extraction
 ```
 

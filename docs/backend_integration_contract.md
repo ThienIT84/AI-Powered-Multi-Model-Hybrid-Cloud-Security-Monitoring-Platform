@@ -444,16 +444,66 @@ Orchestrator chỉ gọi adapter qua interface này. Không nhét logic AI2B tr�
 Expected scope:
 
 ```text
-ZEEK_CONN_FLOW
+ZEEK_CONN_FLOW_ANOMALY_FEATURES
 ```
 
-`supports()` should be true only when `evidence.flow` has required AI1 features.
+`supports()` is true when the event has `evidence.flow`. The real adapter then
+requires a complete frozen feature vector at:
+
+```json
+{
+  "evidence": {
+    "flow": {
+      "ai1_features": {
+        "duration": 1.2,
+        "orig_bytes": 1280
+      }
+    }
+  }
+}
+```
+
+If `ai1_features` is missing or incomplete, AI1 must return:
+
+```text
+status = not_available
+source = unavailable
+reason = AI1 frozen feature vector is incomplete
+```
+
+AI1 does not classify SQLI/XSS or concrete attack families. It is a flow-level
+anomaly detector only.
 
 Expected labels:
 
 ```text
 NORMAL
 ANOMALY
+```
+
+AI1 real artifact path:
+
+```text
+Dataset/tools/ai1_modeling/artifacts/release_candidate_v1/latest/
+├── model.joblib
+├── preprocessor.joblib
+├── feature_manifest.json
+├── thresholds_frozen.json
+├── smoke_samples.jsonl
+└── model_card.md
+```
+
+Backend assumes `thresholds_frozen.json` has `score_direction =
+higher_is_more_anomalous`. If the raw model score has the opposite direction,
+AI1 must normalize it before handoff so `confidence` is always in `[0, 1]` and
+higher means more anomalous.
+
+Fusion rule:
+
+```text
+AI1 completed real ANOMALY only -> Network Anomaly
+AI1 NORMAL / not_available / failed -> no attack by itself
+AI2B SQLI/XSS still has higher priority than AI1 ANOMALY
 ```
 
 ### AI2A Adapter
@@ -654,13 +704,38 @@ For this backend handoff, keep the final alert DTO stable.
 
 Priority order:
 
-1. Add real AI1 adapter when model artifact/input schema is available.
-2. Add live combined correlation between independent HTTP and conn tailers when
+1. Complete AI1 artifact handoff:
+   `model.joblib`, optional `preprocessor.joblib`, `feature_manifest.json`,
+   `thresholds_frozen.json`, `smoke_samples.jsonl`, and `model_card.md` under
+   `Dataset/tools/ai1_modeling/artifacts/release_candidate_v1/latest/`.
+2. Add AI1 feature enrichment/extractor that writes
+   `evidence.flow.ai1_features` from Zeek `conn.log` rows. Do not reuse
+   `ai2a_features` for AI1.
+3. Run AI1 real smoke with `AI1_PREDICTOR_MODE=real` and a complete frozen
+   AI1 feature vector.
+4. Add live combined correlation between independent HTTP and conn tailers when
    needed for a single fused alert from two live streams.
-3. Add persistent alert store if needed for demo recording.
-4. Extend replay bridge with pacing/batch mode if needed for local lab demos.
-5. Add API request validation with Pydantic models if time allows.
-6. Add production CORS/auth only if deployment requires it.
+5. Add persistent alert store if needed for demo recording.
+6. Extend replay bridge with pacing/batch mode if needed for local lab demos.
+7. Add API request validation with Pydantic models if time allows.
+8. Add production CORS/auth only if deployment requires it.
+
+Current AI1 status:
+
+```text
+RealAI1Adapter exists.
+AI1_PREDICTOR_MODE=real is wired in backend/app/dependencies.py.
+The adapter is fail-safe:
+  no flow                         -> not_applicable
+  flow but missing ai1_features   -> not_available
+  missing/bad artifact            -> not_available
+  invalid score                   -> failed
+  complete artifact + features    -> completed real NORMAL/ANOMALY
+```
+
+So the remaining AI1 work is not "create backend adapter from scratch"; it is
+"provide the frozen artifact/schema and the conn.log -> ai1_features enrichment
+path."
 
 Do not block MVP on final AI2B holdout `133-136`. Holdout remains future validation.
 

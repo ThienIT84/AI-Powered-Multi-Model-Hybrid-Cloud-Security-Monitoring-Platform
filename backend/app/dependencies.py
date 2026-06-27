@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 
+from app.adapters.ai1_real import RealAI1Adapter
 from app.adapters.ai2a_real import RealAI2AAdapter
 from app.adapters.ai2b_real import RealAI2BAdapter
 from app.adapters.mock import MockAI1Adapter, MockAI2AAdapter, MockAI2BAdapter
@@ -35,20 +36,15 @@ def _build_ai1_adapter() -> object:
         return UnavailableAdapter(
             "AI1",
             reason="AI1 adapter is disabled by AI1_PREDICTOR_MODE=unavailable.",
-            input_scope="FLOW_ANOMALY_FEATURES",
+            input_scope="ZEEK_CONN_FLOW_ANOMALY_FEATURES",
             supported_scope="flow",
         )
     if mode == "real":
-        return UnavailableAdapter(
-            "AI1",
-            reason="Real AI1 adapter is not implemented in this MVP.",
-            input_scope="FLOW_ANOMALY_FEATURES",
-            supported_scope="flow",
-        )
+        return RealAI1Adapter()
     return UnavailableAdapter(
         "AI1",
         reason=f"Unsupported AI1_PREDICTOR_MODE={mode!r}.",
-        input_scope="FLOW_ANOMALY_FEATURES",
+        input_scope="ZEEK_CONN_FLOW_ANOMALY_FEATURES",
         supported_scope="flow",
     )
 

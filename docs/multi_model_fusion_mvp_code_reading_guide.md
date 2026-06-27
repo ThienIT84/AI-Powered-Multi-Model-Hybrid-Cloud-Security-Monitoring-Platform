@@ -89,7 +89,46 @@ Các adapter này phục vụ demo/dev. Chúng không giả vờ là model thậ
 - AI1/AI2A `supports()` chỉ true khi có `evidence.flow`.
 - AI2B `supports()` chỉ true khi có HTTP `method` và `uri`.
 
-### Bước 4: Real AI2A adapter
+### Bước 4: Real AI1 adapter
+
+Đọc file:
+
+```text
+backend/app/adapters/ai1_real.py
+```
+
+File này là phần backend integration-ready cho AI1:
+
+- `supports(event)` true khi event có `evidence.flow`.
+- `build_input(event)` lấy flow evidence.
+- `predict(model_input)` đọc `evidence.flow.ai1_features`.
+- thiếu artifact hoặc thiếu feature vector thì trả `not_available`.
+- score ngoài `[0, 1]` thì trả `failed`.
+- đủ artifact + đủ feature thì trả `completed/real` với label `NORMAL` hoặc
+  `ANOMALY`.
+
+Điểm cần nhớ: adapter AI1 đã có, nhưng nó không tự sinh feature từ raw Zeek flow
+và không tự đoán công thức normalize anomaly score. AI1 team phải bàn giao:
+
+```text
+Dataset/tools/ai1_modeling/artifacts/release_candidate_v1/latest/
+├── model.joblib
+├── preprocessor.joblib        # optional
+├── feature_manifest.json
+├── thresholds_frozen.json
+├── smoke_samples.jsonl        # optional canary
+└── model_card.md
+```
+
+`thresholds_frozen.json` phải đảm bảo `score_direction =
+higher_is_more_anomalous`, và backend sẽ hiểu:
+
+```text
+confidence >= selected_threshold -> ANOMALY
+confidence < selected_threshold  -> NORMAL
+```
+
+### Bước 5: Real AI2A adapter
 
 Đọc file:
 
@@ -126,7 +165,7 @@ max_proba < 0.9 -> label = unknown
 
 Fusion không xem `unknown` là attack label.
 
-### Bước 5: Real AI2B adapter
+### Bước 6: Real AI2B adapter
 
 Đọc file:
 
@@ -154,7 +193,7 @@ release_candidate = AI2B_V1.4.9_RC
 
 Đây là adapter HTTP thật cho SQLI/XSS.
 
-### Bước 6: Unavailable adapter
+### Bước 7: Unavailable adapter
 
 Đọc file:
 
@@ -170,7 +209,7 @@ File này giúp phân biệt:
 Ví dụ HTTP-only event sẽ làm AI1/AI2A là `not_applicable`, không phải
 `not_available`.
 
-### Bước 7: Adapter registry / dependency wiring
+### Bước 8: Adapter registry / dependency wiring
 
 Đọc file:
 
@@ -191,7 +230,7 @@ AI2B_PREDICTOR_MODE=real
 Nếu bật `real`, backend dùng adapter thật tương ứng. Nếu artifact lỗi, backend
 không fallback sang mock; adapter trả `not_available` hoặc `failed`.
 
-### Bước 8: Orchestrator
+### Bước 9: Orchestrator
 
 Đọc file:
 
@@ -227,7 +266,7 @@ build_alert(event, outputs, fusion)
 - `ai_analysis.fusion`
 - `decision_flow`
 
-### Bước 9: Fusion rule engine
+### Bước 10: Fusion rule engine
 
 Đọc file:
 
@@ -252,7 +291,7 @@ Fusion mode:
 - `SIMULATED_FULL_MULTI_MODEL`: cả ba là mock/replay.
 - `NO_AI_AVAILABLE`: không model nào chạy được.
 
-### Bước 10: Replay bridge cho local lab
+### Bước 11: Replay bridge cho local lab
 
 Đọc hai file:
 
@@ -286,7 +325,7 @@ Với `conn.log`, replay bridge enrich flow thành frozen AI2A 41-feature vector
 Với `http.log`, replay bridge tạo HTTP evidence cho AI2B. Nếu cả hai log có cùng
 Zeek `uid`, replay có thể tạo `combined` event.
 
-### Bước 11: Store và WebSocket
+### Bước 12: Store và WebSocket
 
 Đọc hai file:
 
@@ -306,7 +345,7 @@ backend/app/services/websocket_manager.py
 }
 ```
 
-### Bước 12: API entrypoint
+### Bước 13: API entrypoint
 
 Đọc file:
 
@@ -332,7 +371,7 @@ WS   /ws/alerts
 
 `/api/replay/demo` tạo một số event mẫu để frontend nhận qua WebSocket.
 
-### Bước 13: Backend tests
+### Bước 14: Backend tests
 
 Đọc các file:
 
@@ -692,25 +731,27 @@ Fusion mode -> DEGRADED_AI2B_ONLY
 1. backend/app/contracts.py
 2. backend/app/adapters/base.py
 3. backend/app/adapters/mock.py
-4. backend/app/adapters/ai2a_real.py
-5. backend/app/adapters/ai2b_real.py
-6. backend/app/adapters/unavailable.py
-7. backend/app/dependencies.py
-8. backend/app/services/orchestrator.py
-9. backend/app/services/fusion.py
-10. backend/app/replay/zeek.py
-11. backend/scripts/replay_local_lab_logs.py
-12. backend/app/services/store.py
-13. backend/app/services/websocket_manager.py
-14. backend/app/main.py
-15. backend/tests/test_fusion_mvp.py
-16. backend/tests/test_ai2a_real_and_replay.py
-17. frontend/src/types.ts
-18. frontend/src/lib/alertMapper.ts
-19. frontend/src/useSocket.ts
-20. frontend/src/components/alerts/AlertTable.tsx
-21. frontend/src/components/alerts/AlertDetailDrawer.tsx
-22. frontend/src/mocks/securityData.ts
+4. backend/app/adapters/ai1_real.py
+5. backend/app/adapters/ai2a_real.py
+6. backend/app/adapters/ai2b_real.py
+7. backend/app/adapters/unavailable.py
+8. backend/app/dependencies.py
+9. backend/app/services/orchestrator.py
+10. backend/app/services/fusion.py
+11. backend/app/replay/zeek.py
+12. backend/scripts/replay_local_lab_logs.py
+13. backend/app/services/store.py
+14. backend/app/services/websocket_manager.py
+15. backend/app/main.py
+16. backend/tests/test_ai1_real_adapter.py
+17. backend/tests/test_fusion_mvp.py
+18. backend/tests/test_ai2a_real_and_replay.py
+19. frontend/src/types.ts
+20. frontend/src/lib/alertMapper.ts
+21. frontend/src/useSocket.ts
+22. frontend/src/components/alerts/AlertTable.tsx
+23. frontend/src/components/alerts/AlertDetailDrawer.tsx
+24. frontend/src/mocks/securityData.ts
 ```
 
 Nếu chỉ có 30 phút để hiểu nhanh, đọc:
@@ -729,7 +770,9 @@ frontend/src/components/alerts/AlertTable.tsx
 
 Các phần chưa được làm, để tránh hiểu nhầm:
 
-- Chưa tích hợp real AI1 adapter.
+- Real AI1 adapter đã có, nhưng artifact thật và `conn.log -> ai1_features`
+  extractor/enrichment path vẫn cần AI1 team bàn giao để chạy `completed/real`
+  trên dữ liệu thật.
 - Live combined correlation giữa HTTP tailer và conn tailer chưa có. Hai tailer
   hiện có thể tạo alert riêng; replay mode vẫn có thể ghép `conn.log`/`http.log`
   theo UID trong cùng một lần chạy.
@@ -737,4 +780,5 @@ Các phần chưa được làm, để tránh hiểu nhầm:
 - Chưa lưu database bền vững; store hiện là in-memory.
 - Chưa dùng final holdout `133-136` để quyết định dashboard integration.
 
-Nhưng contract đã sẵn sàng để cắm AI1/AI2A thật sau này mà không cần đổi frontend schema.
+Contract đã sẵn sàng để dùng AI1/AI2A/AI2B thật mà không cần đổi frontend schema;
+AI1 hiện chỉ còn thiếu artifact/schema và feature enrichment đầu vào.

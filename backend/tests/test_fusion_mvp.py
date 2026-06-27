@@ -89,6 +89,30 @@ class FixedFlowAdapter:
         )
 
 
+class FixedAI1Adapter:
+    name = "AI1"
+
+    def __init__(self, label: str, confidence: float = 0.91) -> None:
+        self.label = label
+        self.confidence = confidence
+
+    def supports(self, event: dict) -> bool:
+        return bool((event.get("evidence") or {}).get("flow"))
+
+    def build_input(self, event: dict) -> dict:
+        return dict((event.get("evidence") or {}).get("flow") or {})
+
+    def predict(self, model_input: dict):  # noqa: ANN001
+        return ModelOutput(
+            status=ModelStatus.COMPLETED.value,
+            source=ModelSource.REAL.value,
+            label=self.label,
+            confidence=self.confidence,
+            model_version="AI1_TEST_REAL",
+            input_scope="ZEEK_CONN_FLOW_ANOMALY_FEATURES",
+        )
+
+
 class FixedHttpAdapter:
     name = "AI2B"
 
@@ -162,6 +186,56 @@ def test_ai2a_unknown_and_normal_remain_benign_without_ai1_anomaly() -> None:
 
 def test_ai2b_web_attack_still_takes_priority_over_ai2a_attack() -> None:
     alert = process_with_ai2a("controlled_exfiltration", ai2b_label="SQLI")
+
+    assert alert["attack_type"] == "SQL Injection"
+    assert "AI2B HTTP semantic detector" in alert["ai_analysis"]["fusion"]["reason"]
+
+
+def test_ai1_real_anomaly_only_maps_to_network_anomaly() -> None:
+    orchestrator = EventOrchestrator(
+        {
+            "AI1": FixedAI1Adapter("ANOMALY", 0.91),
+            "AI2A": MockAI2AAdapter(),
+            "AI2B": MockAI2BAdapter(),
+        },
+        FusionService(),
+    )
+
+    alert = orchestrator.process(
+        {
+            "event_type": "network_flow",
+            "source_ip": "10.10.10.10",
+            "destination_ip": "192.168.1.10",
+            "evidence": {"flow": {"service": "custom", "dst_port": 9999, "orig_pkts": 10}},
+        }
+    )
+
+    assert alert["attack_type"] == "Network Anomaly"
+    assert alert["ai_analysis"]["fusion"]["mode"] == "DEGRADED_AI1"
+    assert alert["ai_analysis"]["fusion"]["contributors"] == ["AI1"]
+
+
+def test_ai2b_web_attack_still_takes_priority_over_ai1_anomaly() -> None:
+    orchestrator = EventOrchestrator(
+        {
+            "AI1": FixedAI1Adapter("ANOMALY", 0.91),
+            "AI2A": MockAI2AAdapter(),
+            "AI2B": FixedHttpAdapter("SQLI", 0.96),
+        },
+        FusionService(),
+    )
+
+    alert = orchestrator.process(
+        {
+            "event_type": "combined",
+            "source_ip": "10.10.10.10",
+            "destination_ip": "192.168.1.10",
+            "evidence": {
+                "flow": {"service": "http", "dst_port": 80, "orig_pkts": 10},
+                "http": {"method": "GET", "uri": "/search?q=%27%20OR%201%3D1--"},
+            },
+        }
+    )
 
     assert alert["attack_type"] == "SQL Injection"
     assert "AI2B HTTP semantic detector" in alert["ai_analysis"]["fusion"]["reason"]

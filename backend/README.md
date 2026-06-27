@@ -10,8 +10,10 @@ http evidence      -> AI2B
 suricata evidence  -> Fusion rule evidence
 ```
 
-AI2B and AI2A can be selected independently through adapter modes. AI1 is
-mock/unavailable in this MVP until a real adapter is supplied.
+AI1, AI2A, and AI2B can be selected independently through adapter modes. AI1
+real is integration-ready, but it requires a local AI1 artifact bundle plus
+`evidence.flow.ai1_features`; if either is missing, it reports
+`not_available` instead of guessing or falling back to mock.
 
 Adapter modes:
 
@@ -55,6 +57,44 @@ conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
   AI1_PREDICTOR_MODE=mock AI2A_PREDICTOR_MODE=real AI2B_PREDICTOR_MODE=mock \
   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+Run with AI1 real for artifact smoke testing:
+
+```bash
+conda run --no-capture-output -n interior_ai env PYTHONPATH=backend \
+  AI1_PREDICTOR_MODE=real AI2A_PREDICTOR_MODE=mock AI2B_PREDICTOR_MODE=mock \
+  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+AI1 artifact handoff path:
+
+```text
+Dataset/tools/ai1_modeling/artifacts/release_candidate_v1/latest/
+├── model.joblib
+├── preprocessor.joblib        # optional
+├── feature_manifest.json
+├── thresholds_frozen.json
+├── smoke_samples.jsonl        # optional canary
+└── model_card.md
+```
+
+AI1 real input contract:
+
+```json
+{
+  "evidence": {
+    "flow": {
+      "ai1_features": {
+        "duration": 1.2,
+        "orig_bytes": 1280
+      }
+    }
+  }
+}
+```
+
+The AI1 model must expose a normalized anomaly confidence where higher means
+more anomalous and `confidence >= selected_threshold` maps to `ANOMALY`.
 
 Replay local Zeek logs through the public `/api/events` path. Use `--dry-run`
 first to verify parser/correlation counts without creating alerts:
