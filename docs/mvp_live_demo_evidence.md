@@ -224,7 +224,8 @@ The A10 replay is used as a capability demonstration rather than a final evaluat
 Current limitations:
 
 ```text
-- AI1 remains mock/unavailable in the MVP.
+- AI1 real adapter is implemented, but the live demo still uses AI1 mock/unavailable
+  until the AI1 artifact bundle and ai1_features enrichment path are handed off.
 - Incident/campaign aggregation across multiple HTTP transactions is future work.
 - Final AI2B strict blind holdout remains future validation and does not block the dashboard MVP.
 ```
