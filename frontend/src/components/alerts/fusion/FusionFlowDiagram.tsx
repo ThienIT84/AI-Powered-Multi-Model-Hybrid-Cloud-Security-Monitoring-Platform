@@ -230,7 +230,7 @@ export function FusionFlowDiagram({ alert }: FusionFlowDiagramProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[7.8px] font-mono pt-1 text-muted-foreground/90 uppercase font-bold">
             {activeNode.details.map((detail, keyIdx) => (
               <span key={keyIdx} className="bg-secondary/40 border border-border/50 px-2 py-0.5 rounded leading-none block truncate">
-                • {detail}
+                - {detail}
               </span>
             ))}
           </div>

@@ -51,7 +51,7 @@ export function MitreAlertMappingTable({
             </span>
           </div>
           <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
-            Alert → MITRE ATT&amp;CK Mapping Table
+            Alert -> MITRE ATT&amp;CK Mapping Table
           </h3>
         </div>
 

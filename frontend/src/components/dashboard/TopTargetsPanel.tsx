@@ -32,7 +32,7 @@ export function TopTargetsPanel() {
 
               <div className="flex flex-col truncate pr-1">
                 <span className="text-[9.5px] font-black text-foreground truncate">{t.name}</span>
-                <span className="text-[7px] text-muted-foreground mt-1 truncate uppercase">{t.type} • {t.ip}</span>
+                <span className="text-[7px] text-muted-foreground mt-1 truncate uppercase">{t.type} - {t.ip}</span>
               </div>
             </div>
 

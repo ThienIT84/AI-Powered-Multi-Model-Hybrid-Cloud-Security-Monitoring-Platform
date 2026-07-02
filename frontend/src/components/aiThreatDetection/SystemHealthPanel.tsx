@@ -35,7 +35,7 @@ export const SystemHealthPanel: React.FC<SystemHealthPanelProps> = ({
           </div>
           <div className="text-right">
             <span className="inline-flex items-center gap-1 border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
-              • Healthy
+              - Healthy
             </span>
           </div>
         </div>
@@ -48,7 +48,7 @@ export const SystemHealthPanel: React.FC<SystemHealthPanelProps> = ({
           </div>
           <div className="text-right">
             <span className="inline-flex items-center gap-1 border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
-              • Healthy
+              - Healthy
             </span>
           </div>
         </div>
@@ -61,7 +61,7 @@ export const SystemHealthPanel: React.FC<SystemHealthPanelProps> = ({
           </div>
           <div className="text-right">
             <span className="inline-flex items-center gap-1 border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
-              • Healthy
+              - Healthy
             </span>
           </div>
         </div>
@@ -74,7 +74,7 @@ export const SystemHealthPanel: React.FC<SystemHealthPanelProps> = ({
           </div>
           <div className="text-right">
             <span className="inline-flex items-center gap-1 border border-cyan-500/20 bg-cyan-500/10 text-cyan-400 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
-              ⚡ ACTIVE
+              ACTIVE
             </span>
           </div>
         </div>

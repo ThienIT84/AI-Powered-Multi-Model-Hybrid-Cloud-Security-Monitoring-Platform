@@ -177,9 +177,9 @@ export function GeneralSettings({ data, onChange }: GeneralSettingsProps) {
               onChange={(e) => handleTextChange("language", e.target.value as any)}
             >
               <option value="en">English (US Standard)</option>
-              <option value="vi">Tiếng Việt (Vietnamese Translation)</option>
-              <option value="es">Español (Castellano Audits)</option>
-              <option value="ja">日本語 (Japanese Terminal)</option>
+              <option value="vi">Vietnamese Translation</option>
+              <option value="es">Spanish Audits</option>
+              <option value="ja">Japanese Terminal</option>
             </select>
           </div>
 

@@ -108,7 +108,7 @@ export function EndpointPage() {
       {/* 2. Structured Two-Column EDR Panel Layout (Stacked Table + Overview & Forensic Slide-in/Toggle panel) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:items-start items-start">
         
-        {/* 🟦 Left Area: ASSET LIST + OVERVIEW STACK */}
+        {/* Left area: asset list and overview stack */}
         <div className={cn(
           "space-y-5 transition-all duration-300 flex flex-col justify-between min-w-0",
           selectedId ? "lg:col-span-8" : "lg:col-span-12"
@@ -141,7 +141,7 @@ export function EndpointPage() {
             onExportCSV={handleExportCSV}
           />
 
-          {/* 🟨 Host Overview & AI Detection Panel underneath Table */}
+          {/* Host overview and AI detection panel */}
           <div className="border border-border bg-card rounded-xl p-4.5 shadow-xs">
             <div className="border-b border-border pb-3 mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -160,7 +160,7 @@ export function EndpointPage() {
           </div>
         </div>
 
-        {/* 🟥 Right Area: DETAILED FORENSIC PANEL (Shown & hidden dynamically with premium spring transition when selected) */}
+        {/* Right area: detailed forensic panel */}
         <AnimatePresence>
           {selectedId && (
             <motion.div

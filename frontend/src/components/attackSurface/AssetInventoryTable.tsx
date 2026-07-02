@@ -232,7 +232,7 @@ export function AssetInventoryTable({
                         {asset.openAlerts} ACT
                       </span>
                     ) : (
-                      <span className="text-muted-foreground/45">—</span>
+                      <span className="text-muted-foreground/45">-</span>
                     )}
                   </td>
                   <td className="py-2.5 pl-2 text-right text-muted-foreground text-[8.5px]">

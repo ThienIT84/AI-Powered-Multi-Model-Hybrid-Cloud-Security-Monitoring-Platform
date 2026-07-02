@@ -1,7 +1,6 @@
 import React from "react";
-import { useSettingsStore } from "../../store/useSettingsStore";
 import { cn } from "../../lib/utils";
-import { Bell, Mail, MessageSquare, Send, Globe, Phone, Settings, ToggleLeft, ShieldAlert } from "lucide-react";
+import { Bell, Mail, MessageSquare, Send, Globe, Phone, Settings, ShieldAlert } from "lucide-react";
 
 export function NotificationSettings() {
   return (
@@ -17,8 +16,9 @@ export function NotificationSettings() {
 
       {/* Core channels list */}
       <div className="space-y-4">
-        <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-          📡 CHANNELS STATUS
+        <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+          <Send size={12} className="text-cyan-500" />
+          Channel Status
         </label>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -82,8 +82,9 @@ export function NotificationSettings() {
 
       {/* Escalation Policy Section */}
       <div className="space-y-4">
-        <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-          🚨 ESCALATION POLICY DEFLECTION
+        <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+          <ShieldAlert size={12} className="text-red-500" />
+          Escalation Policy
         </label>
 
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm">

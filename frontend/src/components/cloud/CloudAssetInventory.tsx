@@ -165,7 +165,7 @@ export function CloudAssetInventory({
               sortBy === "riskScore" ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Risk {sortBy === "riskScore" && (sortOrder === "desc" ? "↓" : "↑")}
+            Risk {sortBy === "riskScore" && (sortOrder === "desc" ? "DOWN" : "UP")}
           </button>
           <button
             type="button"
@@ -174,7 +174,7 @@ export function CloudAssetInventory({
               sortBy === "exposureScore" ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Expos. {sortBy === "exposureScore" && (sortOrder === "desc" ? "↓" : "↑")}
+            Expos. {sortBy === "exposureScore" && (sortOrder === "desc" ? "DOWN" : "UP")}
           </button>
         </div>
       </div>
@@ -223,9 +223,9 @@ export function CloudAssetInventory({
                     {/* Metadata line */}
                     <div className="flex items-center gap-2 text-[8px] text-muted-foreground font-mono flex-wrap">
                       <span className="text-zinc-400 font-bold">{asset.environment.toUpperCase()}</span>
-                      <span>•</span>
+                      <span>-</span>
                       <span>{asset.region}</span>
-                      <span>•</span>
+                      <span>-</span>
                       <span className="truncate">Own: {asset.owner}</span>
                     </div>
 

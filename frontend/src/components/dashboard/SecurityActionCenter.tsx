@@ -25,7 +25,7 @@ export function SecurityActionCenter() {
     <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-start shadow-sm select-none relative overflow-hidden h-fit self-start">
       
       {/* Toast notifications rendering container */}
-      <div className="absolute top-2 right-2规则 z-50 flex flex-col gap-1.5 pointer-events-none select-none max-w-xs text-[8.5px] font-mono leading-none font-black shadow-lg">
+      <div className="absolute top-2 right-2 z-50 flex flex-col gap-1.5 pointer-events-none select-none max-w-xs text-[8.5px] font-mono leading-none font-black shadow-lg">
         {toasts.map(t => (
           <div 
             key={t.id} 

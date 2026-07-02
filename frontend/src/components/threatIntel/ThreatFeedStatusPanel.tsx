@@ -74,7 +74,7 @@ export const ThreatFeedStatusPanel = React.memo(function ThreatFeedStatusPanel({
                 </div>
                 <div className="text-[8px] text-muted-foreground flex gap-2 font-semibold">
                   <span>Count: <strong className="text-purple-600 dark:text-purple-400">{feed.iocCount.toLocaleString()}</strong></span>
-                  <span>•</span>
+                  <span>-</span>
                   <span>Sync: {feed.lastSync}</span>
                 </div>
               </div>

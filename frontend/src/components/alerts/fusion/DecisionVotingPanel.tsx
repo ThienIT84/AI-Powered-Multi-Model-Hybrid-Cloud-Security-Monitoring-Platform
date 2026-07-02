@@ -62,8 +62,8 @@ export function DecisionVotingPanel({ alert }: DecisionVotingPanelProps) {
   const hasConflict = (isAnomaly === false && (hasWebThreat || hasSuricata)) || (isAnomaly === true && (!hasTrafficThreat && !hasWebThreat && !hasSuricata));
 
   const conflictMessage = hasConflict 
-    ? "⚠️ Conflict detected: High mismatch pattern discovered. AI1 behavioral indices contradict downstream classifiers!"
-    : "✓ Full consensus: Network anomaly is corroborated by layer classifiers.";
+    ? "Conflict detected: high mismatch pattern discovered. AI1 behavioral indices contradict downstream classifiers."
+    : "Full consensus: network anomaly is corroborated by layer classifiers.";
 
   // Calculate final aggregated index
   const weightedSum = votes.reduce((acc, current) => {

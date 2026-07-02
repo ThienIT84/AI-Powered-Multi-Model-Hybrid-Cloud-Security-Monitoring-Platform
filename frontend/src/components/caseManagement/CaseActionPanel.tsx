@@ -177,7 +177,7 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
             )}
           </button>
 
-          {/* Dispaching dropdown lists */}
+          {/* Analyst assignment list */}
           <div className="space-y-1 pt-1 border-t border-border/20">
             <span className="text-[6.5px] font-black font-mono text-muted-foreground uppercase tracking-widest block mb-1">
               ASSIGN TO ANALYST WORKPLACE
@@ -197,7 +197,7 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
                         : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    {assigned ? `✓ ${n.split(" ")[0]}` : n}
+                    {assigned ? `Assigned: ${n.split(" ")[0]}` : n}
                   </button>
                 );
               })}

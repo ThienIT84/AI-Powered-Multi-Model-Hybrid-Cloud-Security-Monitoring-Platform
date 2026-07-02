@@ -1,7 +1,7 @@
 import React from "react";
 import { useSettingsStore } from "../../store/useSettingsStore";
 import { cn } from "../../lib/utils";
-import { BrainCircuit, ShieldAlert, Cpu, AreaChart, Settings } from "lucide-react";
+import { BrainCircuit, AreaChart, Settings } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 
 const PERF_LATENCY_DATA = [
@@ -47,8 +47,9 @@ export function AiConfigSettings() {
         
         {/* Left config side */}
         <div className="lg:col-span-2 space-y-6">
-          <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-            🤖 AI SETTINGS
+          <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+            <Settings size={12} className="text-cyan-500" />
+            AI Settings
           </label>
           
           <div className="bg-card border border-border rounded-xl p-5 space-y-6 shadow-sm">
@@ -70,7 +71,7 @@ export function AiConfigSettings() {
                     <option value="Anthropic">Anthropic Security Core</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground text-[10px]">
-                    ▼
+                    v
                   </div>
                 </div>
               </div>
@@ -91,7 +92,7 @@ export function AiConfigSettings() {
                     <option value="gpt-4o">GPT-4o Security-Tuned</option>
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground text-[10px]">
-                    ▼
+                    v
                   </div>
                 </div>
               </div>
@@ -126,8 +127,9 @@ export function AiConfigSettings() {
 
           {/* Autonomous Mode Card */}
           <div className="space-y-3">
-            <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-              🧠 AUTONOMOUS MODE
+            <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+              <BrainCircuit size={12} className="text-purple-500" />
+              Autonomous Mode
             </label>
             
             <div className="p-5 bg-purple-500/5 border border-purple-500/25 rounded-xl flex items-start gap-4">
@@ -167,8 +169,9 @@ export function AiConfigSettings() {
 
         {/* Right metrics side */}
         <div className="space-y-6">
-          <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-            📊 AI METRICS PANEL
+          <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+            <AreaChart size={12} className="text-cyan-500" />
+            AI Metrics Panel
           </label>
           
           <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-6 relative overflow-hidden">

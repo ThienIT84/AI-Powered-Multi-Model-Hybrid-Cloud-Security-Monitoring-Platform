@@ -73,7 +73,7 @@ export function CloudIntegrationsPanel({ integrations, onSelect }: CloudIntegrat
                 {/* Region & last sync */}
                 <div className="flex items-center gap-1.5 mt-1 font-mono text-[7px] text-muted-foreground uppercase">
                   <span>REGION: <b>{srv.data.region || "ap-southeast-1"}</b></span>
-                  <span>•</span>
+                  <span>-</span>
                   <span>SYNC: <b>{srv.data.lastSync}</b></span>
                 </div>
               </div>

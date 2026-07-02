@@ -136,7 +136,7 @@ export const ExplainabilityCenter: React.FC<ExplainabilityCenterProps> = ({ log 
               <div className="flex-1 bg-muted/40 dark:bg-slate-900/60 border border-border dark:border-slate-800 p-2 rounded text-center">
                 <div className="text-[8px] text-muted-foreground dark:text-slate-500 font-black uppercase">ZEEK TELEMETRY</div>
                 <div className="font-bold text-foreground dark:text-slate-200 mt-0.5 truncate">{log.protocol} Connection</div>
-                <div className="text-[8px] text-muted-foreground dark:text-slate-400 mt-0.5">{log.srcIp.substring(0, 11)}.. ➔ {log.destIp.substring(0, 11)}..</div>
+                <div className="text-[8px] text-muted-foreground dark:text-slate-400 mt-0.5">{log.srcIp.substring(0, 11)}.. -> {log.destIp.substring(0, 11)}..</div>
               </div>
 
               <div className="flex items-center justify-center text-muted-foreground/60 dark:text-slate-600">
@@ -277,7 +277,7 @@ export const ExplainabilityCenter: React.FC<ExplainabilityCenterProps> = ({ log 
 
                 {isAnomaly && (
                   <div className="p-1.5 bg-red-500/5 dark:bg-red-950/20 border border-red-500/10 dark:border-red-500/15 text-[9px] text-red-650 dark:text-red-400 rounded leading-relaxed mt-1">
-                    🌟 <strong>Rule Overrides Active:</strong> Suricata payload matching rule <code>ID {suricataSigId}</code> forced threat level promotion from MEDIUM ➔ <strong>{log.severity}</strong>.
+                    <strong>Rule Overrides Active:</strong> Suricata payload matching rule <code>ID {suricataSigId}</code> forced threat level promotion from MEDIUM -> <strong>{log.severity}</strong>.
                   </div>
                 )}
               </div>

@@ -1,4 +1,4 @@
-// ─── MITRE ATT&CK Mapping – Simplified Config & Data Model ───
+// --- MITRE ATT&CK Mapping - Simplified Config & Data Model ---
 
 export interface MitreAlertMapping {
   alertId: string;

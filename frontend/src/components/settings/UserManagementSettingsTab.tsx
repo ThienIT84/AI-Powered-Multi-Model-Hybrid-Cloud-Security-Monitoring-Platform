@@ -1,5 +1,5 @@
 import React from "react";
-import { UserPlus, MoreVertical, Shield, User, Clock, Activity, Users } from "lucide-react";
+import { UserPlus, MoreVertical, Shield, User, Clock, Users, LockKeyhole, BarChart3 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export function UserManagementSettings() {
@@ -94,7 +94,10 @@ export function UserManagementSettings() {
         <div className="p-6 bg-card border border-border rounded-xl space-y-4 shadow-sm">
           <div>
             <span className="text-[8px] font-mono font-black text-muted-foreground uppercase tracking-widest">SYSTEM DECREE</span>
-            <h4 className="text-[11px] font-black text-foreground uppercase tracking-wider mt-0.5">🔐 RBAC SUMMARY</h4>
+            <h4 className="text-[11px] font-black text-foreground uppercase tracking-wider mt-0.5 flex items-center gap-1.5">
+              <LockKeyhole size={13} className="text-cyan-500" />
+              RBAC Summary
+            </h4>
           </div>
           
           <div className="space-y-3 font-mono text-[10px]">
@@ -124,7 +127,10 @@ export function UserManagementSettings() {
           
           <div>
             <span className="text-[8px] font-mono font-black text-muted-foreground uppercase tracking-widest">OPERATIONAL PERFORMANCE</span>
-            <h4 className="text-[11px] font-black text-foreground uppercase tracking-wider mt-0.5">📊 TEAM METRICS</h4>
+            <h4 className="text-[11px] font-black text-foreground uppercase tracking-wider mt-0.5 flex items-center gap-1.5">
+              <BarChart3 size={13} className="text-cyan-500" />
+              Team Metrics
+            </h4>
           </div>
 
           <div className="grid grid-cols-2 gap-4 font-mono select-none">

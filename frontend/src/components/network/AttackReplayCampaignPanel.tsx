@@ -299,7 +299,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
               {
                 time: timeLabel,
                 uid: injectedLog.id,
-                payload: `${injectedLog.srcIp} ➔ ${injectedLog.destIp}:${injectedLog.destPort} [${injectedLog.protocol}]`,
+                payload: `${injectedLog.srcIp} -> ${injectedLog.destIp}:${injectedLog.destPort} [${injectedLog.protocol}]`,
                 verdict: injectedLog.verdict,
                 score: injectedLog.threatScore,
                 reason: injectedLog.reason
@@ -488,7 +488,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
               </h3>
             </div>
           </div>
-          <span className="text-[8.5px] text-muted-foreground/80 dark:text-slate-400 italic uppercase font-black">Zeek ➔ AI ➔ Suricata Fusion map</span>
+          <span className="text-[8.5px] text-muted-foreground/80 dark:text-slate-400 italic uppercase font-black">Zeek -> AI -> Suricata Fusion map</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -512,7 +512,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
                   <div>
                     <span className="text-[8.5px] font-black uppercase text-muted-foreground dark:text-slate-500 tracking-wider">Campaign ID: {camp.id}</span>
                     <h4 className="font-extrabold uppercase text-foreground dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-red-400 mt-0.5 leading-snug">{camp.name}</h4>
-                    <span className="text-[8px] text-muted-foreground/85 dark:text-slate-400 mt-1 block">Stages: {camp.stagesCount} • Active for: {camp.duration}</span>
+                    <span className="text-[8px] text-muted-foreground/85 dark:text-slate-400 mt-1 block">Stages: {camp.stagesCount} - Active for: {camp.duration}</span>
                   </div>
                   <div className="text-right">
                     <span className="font-black text-rose-600 dark:text-rose-400 text-[11px] block">{camp.risk}/100</span>
@@ -661,7 +661,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
             <div>
               <div className="text-[8px] font-bold text-muted-foreground dark:text-slate-500 uppercase tracking-widest border-b border-border dark:border-slate-805 pb-1.5 mb-1.5 flex justify-between">
                 <span>REPLAY OUTPUT INJECTION TIMELINE LOG</span>
-                {isPlaying && <span className="text-indigo-600 dark:text-indigo-400 animate-pulse font-black uppercase">🌟 STREAM_REPLAYING ACTIVE ({replaySpeed}x)</span>}
+                {isPlaying && <span className="text-indigo-600 dark:text-indigo-400 animate-pulse font-black uppercase">Replay active ({replaySpeed}x)</span>}
               </div>
 
               <div className="space-y-1.5 max-h-30 overflow-y-auto custom-scrollbar pr-1">

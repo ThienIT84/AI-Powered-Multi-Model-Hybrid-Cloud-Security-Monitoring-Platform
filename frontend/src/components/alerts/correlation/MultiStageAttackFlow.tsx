@@ -32,7 +32,7 @@ export function MultiStageAttackFlow() {
               <div className="flex items-center gap-2">
                 <span className="text-[9px] font-black uppercase text-foreground">{s.title}</span>
                 <span className={cn("text-[7px] font-black uppercase tracking-wider font-mono", s.color)}>
-                  ● {s.status}
+                  * {s.status}
                 </span>
               </div>
               <p className="text-[8px] text-muted-foreground leading-normal font-medium">{s.desc}</p>

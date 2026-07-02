@@ -97,3 +97,11 @@ pnpm start
 ## Data Contract
 
 Backend responses should follow the README contract with `snake_case` fields. The frontend maps those DTOs into internal React types with `camelCase` fields before rendering components.
+
+## Frontend Copy Standard
+
+- User-facing text must be English.
+- Labels should be short, operational, and SOC-friendly.
+- Avoid decorative emoji, box drawing characters, and mixed-language headings.
+- Use icon components for UI affordances instead of emoji text.
+- Keep technical acronyms such as SOC, MITRE, Zeek, Suricata, IOC, API, and WebSocket unchanged.

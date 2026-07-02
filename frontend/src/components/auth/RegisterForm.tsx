@@ -208,7 +208,7 @@ export function RegisterForm({ onNavigateToLogin, onSuccess }: RegisterFormProps
               <input
                 id="register-password"
                 type="password"
-                placeholder="••••••••••••••••"
+                placeholder="----------------"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
@@ -232,7 +232,7 @@ export function RegisterForm({ onNavigateToLogin, onSuccess }: RegisterFormProps
               <input
                 id="register-confirmPassword"
                 type="password"
-                placeholder="••••••••••••••••"
+                placeholder="----------------"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}

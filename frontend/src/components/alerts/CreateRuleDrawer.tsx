@@ -223,21 +223,21 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
                   onClick={() => loadPreset('beacon')}
                   className="px-2.5 py-1.5 bg-muted/60 hover:bg-cyan-500/10 hover:text-cyan-400 hover:border-cyan-500/40 border border-border rounded-md text-[8px] font-bold uppercase tracking-wider cursor-pointer"
                 >
-                  📡 outbound Beaconing
+                  Outbound Beaconing
                 </button>
                 <button
                   type="button"
                   onClick={() => loadPreset('sqli')}
                   className="px-2.5 py-1.5 bg-muted/60 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/40 border border-border rounded-md text-[8px] font-bold uppercase tracking-wider cursor-pointer"
                 >
-                  💉 SQL Injection (HTTP Burst)
+                  SQL Injection (HTTP Burst)
                 </button>
                 <button
                   type="button"
                   onClick={() => loadPreset('brute')}
                   className="px-2.5 py-1.5 bg-muted/60 hover:bg-orange-500/10 hover:text-orange-400 hover:border-orange-500/40 border border-border rounded-md text-[8px] font-bold uppercase tracking-wider cursor-pointer"
                 >
-                  🔒 SSH Brute Force
+                  SSH Brute Force
                 </button>
               </div>
             </div>
@@ -477,7 +477,7 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
                     <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">[ AI Recommendation ]</span>
                   </div>
                   <p className="text-[8.5px] text-muted-foreground/95 font-medium leading-relaxed uppercase">
-                    “Recent traffic patterns suggest lowering threshold from <strong className="text-purple-400 font-extrabold">95%</strong> to <strong className="text-purple-400 font-extrabold">88%</strong> for improved detection coverage.”
+                    "Recent traffic patterns suggest lowering threshold from <strong className="text-purple-400 font-extrabold">95%</strong> to <strong className="text-purple-400 font-extrabold">88%</strong> for improved detection coverage."
                   </p>
                 </div>
 
@@ -539,15 +539,15 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
                       <div>
                         <span className="text-pink-500 font-extrabold text-[9.5px]">IF:</span>
                         <div className="pl-3 mt-1 space-y-1 text-muted-foreground font-mono uppercase">
-                          <div>• rule_name = <span className="text-cyan-400 font-semibold">{ruleName ? `"${ruleName}"` : "Untitled Rule"}</span></div>
-                          <div>• severity_threshold = <span className="text-cyan-400 font-semibold">"{severity}"</span></div>
-                          {attackType && <div>• attack_type = <span className="text-cyan-400 font-semibold">"{attackType}"</span></div>}
-                          <div>• protocol IN <span className="text-cyan-400 font-semibold">["{protocol}"]</span></div>
-                          {sourceIp && <div>• source_subnet = <span className="text-cyan-400 font-semibold">"{sourceIp}"</span></div>}
-                          {destPort && <div>• destination_port = <span className="text-cyan-400 font-semibold">"{destPort}"</span></div>}
-                          <div>• cloud_provider = <span className="text-cyan-400 font-semibold">"{cloudProvider}"</span></div>
-                          <div>• ai_confidence &gt;= <span className="text-cyan-400 font-semibold">{confidence}%</span></div>
-                          {mitreId && <div>• mitre_id = <span className="text-cyan-400 font-semibold">"#{mitreId}"</span></div>}
+                          <div>- rule_name = <span className="text-cyan-400 font-semibold">{ruleName ? `"${ruleName}"` : "Untitled Rule"}</span></div>
+                          <div>- severity_threshold = <span className="text-cyan-400 font-semibold">"{severity}"</span></div>
+                          {attackType && <div>- attack_type = <span className="text-cyan-400 font-semibold">"{attackType}"</span></div>}
+                          <div>- protocol IN <span className="text-cyan-400 font-semibold">["{protocol}"]</span></div>
+                          {sourceIp && <div>- source_subnet = <span className="text-cyan-400 font-semibold">"{sourceIp}"</span></div>}
+                          {destPort && <div>- destination_port = <span className="text-cyan-400 font-semibold">"{destPort}"</span></div>}
+                          <div>- cloud_provider = <span className="text-cyan-400 font-semibold">"{cloudProvider}"</span></div>
+                          <div>- ai_confidence &gt;= <span className="text-cyan-400 font-semibold">{confidence}%</span></div>
+                          {mitreId && <div>- mitre_id = <span className="text-cyan-400 font-semibold">"#{mitreId}"</span></div>}
                         </div>
                       </div>
 
@@ -567,7 +567,7 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
                                 else if (key === 'isolateAsset') labelAction = "Contain & isolate vulnerable virtual asset node";
                                 else if (key === 'escalateSeverity') labelAction = "Promote incident urgency hierarchy levels on match";
                                 return (
-                                  <div key={key}>• <span className="text-emerald-400 font-semibold">{labelAction}</span></div>
+                                  <div key={key}>- <span className="text-emerald-400 font-semibold">{labelAction}</span></div>
                                 );
                               })
                           )}

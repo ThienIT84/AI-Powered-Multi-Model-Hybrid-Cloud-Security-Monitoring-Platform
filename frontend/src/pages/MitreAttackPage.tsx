@@ -47,7 +47,7 @@ export function MitreAttackPage() {
       transition={{ duration: 0.18 }}
       className="space-y-5"
     >
-      {/* ── Page Header ──────────────────────────────────────────────────────── */}
+      {/* -- Page Header -------------------------------------------------------- */}
       <div className="flex items-start justify-between pb-3.5 border-b border-border select-none">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -65,7 +65,7 @@ export function MitreAttackPage() {
         </div>
       </div>
 
-      {/* ── Top Layout Row: 3-column Grid side-by-side ── */}
+      {/* -- Top Layout Row: 3-column Grid side-by-side -- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch w-full">
         {/* Column 1: Technique Summary List */}
         <MitreTechniqueSummary
@@ -87,7 +87,7 @@ export function MitreAttackPage() {
         />
       </div>
 
-      {/* ── Bottom Layout Row: Full Width Alert Mapping Table ── */}
+      {/* -- Bottom Layout Row: Full Width Alert Mapping Table -- */}
       <div className="w-full">
         <MitreAlertMappingTable
           alerts={alertMappings}

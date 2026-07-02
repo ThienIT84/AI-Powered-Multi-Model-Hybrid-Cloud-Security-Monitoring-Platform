@@ -124,7 +124,7 @@ export function AttackTimeline({ campaign }: AttackTimelineProps) {
                     {/* Exposing technique and severity labels */}
                     <div className="flex items-center gap-2 pt-0.5 select-none font-mono text-[7px]">
                       <span className="text-[#06b6d4] font-black">{e.technique}</span>
-                      <span className="text-muted-foreground font-semibold">•</span>
+                      <span className="text-muted-foreground font-semibold">-</span>
                       <span className={cn(
                         "font-black uppercase",
                         isCrit ? "text-red-500" : isHigh ? "text-orange-500" : "text-cyan-500"

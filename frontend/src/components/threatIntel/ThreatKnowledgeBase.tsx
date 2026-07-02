@@ -101,7 +101,7 @@ export function ThreatKnowledgeBase({ articles }: ThreatKnowledgeBaseProps) {
                       <span className="text-[7px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-600 dark:text-purple-400 px-1.5 py-0.2 rounded border border-purple-500/10">
                         {article.type}
                       </span>
-                      <span className="text-slate-400 text-[8px]">• Pub: {article.publishedDate}</span>
+                      <span className="text-slate-400 text-[8px]">- Pub: {article.publishedDate}</span>
                     </div>
 
                     <h4 className="text-[10px] font-extrabold text-foreground leading-snug uppercase tracking-tight">

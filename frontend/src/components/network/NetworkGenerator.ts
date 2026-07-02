@@ -16,17 +16,17 @@ const SRC_IPS = [
 ];
 
 const DEST_IPS_MAP = [
-  { ip: "8.8.8.8", country: "US", flag: "🇺🇸", as: "Google LLC" },
-  { ip: "142.250.64.46", country: "US", flag: "🇺🇸", as: "Google LLC" },
-  { ip: "34.120.177.200", country: "US", flag: "🇺🇸", as: "Google Cloud" },
-  { ip: "13.224.29.89", country: "SG", flag: "🇸🇬", as: "Amazon Cloudfront" },
-  { ip: "185.220.101.5", country: "NL", flag: "🇳🇱", as: "Tor Exit Node Relay" },
-  { ip: "104.244.42.1", country: "US", flag: "🇺🇸", as: "Twitter Inc." },
-  { ip: "172.217.16.142", country: "SG", flag: "🇸🇬", as: "Google Inc" },
-  { ip: "23.21.224.150", country: "UA", flag: "🇺🇦", as: "Host Pro Service" },
-  { ip: "45.227.254.12", country: "CN", flag: "🇨🇳", as: "Chinonet Telecom" },
-  { ip: "91.198.174.192", country: "RU", flag: "🇷🇺", as: "Clover Intermedia" },
-  { ip: "77.247.110.120", country: "DE", flag: "🇩🇪", as: "Herausgeber Gmbh" }
+  { ip: "8.8.8.8", country: "US", flag: "US", as: "Google LLC" },
+  { ip: "142.250.64.46", country: "US", flag: "US", as: "Google LLC" },
+  { ip: "34.120.177.200", country: "US", flag: "US", as: "Google Cloud" },
+  { ip: "13.224.29.89", country: "SG", flag: "SG", as: "Amazon Cloudfront" },
+  { ip: "185.220.101.5", country: "NL", flag: "NL", as: "Tor Exit Node Relay" },
+  { ip: "104.244.42.1", country: "US", flag: "US", as: "Twitter Inc." },
+  { ip: "172.217.16.142", country: "SG", flag: "SG", as: "Google Inc" },
+  { ip: "23.21.224.150", country: "UA", flag: "UA", as: "Host Pro Service" },
+  { ip: "45.227.254.12", country: "CN", flag: "CN", as: "Chinonet Telecom" },
+  { ip: "91.198.174.192", country: "RU", flag: "RU", as: "Clover Intermedia" },
+  { ip: "77.247.110.120", country: "DE", flag: "DE", as: "Herausgeber Gmbh" }
 ];
 
 const PORTS = [443, 80, 53, 22, 8080, 3389, 9001];

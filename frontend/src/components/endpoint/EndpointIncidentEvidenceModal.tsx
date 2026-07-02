@@ -30,7 +30,7 @@ export const EndpointIncidentEvidenceModal: React.FC<EndpointIncidentEvidenceMod
             <ShieldAlert className="w-5 h-5 text-red-500 animate-pulse" />
             <div className="flex flex-col">
               <span className="text-xs font-black uppercase tracking-wider">FORENSIC TELEMETRY EVIDENCE DOSSIER</span>
-              <span className="text-[8px] text-muted-foreground uppercase font-semibold">Consensus ID: {selectedIncident.id} • Registered {selectedIncident.timestamp}</span>
+              <span className="text-[8px] text-muted-foreground uppercase font-semibold">Consensus ID: {selectedIncident.id} - Registered {selectedIncident.timestamp}</span>
             </div>
           </div>
           <button 
@@ -68,7 +68,7 @@ export const EndpointIncidentEvidenceModal: React.FC<EndpointIncidentEvidenceMod
                       <ArrowRight size={10} className="text-slate-500" />
                       <span className="text-blue-400">{selectedIncident.zeekLogs.conn.dest_ip}:{selectedIncident.zeekLogs.conn.dest_port}</span>
                       <span className="text-[8px] bg-secondary border border-border px-1.5 py-0.2 rounded uppercase font-bold text-foreground">
-                        {selectedIncident.zeekLogs.conn.proto} • {selectedIncident.zeekLogs.conn.service}
+                        {selectedIncident.zeekLogs.conn.proto} - {selectedIncident.zeekLogs.conn.service}
                       </span>
                     </div>
                   </div>
