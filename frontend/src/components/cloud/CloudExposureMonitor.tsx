@@ -93,7 +93,7 @@ export function CloudExposureMonitor({ assets }: CloudExposureMonitorProps) {
                   </div>
                   <div className="flex items-center gap-1.5 text-[7.5px] text-slate-500 font-bold font-sans uppercase">
                     <span>Region: {asset.region}</span>
-                    <span>•</span>
+                    <span>-</span>
                     <span>Service: {asset.service}</span>
                   </div>
                 </div>

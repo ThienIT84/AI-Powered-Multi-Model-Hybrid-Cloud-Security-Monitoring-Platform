@@ -181,7 +181,7 @@ export function IntegrationsPage() {
       transition={{ duration: 0.3 }}
       className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans antialiased space-y-6 transition-colors duration-300 pb-16"
     >
-      {/* ─── Header Section ─── */}
+      {/* --- Header Section --- */}
       <IntegrationPageHeader
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -192,18 +192,18 @@ export function IntegrationsPage() {
         systemTime={systemTime}
       />
 
-      {/* ─── KPI Section ─── */}
+      {/* --- KPI Section --- */}
       <IntegrationKPIs
         integrations={integrations}
         lastSyncText={lastSyncText}
       />
 
-      {/* ─── Connectivity Map (Full Width) ─── */}
+      {/* --- Connectivity Map (Full Width) --- */}
       <div className="w-full">
         <ConnectivityMap integrations={integrations} />
       </div>
 
-      {/* ─── Main Content Workspace Grid (Split 8 + 4 cols or similar) ─── */}
+      {/* --- Main Content Workspace Grid (Split 8 + 4 cols or similar) --- */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
         
         {/* Left Section: table inventory (resembles normal operation view) */}
@@ -229,7 +229,7 @@ export function IntegrationsPage() {
         )}
       </div>
 
-      {/* ─── Secondary Detail Panels with Telemetry Sources & Cloud Integrations ─── */}
+      {/* --- Secondary Detail Panels with Telemetry Sources & Cloud Integrations --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
         {/* Telemetry Sources (Zeek, Suricata, Filebeat) */}
         <TelemetrySourcesPanel

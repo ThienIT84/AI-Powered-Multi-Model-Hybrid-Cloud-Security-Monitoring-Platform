@@ -39,7 +39,7 @@ export function IncidentClusterView() {
             >
               <div className="flex justify-between items-start">
                 <span className="text-[7.5px] font-mono text-muted-foreground uppercase font-black tracking-wider">
-                  {cur.id} • {cur.primaryActor}
+                  {cur.id} - {cur.primaryActor}
                 </span>
                 <span className={cn(
                   "text-[7px] font-black px-1.5 py-0.5 rounded border uppercase flex items-center gap-1",

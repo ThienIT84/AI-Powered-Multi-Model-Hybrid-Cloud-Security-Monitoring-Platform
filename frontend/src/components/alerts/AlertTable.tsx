@@ -26,15 +26,15 @@ interface AlertTableProps {
 function formatModelCell(value: string, status: string, source: string) {
   const normalizedStatus = (status || "completed").toLowerCase();
   const normalizedSource = (source || "legacy").toLowerCase();
-  if (normalizedStatus === "not_applicable") return "— N/A";
-  if (normalizedStatus === "not_available") return "○ UNAVAIL";
-  if (normalizedStatus === "not_run") return "○ NOT RUN";
+  if (normalizedStatus === "not_applicable") return "- N/A";
+  if (normalizedStatus === "not_available") return "Unavailable";
+  if (normalizedStatus === "not_run") return "Not Run";
   if (normalizedStatus === "failed") return "! FAILED";
   if (normalizedStatus === "timeout") return "! TIMEOUT";
   if (normalizedStatus === "simulated" || normalizedSource === "mock" || normalizedSource === "simulated") {
-    return `M ${value}`;
+    return `Mock ${value}`;
   }
-  if (normalizedSource === "real") return `✓ ${value}`;
+  if (normalizedSource === "real") return `Real ${value}`;
   return value;
 }
 
@@ -259,7 +259,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                 Severity
               </th>
               <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[11%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
-                Source → Destination
+                Source -> Destination
               </th>
               <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[8%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
                 AI1_RESULT
@@ -362,7 +362,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                        <td className="px-3 py-1 font-mono text-[7.8px] text-muted-foreground font-semibold">
                           <div className="flex items-center gap-1 leading-none">
                             <span className="text-foreground font-black">{alert.sourceIp}</span>
-                            <span className="text-cyan-500/60 font-black">→</span>
+                            <span className="text-cyan-500/60 font-black">-></span>
                             <span className="text-foreground/90">{alert.destinationIp}</span>
                           </div>
                        </td>

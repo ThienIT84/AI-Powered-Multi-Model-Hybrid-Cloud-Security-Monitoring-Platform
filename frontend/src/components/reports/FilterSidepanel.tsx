@@ -110,7 +110,7 @@ export function FilterSidepanel({
               >
                 <span>{atk}</span>
                 <div className={`w-3 h-3 rounded-sm border ${isChecked ? "bg-cyan-500 dark:bg-cyan-400 border-cyan-500 dark:border-cyan-400 flex items-center justify-center text-slate-950 font-black text-[8px]" : "border-slate-300 dark:border-slate-700"}`}>
-                  {isChecked && "✓"}
+                  {isChecked && "OK"}
                 </div>
               </button>
             );
@@ -137,7 +137,7 @@ export function FilterSidepanel({
               >
                 <span>{ai.label}</span>
                 <div className={`w-3 h-3 rounded-sm border ${isChecked ? "bg-purple-500 dark:bg-purple-400 border-purple-500 dark:border-purple-400 flex items-center justify-center text-slate-950 font-black text-[8px]" : "border-slate-300 dark:border-slate-700"}`}>
-                  {isChecked && "✓"}
+                  {isChecked && "OK"}
                 </div>
               </button>
             );

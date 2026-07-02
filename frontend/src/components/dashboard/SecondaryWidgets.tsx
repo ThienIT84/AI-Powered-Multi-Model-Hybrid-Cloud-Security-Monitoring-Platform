@@ -24,7 +24,7 @@ export function SecondaryWidgets() {
       <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center gap-2 mb-6">
            <Activity className="w-4 h-4 text-cyan-400" />
-           <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest">SỨC KHỎE HẠ TẦNG</h3>
+           <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest">Infrastructure Health</h3>
         </div>
         <div className="space-y-5">
            <InfraItem icon={Server} label="Web Servers" ok={45} err={3} total={48} color="bg-cyan-500" />
@@ -38,7 +38,7 @@ export function SecondaryWidgets() {
       <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
            <ShieldCheck className="w-4 h-4 text-purple-400" />
-           <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest">BỀ MẶT TẤN CÔNG</h3>
+           <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest">Attack Surface</h3>
         </div>
         <div className="h-45 w-full">
            <ResponsiveContainer width="100%" height="100%">
@@ -61,7 +61,7 @@ export function SecondaryWidgets() {
       <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
            <AlertTriangle className="w-4 h-4 text-yellow-500" />
-           <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest">SỰ CỐ TUẦN NÀY</h3>
+           <h3 className="text-[10px] font-black text-foreground uppercase tracking-widest">Incidents This Week</h3>
         </div>
         <div className="h-45 w-full">
            <ResponsiveContainer width="100%" height="100%">
@@ -86,21 +86,21 @@ export function SecondaryWidgets() {
       <div className="grid grid-rows-2 gap-4">
          <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
-               <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">DỰ BÁO RỦI RO AI</span>
+               <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">AI Risk Forecast</span>
                <Zap className="w-3 h-3 text-purple-400" />
             </div>
             <div className="grid grid-cols-2 gap-2 flex-1">
-               <RiskTile label="1H" value={72} color="text-red-500" sub="Nguy cơ cao" />
-               <RiskTile label="6H" value={58} color="text-yellow-500" sub="Trung bình" />
-               <RiskTile label="12H" value={45} color="text-blue-500" sub="Thấp" />
-               <RiskTile label="24H" value={32} color="text-green-500" sub="An toàn" />
+               <RiskTile label="1H" value={72} color="text-red-500" sub="High Risk" />
+               <RiskTile label="6H" value={58} color="text-yellow-500" sub="Medium" />
+               <RiskTile label="12H" value={45} color="text-blue-500" sub="Low" />
+               <RiskTile label="24H" value={32} color="text-green-500" sub="Safe" />
             </div>
          </div>
          <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 flex items-start gap-3">
             <Zap className="w-4 h-4 text-red-500 mt-0.5" />
             <div>
-               <p className="text-[10px] text-red-400 font-bold leading-snug">AI dự báo đợt tấn công DDoS quy mô lớn trong 1-2 giờ tới</p>
-               <p className="text-[8px] text-red-500/50 uppercase font-black mt-1 tracking-widest">HÀNH ĐỘNG KHUYÊN DÙNG: BẬT WAF</p>
+               <p className="text-[10px] text-red-400 font-bold leading-snug">AI forecasts a large-scale DDoS attempt within the next 1-2 hours</p>
+               <p className="text-[8px] text-red-500/50 uppercase font-black mt-1 tracking-widest">Recommended action: enable WAF</p>
             </div>
          </div>
       </div>
@@ -141,7 +141,7 @@ function RiskTile({ label, value, color, sub }: any) {
 }
 
 const radarData = [
-  { subject: 'Mạng', value: 120, fullMark: 150 },
+  { subject: 'Network', value: 120, fullMark: 150 },
   { subject: 'Server', value: 98, fullMark: 150 },
   { subject: 'DB', value: 86, fullMark: 150 },
   { subject: 'App', value: 99, fullMark: 150 },
@@ -150,11 +150,11 @@ const radarData = [
 ];
 
 const weeklyData = [
-  { day: 'T2', count: 12 },
-  { day: 'T3', count: 8 },
-  { day: 'T4', count: 15 },
-  { day: 'T5', count: 6 },
-  { day: 'T6', count: 22 },
-  { day: 'T7', count: 11 },
-  { day: 'CN', count: 9 },
+  { day: 'Mon', count: 12 },
+  { day: 'Tue', count: 8 },
+  { day: 'Wed', count: 15 },
+  { day: 'Thu', count: 6 },
+  { day: 'Fri', count: 22 },
+  { day: 'Sat', count: 11 },
+  { day: 'Sun', count: 9 },
 ];

@@ -69,11 +69,11 @@
     --primary: #0f172a;
     --primary-foreground: #f8fafc;
 
-    /* Super Saturated Neon Intensity (Vibrant & Deep) */
-    --xanh-accent: #0044ff;      /* Xanh dương rực rỡ */
-    --critical-accent: #ff0044;  /* Đỏ Neon cực mạnh */
-    --high-accent: #ff6600;      /* Cam Neon rực rỡ */
-    --medium-accent: #eab308;    /* Vàng rực rỡ */
+    /* Super saturated neon intensity */
+    --xanh-accent: #0044ff;      /* Bright blue */
+    --critical-accent: #ff0044;  /* Neon red */
+    --high-accent: #ff6600;      /* Neon orange */
+    --medium-accent: #eab308;    /* Bright yellow */
     --low-accent: #22d3ee;       /* Cyan Neon */
     --emerald-accent: #10b981;   /* Emerald Neon */
     --purple-accent: #a855f7;    /* Purple Neon */
@@ -211,4 +211,3 @@
   color: #f4f4f5 !important; /* zinc-100 */
   font-weight: 950 !important;
 }
-

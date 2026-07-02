@@ -82,7 +82,7 @@ export function AttackSurfacePage() {
       transition={{ duration: 0.3 }}
       className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans antialiased space-y-6 transition-colors duration-300"
     >
-      {/* ─── 1. PAGE TITLE HEADER ─── */}
+      {/* --- 1. PAGE TITLE HEADER --- */}
       <div className="flex flex-col sm:flex-row items-baseline sm:items-center justify-between gap-3 border-b border-border/20 pb-4_">
         <div>
           <h2 className="text-xl font-black text-foreground uppercase tracking-widest flex items-center gap-2">
@@ -103,7 +103,7 @@ export function AttackSurfacePage() {
         </div>
       </div>
 
-      {/* ─── 2. HEADER KPI BAR ─── */}
+      {/* --- 2. HEADER KPI BAR --- */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5 select-none w-full">
         {/* Total Assets */}
         <div className="bg-card border border-border rounded-xl p-3.5 shadow-sm space-y-1 relative overflow-hidden">
@@ -171,7 +171,7 @@ export function AttackSurfacePage() {
         </div>
       </div>
 
-      {/* ─── ROW 1: INFRASTRUCTURE MAP & ASSET INVENTORY (WITH RIGHT DETAIL DRAWER ACTION) ─── */}
+      {/* --- ROW 1: INFRASTRUCTURE MAP & ASSET INVENTORY (WITH RIGHT DETAIL DRAWER ACTION) --- */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start w-full">
         {/* Left Column: Topo and Table stacked or split depending on selection */}
         <div className={`transition-all duration-300 w-full ${selectedAssetId ? "lg:col-span-8" : "lg:col-span-12"}`}>
@@ -203,7 +203,7 @@ export function AttackSurfacePage() {
         )}
       </div>
 
-      {/* ─── ROW 2: ASSET TYPE DISTRIBUTION & ASSET ZONE DISTRIBUTION & INTERNET FACING ASSETS ─── */}
+      {/* --- ROW 2: ASSET TYPE DISTRIBUTION & ASSET ZONE DISTRIBUTION & INTERNET FACING ASSETS --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
         {/* Asset Type Distribution */}
         <AssetTypeDistribution assets={assets} />
@@ -215,7 +215,7 @@ export function AttackSurfacePage() {
         <InternetFacingAssetsPanel assets={assets} onSelectAssetId={setSelectedAssetId} />
       </div>
 
-      {/* ─── ROW 3: HIGH FUSION RISK ASSETS & CLOUD RESOURCE STATUS ─── */}
+      {/* --- ROW 3: HIGH FUSION RISK ASSETS & CLOUD RESOURCE STATUS --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         {/* High Fusion Risk Assets inventory */}
         <FusionRiskInventory assets={assets} onSelectAssetId={setSelectedAssetId} />

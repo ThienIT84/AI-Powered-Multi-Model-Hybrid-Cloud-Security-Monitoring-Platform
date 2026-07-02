@@ -61,7 +61,7 @@ export function CloudCompliancePanel({ frameworks }: CloudCompliancePanelProps) 
                     <span className="flex items-center gap-0.5 text-red-500">
                       Failed: {framework.failedControls}
                     </span>
-                    <span>•</span>
+                    <span>-</span>
                     <span className="flex items-center gap-0.5 text-amber-500">
                       Warn: {framework.warnings}
                     </span>

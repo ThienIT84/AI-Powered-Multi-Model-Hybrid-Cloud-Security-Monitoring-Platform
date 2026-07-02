@@ -9,7 +9,7 @@ export function CampaignOverviewPanel() {
       name: "APT-41 Coordinated Brute-Force Recon Campaign",
       risk: "Critical",
       assets: "DMZ-WEB-SVR-01, CORP-AD-DC-02",
-      stages: "Reconnaissance → Initial Access",
+      stages: "Reconnaissance -> Initial Access",
       duration: "3h 42m",
       volume: 1840,
       state: "ACTIVE"
@@ -19,7 +19,7 @@ export function CampaignOverviewPanel() {
       name: "Targeted Russian-speaking XSS Semantic Campaign",
       risk: "High",
       assets: "CLOUD-S3-BUCKET",
-      stages: "Initial Access → SQLi Execution",
+      stages: "Initial Access -> SQLi Execution",
       duration: "12h 15m",
       volume: 450,
       state: "MONITORING"

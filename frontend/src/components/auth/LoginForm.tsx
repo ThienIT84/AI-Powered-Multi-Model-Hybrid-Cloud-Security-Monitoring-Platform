@@ -178,7 +178,7 @@ export function LoginForm({ onNavigateToRegister, onSuccess }: LoginFormProps) {
                 id="session-password"
                 type={showPassword ? "text" : "password"}
                 name="password"
-                placeholder="••••••••••••••••"
+                placeholder="----------------"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}

@@ -99,7 +99,7 @@ export function AlertFilters({
               <option value="LOW">LOW</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground">
-              <span className="text-[7.5px]">▼</span>
+              <span className="text-[7.5px]">v</span>
             </div>
           </div>
         </div>
@@ -121,7 +121,7 @@ export function AlertFilters({
               <option value="FALSE_POSITIVE">FALSE POSITIVE</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-muted-foreground">
-              <span className="text-[7.5px]">▼</span>
+              <span className="text-[7.5px]">v</span>
             </div>
           </div>
         </div>

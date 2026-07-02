@@ -252,9 +252,9 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
                 </p>
                 <div className="text-[9px] font-mono text-muted-foreground dark:text-slate-500 flex flex-wrap gap-2 uppercase">
                   <span>Owner: Analyst-09</span>
-                  <span>•</span>
+                  <span>-</span>
                   <span>Status: Active Investigation</span>
-                  <span>•</span>
+                  <span>-</span>
                   <span>Risk: Critical</span>
                 </div>
               </div>
@@ -397,7 +397,7 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
                     <div key={res.id} className="bg-secondary/40 dark:bg-slate-900/40 p-1.5 rounded border border-border dark:border-slate-900 flex items-center justify-between text-[9px]">
                       <div>
                         <span className="font-extrabold text-muted-foreground dark:text-slate-400">{res.id}</span>
-                        <span className="text-muted-foreground dark:text-slate-500 ml-2">{res.srcIp} → {res.destIp}</span>
+                        <span className="text-muted-foreground dark:text-slate-500 ml-2">{res.srcIp} -> {res.destIp}</span>
                         <span className="bg-muted dark:bg-slate-800 px-1 py-0.2 rounded font-black text-[8px] text-foreground dark:text-slate-300 ml-2">{res.protocol}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -606,7 +606,7 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
           <div className="mt-4 p-4 bg-muted dark:bg-slate-900 border border-border dark:border-slate-855 rounded text-[10px] space-y-2 animate-fade-in line-clamp-none font-mono">
             <div className="flex items-center justify-between border-b border-border dark:border-slate-800 pb-1.5">
               <span className="text-red-650 dark:text-red-455 font-extrabold flex items-center gap-1">
-                <Info size={13} /> {activeMitreDetail.code}: {activeMitreDetail.name} — ({activeMitreDetail.tier.toUpperCase()})
+                <Info size={13} /> {activeMitreDetail.code}: {activeMitreDetail.name} - ({activeMitreDetail.tier.toUpperCase()})
               </span>
               <button 
                 onClick={() => setSelectedMitre(null)}

@@ -235,20 +235,20 @@ export default function App() {
                 exit={{ opacity: 0, x: 10 }}
                 className="space-y-6 pb-12"
               >
-                {/* SECTION A — HEADER */}
+                {/* SECTION A - HEADER */}
                 <DashboardHeader 
                   isConnected={isConnected} 
                   onRefresh={handleRefresh} 
                   isSyncing={isSyncing} 
                 />
 
-                {/* SECTION B — EXECUTIVE KPI BAR */}
+                {/* SECTION B - EXECUTIVE KPI BAR */}
                 <ExecutiveKPIBar metrics={metrics} />
 
-                {/* SECTION C — SOC SITUATION SNAPSHOT */}
+                {/* SECTION C - SOC SITUATION SNAPSHOT */}
                 <SOCSituationSnapshot alerts={alerts} />
 
-                {/* SECTION D — REAL-TIME INCIDENT STREAM (WITH DETAILS ON THE RIGHT ON DESKTOP) */}
+                {/* SECTION D - REAL-TIME INCIDENT STREAM (WITH DETAILS ON THE RIGHT ON DESKTOP) */}
                 <div className="flex flex-col lg:flex-row gap-6 items-stretch w-full">
                   <div className={cn(
                     "transition-all duration-300 min-w-0 flex-1",
@@ -281,7 +281,7 @@ export default function App() {
                   </AnimatePresence>
                 </div>
 
-                {/* SECTIONS E, F — OPERATIONAL SUMMARIES */}
+                {/* SECTIONS E, F - OPERATIONAL SUMMARIES */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* FUSION OVERVIEW */}
                   <FusionOverviewPanel metrics={fusionOverview} />
@@ -290,7 +290,7 @@ export default function App() {
                   <OpenCasesSummary metrics={openCasesSummary} />
                 </div>
 
-                {/* SECTIONS G, H — POSTURE SUMMARIES */}
+                {/* SECTIONS G, H - POSTURE SUMMARIES */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* SECURITY POSTURE SUMMARY */}
                   <SecurityPostureSummary metrics={securityPosture} />
@@ -299,7 +299,7 @@ export default function App() {
                   <AlertDistributionChart data={severityDistribution} />
                 </div>
 
-                {/* SECTIONS I, J — HEALTH & ACTION PATHS */}
+                {/* SECTIONS I, J - HEALTH & ACTION PATHS */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                   <div className="lg:col-span-8 flex flex-col h-full">
                     {/* PLATFORM HEALTH */}

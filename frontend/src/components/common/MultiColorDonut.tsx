@@ -38,7 +38,7 @@ export function MultiColorDonut({
 
   return (
     <div className="flex flex-col items-center gap-6 w-full">
-      {/* ── Donut centered ── */}
+      {/* -- Donut centered -- */}
       <div className={cn("relative w-full flex justify-center", isDashboard ? "h-32" : "")} style={!isDashboard ? { height: size } : undefined}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -124,7 +124,7 @@ export function MultiColorDonut({
         </div>
       </div>
 
-      {/* ── Legend grid ── */}
+      {/* -- Legend grid -- */}
       <div className={cn("w-full", isDashboard ? "space-y-1.5" : "space-y-2")}>
         {data.map((item, idx) => {
           const pct = Math.round((item.value / total) * 100);

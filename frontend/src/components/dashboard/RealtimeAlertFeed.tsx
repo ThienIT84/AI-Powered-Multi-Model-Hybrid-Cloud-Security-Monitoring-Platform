@@ -95,7 +95,7 @@ export function RealtimeAlertFeed({ alerts = [], onSelectAlert, selectedAlertId 
               {paginatedAlerts.length === 0 ? (
                 <tr className="h-44">
                   <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground/60 text-[10px] font-mono leading-relaxed">
-                     NO ACTIVE DETECTIONS STREAMING • MONITORING SEC_OBS PIPELINE
+                     NO ACTIVE DETECTIONS STREAMING - MONITORING SEC_OBS PIPELINE
                   </td>
                 </tr>
               ) : (

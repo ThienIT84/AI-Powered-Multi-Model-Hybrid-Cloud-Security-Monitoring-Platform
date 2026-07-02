@@ -96,7 +96,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = React.memo(({
         </div>
         <div className="flex items-end justify-between mt-2.5">
           <span className="text-emerald-500 font-mono text-[7.5px] font-bold">
-            ↑ +14.2% <span className="opacity-60 text-muted-foreground">FLX</span>
+            UP +14.2% <span className="opacity-60 text-muted-foreground">FLX</span>
           </span>
           <svg className="w-14 h-5 overflow-visible" viewBox="0 0 80 20">
             <polyline
@@ -123,7 +123,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = React.memo(({
         </div>
         <div className="flex items-end justify-between mt-2.5">
           <span className="text-emerald-500 font-mono text-[7.5px] font-bold">
-            ↑ +4.8% <span className="opacity-60 text-muted-foreground">CON</span>
+            UP +4.8% <span className="opacity-60 text-muted-foreground">CON</span>
           </span>
           <svg className="w-14 h-5 overflow-visible" viewBox="0 0 80 20">
             <polyline
@@ -156,7 +156,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = React.memo(({
         </div>
         <div className="flex items-end justify-between mt-2.5">
           <span className={`font-mono text-[7.5px] font-bold ${threatLevel > 35 ? "text-red-500" : "text-amber-505"}`}>
-            {threatLevel > 35 ? "↑ HIGH" : "↓ -2.4%"}
+            {threatLevel > 35 ? "HIGH" : "-2.4%"}
           </span>
           <svg className="w-14 h-5 overflow-visible" viewBox="0 0 80 20">
             <polyline
@@ -216,7 +216,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = React.memo(({
         </div>
         <div className="flex items-end justify-between mt-2.5">
           <span className={`font-mono text-[7.5px] font-bold ${suspiciousSessions > 0 ? "text-orange-500" : "text-muted-foreground"}`}>
-            {suspiciousSessions > 0 ? "⚠️ ALERT" : "✓ SAFE"}
+            {suspiciousSessions > 0 ? "ALERT" : "SAFE"}
           </span>
           <svg className="w-14 h-5 overflow-visible" viewBox="0 0 80 20">
             <polyline
@@ -270,7 +270,7 @@ export const NetworkStats: React.FC<NetworkStatsProps> = React.memo(({
         </div>
         <div className="flex items-end justify-between mt-2.5">
           <span className="text-rose-500 font-mono text-[7.5px] font-bold">
-            {threatScore > 50 ? "⚠️ HEURISTIC" : "✓ OK"}
+            {threatScore > 50 ? "HEURISTIC" : "OK"}
           </span>
           <svg className="w-14 h-5 overflow-visible" viewBox="0 0 80 20">
             <polyline

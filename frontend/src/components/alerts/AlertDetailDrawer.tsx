@@ -107,7 +107,7 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetail
               <h2 className="text-[10.5px] font-black text-foreground uppercase tracking-widest">{alert.attackType}</h2>
               <div className="flex items-center gap-1.5 mt-1 text-[8px] text-muted-foreground font-black uppercase tracking-widest animate-pulse">
                 <span>INDEX: {displayId}</span>
-                <span>•</span>
+                <span>-</span>
                 <span className="text-cyan-500 font-extrabold flex items-center gap-0.5">
                   <Activity size={10} className="text-cyan-500" />
                   CORRELATED FUSION

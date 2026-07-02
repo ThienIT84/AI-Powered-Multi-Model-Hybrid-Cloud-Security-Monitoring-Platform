@@ -77,7 +77,7 @@ export function SettingsDebugConsole({
           <div className="flex-1 overflow-y-auto text-[8.5px] text-emerald-700 dark:text-emerald-400 font-mono space-y-0.5 custom-scrollbar pr-2 py-1 select-text">
             {consoleLogs.map((log, index) => (
               <div key={index} className="flex gap-2">
-                <span className="text-cyan-600 dark:text-cyan-550 opacity-45 shrink-0 select-none">──</span>
+                <span className="text-cyan-600 dark:text-cyan-550 opacity-45 shrink-0 select-none">--</span>
                 <span className="font-semibold dark:font-normal">{log}</span>
               </div>
             ))}

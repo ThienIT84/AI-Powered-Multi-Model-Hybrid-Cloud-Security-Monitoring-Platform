@@ -158,31 +158,31 @@ export const NetworkStreamTable: React.FC<NetworkStreamTableProps> = React.memo(
       case "CRITICAL":
         return (
           <span className="inline-flex items-center px-1.5 py-0.5 text-[8.5px] font-black tracking-wider rounded bg-red-950/40 text-red-400 border border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)] uppercase">
-            ● CRITICAL
+            * CRITICAL
           </span>
         );
       case "HIGH":
         return (
           <span className="inline-flex items-center px-1.5 py-0.5 text-[8.5px] font-black tracking-wider rounded bg-orange-950/30 text-orange-400 border border-orange-500/20 uppercase">
-            ● HIGH
+            * HIGH
           </span>
         );
       case "MEDIUM":
         return (
           <span className="inline-flex items-center px-1.5 py-0.5 text-[8.5px] font-black tracking-wider rounded bg-amber-950/20 text-amber-400 border border-amber-500/15 uppercase">
-            ● MEDIUM
+            * MEDIUM
           </span>
         );
       case "LOW":
         return (
           <span className="inline-flex items-center px-1.5 py-0.5 text-[8.5px] font-black tracking-wider rounded bg-emerald-950/15 text-emerald-400 border border-emerald-500/15 uppercase">
-            ● LOW
+            * LOW
           </span>
         );
       default:
         return (
           <span className="inline-flex items-center px-1.5 py-0.5 text-[8.5px] font-black tracking-wider rounded bg-blue-950/15 text-blue-400 border border-blue-500/15 uppercase">
-            ● INFO
+            * INFO
           </span>
         );
     }

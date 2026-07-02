@@ -26,7 +26,7 @@ export function AIThreatDetectionPage() {
 
   return (
     <div className="w-full min-h-screen bg-background p-4 md:p-6 space-y-6 flex flex-col font-mono text-slate-800 dark:text-slate-100 animate-in fade-in">
-      {/* ── 1. Page Title Header Area ──────────────────────────────── */}
+      {/* -- 1. Page Title Header Area -------------------------------- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 border-b border-border/80 gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
@@ -52,7 +52,7 @@ export function AIThreatDetectionPage() {
         </div>
       </div>
 
-      {/* ── 2. Top KPI Metrics bar ────────────────────────────────── */}
+      {/* -- 2. Top KPI Metrics bar ---------------------------------- */}
       <SOCHeaderKPI
         liveInferences={liveInferences}
         liveDetections={liveDetections}
@@ -61,7 +61,7 @@ export function AIThreatDetectionPage() {
         liveFpReduction={liveFpReduction}
       />
 
-      {/* ── 3. Main Center Layout (Grid containing Real-Time Stream + Forensic Detail / Slide-in Panel) ────────────────── */}
+      {/* -- 3. Main Center Layout (Grid containing Real-Time Stream + Forensic Detail / Slide-in Panel) ------------------ */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         
         {/* Left & Center: Real-Time stream + Insights Grid (takes up full width if no event is selected, or 8 columns if selected) */}
@@ -104,7 +104,7 @@ export function AIThreatDetectionPage() {
 
       </div>
 
-      {/* ── 4. Bottom System Health Diagnostic panel ──────────────── */}
+      {/* -- 4. Bottom System Health Diagnostic panel ---------------- */}
       <SystemHealthPanel
         throughput={throughput}
         liveDetections={liveDetections}

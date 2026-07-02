@@ -236,7 +236,7 @@ export function IncidentResponseWorkflow() {
             <ul className="space-y-1.5">
               {selectedStage.checklist.map((step, idx) => (
                 <li key={idx} className="flex items-start gap-1.5 text-foreground leading-relaxed uppercase text-[8px] font-bold">
-                  <span className="text-cyan-500 shrink-0 font-black">•</span>
+                  <span className="text-cyan-500 shrink-0 font-black">-</span>
                   <span>{step}</span>
                 </li>
               ))}

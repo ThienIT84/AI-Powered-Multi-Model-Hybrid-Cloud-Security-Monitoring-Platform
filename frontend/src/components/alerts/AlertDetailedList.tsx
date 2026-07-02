@@ -190,7 +190,7 @@ function AlertTableRow({ alert, isSelected, onClick, index }: AlertTableRowProps
             )}>
               {alert.sourceIp}:{alert.sourcePort || 49152}
             </span>
-            <span className="text-muted-foreground/40 font-black">→</span>
+            <span className="text-muted-foreground/40 font-black">-></span>
             <span className="text-foreground/95 bg-muted/60 border border-border/40 px-1 py-0.2 rounded-sm text-[9px]">
               {alert.destinationIp}:{alert.destinationPort}
             </span>
@@ -284,7 +284,7 @@ function AlertGridItem({ alert, isSelected, onClick, index }: { alert: Alert; is
       <div className="mt-2 pt-2.5 border-t border-border/30 flex flex-col gap-1.5 justify-end">
         <div className="flex justify-between font-mono text-[8.5px] tracking-tight">
           <span className="font-bold text-muted-foreground truncate max-w-25">{alert.sourceIp}</span>
-          <span className="text-muted-foreground/45 shrink-0">→</span>
+          <span className="text-muted-foreground/45 shrink-0">-></span>
           <span className="text-foreground/90 font-semibold truncate max-w-25">{alert.destinationIp}</span>
         </div>
         <div className="flex items-center justify-between mt-1 text-[8px] font-black uppercase tracking-wider text-muted-foreground">

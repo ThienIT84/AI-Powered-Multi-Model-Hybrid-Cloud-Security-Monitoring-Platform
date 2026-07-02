@@ -109,7 +109,7 @@ export function ThreatActorProfiles({ actors, onActorSelect }: ThreatActorProfil
                         <Globe size={10} className="text-slate-400" />
                         {actor.origin.split(" ")[0]}
                       </span>
-                      <span>•</span>
+                      <span>-</span>
                       <span>Active: {actor.lastSeen.split(" ")[0]}</span>
                     </div>
                   </div>

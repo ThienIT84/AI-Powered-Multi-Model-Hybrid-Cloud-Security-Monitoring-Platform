@@ -209,12 +209,12 @@ export const EndpointInventoryTable: React.FC<EndpointInventoryTableProps> = ({
             <tr className="bg-muted/40 text-[10px] font-black text-muted-foreground uppercase tracking-wider border-b border-border">
               {visibleCols.hostname && (
                 <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort("hostname")}>
-                  Hostname {sortField === "hostname" && (sortOrder === "asc" ? "▲" : "▼")}
+                  Hostname {sortField === "hostname" && (sortOrder === "asc" ? "^" : "v")}
                 </th>
               )}
               {visibleCols.ip && (
                 <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort("ip")}>
-                  IP Address {sortField === "ip" && (sortOrder === "asc" ? "▲" : "▼")}
+                  IP Address {sortField === "ip" && (sortOrder === "asc" ? "^" : "v")}
                 </th>
               )}
               {visibleCols.deviceType && <th className="px-4 py-3">Type</th>}
@@ -222,17 +222,17 @@ export const EndpointInventoryTable: React.FC<EndpointInventoryTableProps> = ({
               {visibleCols.role && <th className="px-4 py-3">Role</th>}
               {visibleCols.alertCount && (
                 <th className="px-4 py-3 text-center cursor-pointer select-none" onClick={() => handleSort("alertCount")}>
-                  Alerts {sortField === "alertCount" && (sortOrder === "asc" ? "▲" : "▼")}
+                  Alerts {sortField === "alertCount" && (sortOrder === "asc" ? "^" : "v")}
                 </th>
               )}
               {visibleCols.riskScore && (
                 <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort("riskScore")}>
-                  Risk Score {sortField === "riskScore" && (sortOrder === "asc" ? "▲" : "▼")}
+                  Risk Score {sortField === "riskScore" && (sortOrder === "asc" ? "^" : "v")}
                 </th>
               )}
               {visibleCols.healthScore && (
                 <th className="px-2 py-3 text-center cursor-pointer select-none" onClick={() => handleSort("healthScore")}>
-                  Health {sortField === "healthScore" && (sortOrder === "asc" ? "▲" : "▼")}
+                  Health {sortField === "healthScore" && (sortOrder === "asc" ? "^" : "v")}
                 </th>
               )}
               {visibleCols.status && <th className="px-3 py-3 text-center">Status</th>}

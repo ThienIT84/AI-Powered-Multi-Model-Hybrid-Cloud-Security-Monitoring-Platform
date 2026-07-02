@@ -405,7 +405,7 @@ export function ReportsPage() {
                         <span className="text-rose-500 uppercase font-black">{rec.impact}</span>
                       </div>
                       <p className="text-[7.5px] text-zinc-500 uppercase leading-normal font-semibold">
-                        {rec.desc} — <b className="text-cyan-500 font-black">{rec.regulatory}</b>
+                        {rec.desc} - <b className="text-cyan-500 font-black">{rec.regulatory}</b>
                       </p>
                     </div>
                   ))}
@@ -615,7 +615,7 @@ export function ReportsPage() {
                 </h3>
               </div>
               <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded font-mono text-[7px] font-black uppercase">
-                REPORTING ONLY — NO LIVE INVESTIGATION
+                REPORTING ONLY - NO LIVE INVESTIGATION
               </span>
             </div>
 
@@ -769,7 +769,7 @@ export function ReportsPage() {
                 </h3>
               </div>
               <span className="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-2 py-0.5 rounded font-mono text-[7px] font-black uppercase">
-                EXECUTIVE REPORTS ONLY — MATRIX NOT INTERACTIVE
+                EXECUTIVE REPORTS ONLY - MATRIX NOT INTERACTIVE
               </span>
             </div>
 
@@ -846,7 +846,7 @@ export function ReportsPage() {
                 </h3>
               </div>
               <span className="bg-slate-500/10 text-slate-500 border border-border/20 px-2 py-0.5 rounded font-mono text-[7px] font-black uppercase">
-                COMPLIANCE INDEX ONLY — HISTORICAL RECORDS
+                COMPLIANCE INDEX ONLY - HISTORICAL RECORDS
               </span>
             </div>
 

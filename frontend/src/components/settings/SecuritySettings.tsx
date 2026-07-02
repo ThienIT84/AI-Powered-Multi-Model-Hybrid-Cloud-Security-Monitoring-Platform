@@ -174,7 +174,7 @@ export function SecuritySettings() {
                       )}
                     </div>
                     <span className="text-[9px] font-mono font-bold text-muted-foreground mt-0.5 truncate uppercase tracking-wide">
-                      {session.location} • {session.ip} • {session.elapsed}
+                      {session.location} - {session.ip} - {session.elapsed}
                     </span>
                   </div>
                 </div>

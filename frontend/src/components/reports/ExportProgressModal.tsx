@@ -72,7 +72,7 @@ export function ExportProgressModal({
                 className="space-y-2.5 w-full pt-1"
               >
                 <div className="text-emerald-600 dark:text-emerald-400 font-extrabold uppercase text-[9px] flex items-center justify-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" /> SUCCESS • ARCHIVE COMPILED SECURELY
+                  <CheckCircle2 className="w-4 h-4" /> SUCCESS - ARCHIVE COMPILED SECURELY
                 </div>
                 <button
                   onClick={() => setExportModalOpen(false)}

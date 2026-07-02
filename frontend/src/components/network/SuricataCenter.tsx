@@ -338,7 +338,7 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
                         className="bg-background/80 dark:bg-slate-955/80 p-1.5 rounded border border-border dark:border-slate-900 flex justify-between items-center text-[9.5px] hover:border-red-500/30 cursor-pointer transition-colors"
                       >
                         <span className="font-extrabold text-muted-foreground dark:text-slate-400 font-mono text-[9px] truncate max-w-30">{flow.id}</span>
-                        <span className="text-foreground/90 dark:text-slate-200 font-bold">{flow.srcIp} ➔ {flow.destIp}</span>
+                        <span className="text-foreground/90 dark:text-slate-200 font-bold">{flow.srcIp} -> {flow.destIp}</span>
                         <span className="text-red-650 dark:text-red-400 font-bold font-mono">{flow.threatScore}%</span>
                       </div>
                     ))

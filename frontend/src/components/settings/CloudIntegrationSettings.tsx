@@ -1,7 +1,7 @@
 import React from "react";
 import { useSettingsStore } from "../../store/useSettingsStore";
 import { cn } from "../../lib/utils";
-import { Cloud, RotateCw, RefreshCcw, CheckSquare, Shield, HelpCircle } from "lucide-react";
+import { Cloud, RotateCw, RefreshCcw, HelpCircle } from "lucide-react";
 
 export function CloudIntegrationSettings() {
   const { draftSettings, updateDraft } = useSettingsStore();
@@ -31,8 +31,9 @@ export function CloudIntegrationSettings() {
 
       {/* Cloud providers grid */}
       <div className="space-y-4">
-        <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 block">
-          ☁️ CLOUD PROVIDERS CONNECTORS
+        <label className="text-[10px] font-mono font-black text-muted-foreground uppercase tracking-widest ml-1 flex items-center gap-1.5">
+          <Cloud size={12} className="text-cyan-500" />
+          Cloud Provider Connectors
         </label>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -126,7 +127,7 @@ export function CloudIntegrationSettings() {
         <div className="flex items-center gap-3 border-b border-border/80 pb-4 mb-6">
           <RefreshCcw size={16} className="text-cyan-500 animate-spin-slow" />
           <h4 className="text-[11px] font-mono font-black text-foreground uppercase tracking-widest">
-            ⚙️ AUTO SYNC CONFIGURATION
+            Auto Sync Configuration
           </h4>
         </div>
         
@@ -165,7 +166,7 @@ export function CloudIntegrationSettings() {
           {/* Connected options list checkmarks */}
           <div className="space-y-3">
             <label className="text-[9px] font-mono font-black text-muted-foreground uppercase tracking-widest block mb-1">
-              ☑ ENABLED INTEGRATION FEATURES
+              Enabled Integration Features
             </label>
             
             {[
