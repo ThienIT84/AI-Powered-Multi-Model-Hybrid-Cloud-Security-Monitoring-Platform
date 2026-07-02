@@ -74,7 +74,7 @@ class RealAI2BAdapter:
                 reason=f"AI2B inference failed: {exc}",
             )
 
-    def _load(self) -> None:
+    def _load(self) -> None: 
         try:
             root = Path(__file__).resolve().parents[3]
             scripts = root / "Dataset/tools/ai2b_modeling/scripts"
