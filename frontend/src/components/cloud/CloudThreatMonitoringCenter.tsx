@@ -34,18 +34,20 @@ interface CloudThreatMonitoringCenterProps {
   selectedService: string;
   selectedSeverity: string;
   onRefreshTrigger?: boolean;
+  isSimulated?: boolean;
 }
 
 export function CloudThreatMonitoringCenter({
   searchQuery,
   selectedService,
   selectedSeverity,
-  onRefreshTrigger
+  onRefreshTrigger,
+  isSimulated = true
 }: CloudThreatMonitoringCenterProps) {
   // Findings state to support interaction (e.g. status changes or active resolution)
-  const [findings, setFindings] = useState<OperationalFinding[]>(MOCK_OPERATIONAL_FINDINGS);
-  const [liveStream, setLiveStream] = useState<SecurityEvent[]>(LIVE_SECURITY_EVENTS);
-  const [isLiveStreaming, setIsLiveStreaming] = useState(true);
+  const [findings, setFindings] = useState<OperationalFinding[]>(isSimulated ? MOCK_OPERATIONAL_FINDINGS : []);
+  const [liveStream, setLiveStream] = useState<SecurityEvent[]>(isSimulated ? LIVE_SECURITY_EVENTS : []);
+  const [isLiveStreaming, setIsLiveStreaming] = useState(isSimulated);
 
   // Filter findings based on headers search & selections
   const filteredFindings = useMemo(() => {
@@ -63,6 +65,7 @@ export function CloudThreatMonitoringCenter({
 
   // Handle fake status resolution triggers in table
   const toggleFindingStatus = (id: string) => {
+    if (!isSimulated) return;
     setFindings((prev) =>
       prev.map((f) => {
         if (f.id === id) {
@@ -81,7 +84,7 @@ export function CloudThreatMonitoringCenter({
 
   // Simulate incoming live cloud events to make it feel alive!
   useEffect(() => {
-    if (!isLiveStreaming) return;
+    if (!isSimulated || !isLiveStreaming) return;
 
     const eventTemplates = [
       { eventType: "Access Key Creation", actor: "root-admin-system", resource: "svc-ci-cd-uploader", severity: "High" },
@@ -111,10 +114,11 @@ export function CloudThreatMonitoringCenter({
     }, 4500);
 
     return () => clearInterval(interval);
-  }, [isLiveStreaming]);
+  }, [isLiveStreaming, isSimulated]);
 
   // Support manual event generator injection
   const triggerManualEvent = () => {
+    if (!isSimulated) return;
     const manualEvent: SecurityEvent = {
       id: `evt-manual-${Date.now()}`,
       timestamp: new Date().toLocaleTimeString() + " UTC",

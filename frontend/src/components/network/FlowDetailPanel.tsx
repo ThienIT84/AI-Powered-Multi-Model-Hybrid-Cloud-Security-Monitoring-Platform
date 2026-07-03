@@ -120,6 +120,31 @@ export const FlowDetailPanel: React.FC<FlowDetailPanelProps> = ({
           </div>
         </div>
 
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border pb-0.5">
+            <Shield className="w-3 h-3 text-slate-500" />
+            <span>Correlation Context</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80">
+              <span className="text-[8px] text-muted-foreground font-bold block">SENSOR / SOURCE</span>
+              <span className="font-bold text-foreground block truncate">{log.sensorId || "unknown"} / {log.source || "unknown"}</span>
+            </div>
+            <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80">
+              <span className="text-[8px] text-muted-foreground font-bold block">CORRELATION ID</span>
+              <span className="font-bold text-cyan-500 block truncate">{log.correlationId || log.id}</span>
+            </div>
+            <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80">
+              <span className="text-[8px] text-muted-foreground font-bold block">RELATED ALERT</span>
+              <span className="font-bold text-amber-500 block truncate">{log.relatedAlertId || "None"}</span>
+            </div>
+            <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80">
+              <span className="text-[8px] text-muted-foreground font-bold block">RELATED CASE</span>
+              <span className="font-bold text-emerald-500 block truncate">{log.relatedCaseId || "None"}</span>
+            </div>
+          </div>
+        </div>
+
         {/* SEC 2: Zeek Evidence log details */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border pb-0.5">

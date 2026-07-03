@@ -15,12 +15,16 @@ import { CloudIntegrationsPanel } from "../components/integrations/CloudIntegrat
 import { ConnectivityMap } from "../components/integrations/ConnectivityMap";
 import { IntegrationEventFeed } from "../components/integrations/IntegrationEventFeed";
 import { IntegrationDetailDrawer } from "../components/integrations/IntegrationDetailDrawer";
+import { appConfig } from "../config";
+import { DataModeNotice, EmptyState, ErrorState } from "../components/common/DataState";
 
 export function IntegrationsPage() {
+  const isSimulated = appConfig.dataMode !== "live";
   // --- States ---
-  const [integrations, setIntegrations] = useState<Integration[]>(() => MOCK_INTEGRATIONS);
-  const [events, setEvents] = useState<SyncEvent[]>(() => MOCK_SYNC_EVENTS);
+  const [integrations, setIntegrations] = useState<Integration[]>(() => isSimulated ? MOCK_INTEGRATIONS : []);
+  const [events, setEvents] = useState<SyncEvent[]>(() => isSimulated ? MOCK_SYNC_EVENTS : []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(isSimulated ? null : "Live integration inventory service is not connected.");
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
@@ -63,6 +67,7 @@ export function IntegrationsPage() {
 
   // --- Periodic Telemetry Updates (Lightweight Polling Mock) ---
   useEffect(() => {
+    if (!isSimulated) return;
     const simTimer = setInterval(() => {
       // 1. Randomly update 1 status or health to show dynamic reactivity
       setIntegrations((prev) => {
@@ -124,13 +129,17 @@ export function IntegrationsPage() {
     }, 6000);
 
     return () => clearInterval(simTimer);
-  }, []);
+  }, [isSimulated]);
 
   // --- Manual Force Refresh Handler ---
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
+      if (!isSimulated) {
+        setError("Live integration inventory service is not connected.");
+        return;
+      }
       setLastSyncSec(0);
       setLastSyncText("JUST NOW");
 
@@ -152,7 +161,7 @@ export function IntegrationsPage() {
       };
       setEvents((prev) => [refreshEvent, ...prev].slice(0, 10));
     }, 700);
-  }, []);
+  }, [isSimulated]);
 
   // --- Filtered Integrations ---
   const filteredIntegrations = useMemo(() => {
@@ -192,7 +201,15 @@ export function IntegrationsPage() {
         systemTime={systemTime}
       />
 
+      <DataModeNotice mode={appConfig.dataMode} />
+      {error && <ErrorState label={error} onRetry={handleRefresh} />}
+      {!error && filteredIntegrations.length === 0 && (
+        <EmptyState label="Waiting for integration telemetry." />
+      )}
+
       {/* ─── KPI Section ─── */}
+      {isSimulated && (
+        <>
       <IntegrationKPIs
         integrations={integrations}
         lastSyncText={lastSyncText}
@@ -248,6 +265,8 @@ export function IntegrationsPage() {
           events={events}
         />
       </div>
+        </>
+      )}
 
     </motion.div>
   );

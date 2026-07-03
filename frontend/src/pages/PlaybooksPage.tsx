@@ -14,6 +14,8 @@ import { PlaybookEffectivenessCards } from "../components/playbooks/PlaybookEffe
 import { PlaybookAdvisorPanel } from "../components/playbooks/PlaybookAdvisorPanel";
 import { EvidencePackageSummary } from "../components/playbooks/EvidencePackageSummary";
 import { PlaybookDetailDrawer } from "../components/playbooks/PlaybookDetailDrawer";
+import { appConfig } from "../config";
+import { DataModeNotice, EmptyState, ErrorState } from "../components/common/DataState";
 
 export function PlaybooksPage() {
   // Master procedure database list state
@@ -37,6 +39,12 @@ export function PlaybooksPage() {
   const [newPurpose, setNewPurpose] = useState("");
   const [newEstTime, setNewEstTime] = useState("20m");
   const [newOwner, setNewOwner] = useState("SOC Core Team");
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  const showActionMessage = (message: string) => {
+    setActionMessage(message);
+    window.setTimeout(() => setActionMessage(null), 3500);
+  };
 
   // UTC system time ticker
   const [utcTime, setUtcTime] = useState("");
@@ -63,9 +71,9 @@ export function PlaybooksPage() {
   };
 
   // Handler for custom playbooks file import
-  const handleImportPlaybook = (importedData: any) => {
+  const handleImportPlaybook = (importedData: Record<string, unknown>) => {
     if (!importedData || typeof importedData !== "object") {
-      alert("Invalid JSON data parsed during procedure import.");
+      showActionMessage("Invalid JSON data parsed during procedure import.");
       return;
     }
 
@@ -73,7 +81,7 @@ export function PlaybooksPage() {
     const requiredFields = ["name", "category", "severity", "purpose"];
     const missing = requiredFields.filter((f) => !importedData[f]);
     if (missing.length > 0) {
-      alert(`Invalid Playbook schema. Missing key properties: ${missing.join(", ")}`);
+      showActionMessage(`Invalid Playbook schema. Missing key properties: ${missing.join(", ")}`);
       return;
     }
 
@@ -101,11 +109,12 @@ export function PlaybooksPage() {
     setPlaybooks((prev) => [importedPlaybook, ...prev]);
 
     // Prepend a usage action log
+    const now = Date.now();
     const newUsageEvent: PlaybookUsageEvent = {
-      id: `EV-I${Math.floor(Math.random() * 9000 + 1000)}`,
+      id: `EV-I${now}`,
       timestamp: `${new Date().toISOString().replace("T", " ").substring(0, 19)} UTC`,
       playbookName: importedPlaybook.name,
-      relatedCase: `CASE-${Math.floor(Math.random() * 8000 + 1000)}`,
+      relatedCase: `CASE-${String(now).slice(-6)}`,
       analyst: "phutd0212@gmail.com",
       status: "APPLIED"
     };
@@ -165,7 +174,7 @@ export function PlaybooksPage() {
 
     // Trigger usage event log
     const newUsageEvent: PlaybookUsageEvent = {
-      id: `EV-N${Math.floor(Math.random() * 9000 + 1000)}`,
+      id: `EV-N${Date.now()}`,
       timestamp: `${new Date().toISOString().replace("T", " ").substring(0, 19)} UTC`,
       playbookName: generatedPlaybook.name,
       relatedCase: "CASE-INIT",
@@ -188,6 +197,29 @@ export function PlaybooksPage() {
 
   const inspectedPlaybook = playbooks.find((p) => p.id === inspectedPlaybookId) || playbooks[0];
 
+  if (appConfig.dataMode === "live") {
+    return (
+      <motion.div
+        key="playbooks-page-canvas"
+        initial={{ opacity: 0, scale: 0.99 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.99 }}
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        className="space-y-6 pb-20 select-none relative"
+        id="playbooks-workspace"
+      >
+        <PlaybooksHeader
+          onOpenCreateModal={() => showActionMessage("Live playbook authoring requires backend playbook service.")}
+          onImportTrigger={() => showActionMessage("Live playbook import requires backend playbook service.")}
+          utcTime={utcTime}
+        />
+        <DataModeNotice mode={appConfig.dataMode} />
+        <ErrorState label="Live playbook service is not connected." />
+        <EmptyState label="Waiting for live playbook catalog and run history." />
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       key="playbooks-page-canvas"
@@ -198,6 +230,12 @@ export function PlaybooksPage() {
       className="space-y-6 pb-20 select-none relative"
       id="playbooks-workspace"
     >
+      {actionMessage && (
+        <div className="fixed top-5 right-5 z-60 bg-card border border-amber-500/25 text-amber-500 px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-xl">
+          {actionMessage}
+        </div>
+      )}
+
       {/* 1. Page Header with actions & clock */}
       <PlaybooksHeader
         onOpenCreateModal={() => setIsCreateModalOpen(true)}

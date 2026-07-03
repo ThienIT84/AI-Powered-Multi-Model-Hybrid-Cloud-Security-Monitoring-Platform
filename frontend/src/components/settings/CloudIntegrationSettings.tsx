@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useSettingsStore } from "../../store/useSettingsStore";
 import { cn } from "../../lib/utils";
 import { Cloud, RotateCw, RefreshCcw, CheckSquare, Shield, HelpCircle } from "lucide-react";
@@ -6,6 +6,12 @@ import { Cloud, RotateCw, RefreshCcw, CheckSquare, Shield, HelpCircle } from "lu
 export function CloudIntegrationSettings() {
   const { draftSettings, updateDraft } = useSettingsStore();
   const data = draftSettings.cloud;
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const handleResync = () => {
+    setSyncMessage("Global multi-cloud asset re-synchronization queued.");
+    window.setTimeout(() => setSyncMessage(null), 3500);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -22,12 +28,18 @@ export function CloudIntegrationSettings() {
         
         {/* RE-SYNC ALL Action */}
         <button 
-          onClick={() => alert('Global multi-cloud asset re-synchronization triggered!')}
+          onClick={handleResync}
           className="flex items-center justify-center gap-2 px-5 py-2.5 bg-muted border border-border rounded-xl text-[10px] font-black text-foreground uppercase tracking-widest hover:bg-border transition-all cursor-pointer shadow-sm shrink-0"
         >
           <RotateCw size={12} className="text-cyan-500 animate-spin-slow" /> RE-SYNC ALL
         </button>
       </div>
+
+      {syncMessage && (
+        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-500 px-3 py-2 text-[9px] font-black uppercase tracking-widest">
+          {syncMessage}
+        </div>
+      )}
 
       {/* Cloud providers grid */}
       <div className="space-y-4">

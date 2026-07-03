@@ -1,5 +1,6 @@
 import React from "react";
 import { AppView } from "../../types/views";
+import { NavLink } from "react-router-dom";
 import { 
   ShieldAlert, 
   Activity, 
@@ -31,37 +32,25 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
-const menuItems = [
+const menuItems: Array<{ group: string; items: Array<{ icon: React.ElementType; label: string; to: string; view: AppView; count?: number }> }> = [
   { group: "MONITORING", items: [
-    { icon: Bell, label: "Alerts", count: 12 },
-    { icon: Globe, label: "Network" },
-    { icon: Monitor, label: "Endpoints" },
-    { icon: Cloud, label: "Cloud" },
-    { icon: Shield, label: "Threat Intel" },
+    { icon: Bell, label: "Alerts", to: "/alerts", view: "alerts" },
+    { icon: Globe, label: "Network", to: "/network", view: "network" },
+    { icon: Monitor, label: "Endpoints", to: "/endpoints/default", view: "endpoints" },
+    { icon: Cloud, label: "Cloud", to: "/cloud/assets/default", view: "cloud" },
+    { icon: Shield, label: "Threat Intel", to: "/threat-intel", view: "threat-intel" },
   ]},
   { group: "DETECTION & ANALYSIS", items: [
-    { icon: Target, label: "AI Threat Detection" },
-    { icon: Radar, label: "Attack Surface" },
-    { icon: Grid3X3, label: "MITRE ATT&CK" },
-    { icon: Folder, label: "Case Management" },
-  ]},
-  { group: "DATA SOURCES", items: [
-    { icon: Zap, label: "Zeek Logs" },
-    { icon: ShieldCheck, label: "Suricata Alerts" },
-    { icon: Cloud, label: "AWS VPC Flow Logs" },
-    { icon: Activity, label: "CloudTrail" },
-    { icon: Server, label: "DNS Logs" },
-  ]},
-  { group: "AI & MODELS", items: [
-    { icon: Brain, label: "AI Models" },
-    { icon: Layers, label: "Fusion Layer" },
-    { icon: BarChart3, label: "SHAP Explainability" },
+    { icon: Target, label: "AI Threat Detection", to: "/ai-threat-detection", view: "ai-threat-detection" },
+    { icon: Radar, label: "Attack Surface", to: "/attack-surface", view: "attack-surface" },
+    { icon: Grid3X3, label: "MITRE ATT&CK", to: "/mitre", view: "mitre-attack" },
+    { icon: Folder, label: "Case Management", to: "/cases", view: "case-management" },
   ]},
   { group: "CONFIGURATION", items: [
-    { icon: Puzzle, label: "Integrations" },
-    { icon: BookOpen, label: "Playbooks" },
-    { icon: FileText, label: "Reports" },
-    { icon: Settings, label: "Settings" },
+    { icon: Puzzle, label: "Integrations", to: "/integrations", view: "integrations" },
+    { icon: BookOpen, label: "Playbooks", to: "/playbooks", view: "playbooks" },
+    { icon: FileText, label: "Reports", to: "/reports", view: "reports" },
+    { icon: Settings, label: "Settings", to: "/settings", view: "settings" },
   ]}
 ];
 
@@ -108,7 +97,8 @@ export function Sidebar({
 
       {/* DASHBOARD Highlighted Bar */}
       <div className="px-3 pb-2">
-        <button 
+        <NavLink 
+          to="/dashboard"
           onClick={() => onViewChange('dashboard')}
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border group transition-all",
@@ -119,7 +109,7 @@ export function Sidebar({
         >
           <Home className={cn("w-4 h-4", currentView === 'dashboard' ? "text-cyan-500" : "")} />
           <span className="text-[10px] font-black uppercase tracking-[0.2em] flex-1 text-left">DASHBOARD</span>
-        </button>
+        </NavLink>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-7">
@@ -129,51 +119,13 @@ export function Sidebar({
               {group.group}
             </h3>
             {group.items.map((item, idy) => {
-              const isAlerts = item.label === "Alerts";
-              const isNetwork = item.label === "Network";
-              const isEndpoints = item.label === "Endpoints";
-              const isCloud = item.label === "Cloud";
-              const isThreatIntel = item.label === "Threat Intel";
-              const isIntegrations = item.label === "Integrations";
-              const isPlaybooks = item.label === "Playbooks";
-              const isReports = item.label === "Reports";
-              const isSettings = item.label === "Settings";
-              const isAIThreatDetection = item.label === "AI Threat Detection";
-              const isAttackSurface = item.label === "Attack Surface";
-              const isMitreAttack = item.label === "MITRE ATT&CK";
-              const isCaseManagement = item.label === "Case Management";
-              const isActive = (isAlerts && currentView === 'alerts') ||
-                               (isNetwork && currentView === 'network') ||
-                               (isEndpoints && currentView === 'endpoints') ||
-                               (isCloud && currentView === 'cloud') ||
-                               (isThreatIntel && currentView === 'threat-intel') ||
-                               (isAIThreatDetection && currentView === 'ai-threat-detection') ||
-                               (isAttackSurface && currentView === 'attack-surface') ||
-                               (isMitreAttack && currentView === 'mitre-attack') ||
-                               (isCaseManagement && currentView === 'case-management') ||
-                               (isIntegrations && currentView === 'integrations') ||
-                               (isPlaybooks && currentView === 'playbooks') ||
-                               (isReports && currentView === 'reports') ||
-                               (isSettings && currentView === 'settings');
+              const isActive = currentView === item.view;
               
               return (
-                <button
+                <NavLink
                   key={idy}
-                  onClick={() => {
-                    if (isAlerts) onViewChange('alerts');
-                    else if (isNetwork) onViewChange('network');
-                    else if (isEndpoints) onViewChange('endpoints');
-                    else if (isCloud) onViewChange('cloud');
-                    else if (isThreatIntel) onViewChange('threat-intel');
-                    else if (isIntegrations) onViewChange('integrations');
-                    else if (isPlaybooks) onViewChange('playbooks');
-                    else if (isReports) onViewChange('reports');
-                    else if (isSettings) onViewChange('settings');
-                    else if (isAIThreatDetection) onViewChange('ai-threat-detection');
-                    else if (isAttackSurface) onViewChange('attack-surface');
-                    else if (isMitreAttack) onViewChange('mitre-attack');
-                    else if (isCaseManagement) onViewChange('case-management');
-                  }}
+                  to={item.to}
+                  onClick={() => onViewChange(item.view)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-200 group",
                     isActive 
@@ -187,7 +139,7 @@ export function Sidebar({
                   )} />
                   <span className="flex-1 text-left whitespace-nowrap">{item.label}</span>
                   <ChevronRight className="w-3 h-3 text-muted-foreground/30 opacity-50 group-hover:opacity-100 transition-opacity" />
-                </button>
+                </NavLink>
               );
             })}
           </div>

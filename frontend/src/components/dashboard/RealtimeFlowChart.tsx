@@ -32,12 +32,12 @@ export function RealtimeFlowChart({ traffic = [] }: RealtimeFlowChartProps) {
 
   const formattedChartData = useMemo(() => {
     return traffic.map(item => {
-      // Create interesting artificial normal vs anomaly flows based on inbound and isAnomaly values
-      const anomalyVal = item.isAnomaly ? (item.flows || 350) * (1.5 + Math.random() * 0.8) : 0;
+      const observedFlows = item.flows || item.inbound + item.outbound;
+      const anomalyVal = item.isAnomaly ? item.anomalies || observedFlows : 0;
       return {
         ...item,
         time: new Date(item.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        normalFlows: item.flows || 200 + Math.sin(new Date(item.timestamp).getTime() / 10000) * 80 + Math.random() * 20,
+        normalFlows: Math.max(0, observedFlows - anomalyVal),
         anomalyFlows: anomalyVal
       };
     });

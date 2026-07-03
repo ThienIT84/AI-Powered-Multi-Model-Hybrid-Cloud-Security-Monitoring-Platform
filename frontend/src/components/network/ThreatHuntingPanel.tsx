@@ -38,6 +38,7 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
   const [huntRuleAttackType, setHuntRuleAttackType] = useState("ALL");
   const [searchResults, setSearchResults] = useState<NetworkLog[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [saveName, setSaveName] = useState("");
   const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([
     { id: "q-1", name: "High Risk SSH Recon", query: "SourceIP = 192.168.1.109 AND RiskScore >= 75 AND Port = 22" },
@@ -266,13 +267,21 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
                   <span className="text-red-650 dark:text-red-400 block font-bold">Heuristics Score 98%</span>
                 </div>
                 <button 
-                  onClick={() => alert("Simulating link to Alert details: Incident #42 context has been marked priority.")}
+                  onClick={() => {
+                    setActionMessage("Incident #42 context marked as priority for investigation.");
+                    window.setTimeout(() => setActionMessage(null), 3500);
+                  }}
                   className="mt-2 w-full py-1 text-center bg-primary/10 dark:bg-slate-800 hover:bg-primary/20 dark:hover:bg-slate-750 text-primary dark:text-slate-200 border border-primary/20 dark:border-slate-700 text-[8.5px] font-black uppercase rounded cursor-pointer"
                 >
                   Inspect Incident #42
                 </button>
               </div>
             </div>
+            {actionMessage && (
+              <div className="mt-2 rounded border border-cyan-500/20 bg-cyan-500/10 text-cyan-500 px-2 py-1 text-[8px] font-black uppercase tracking-widest">
+                {actionMessage}
+              </div>
+            )}
           </div>
 
           <div className="bg-amber-500/5 dark:bg-amber-955/20 border border-amber-500/15 p-1.5 rounded text-[8px] text-amber-700 dark:text-amber-500 mt-2 flex justify-between items-center font-sans font-medium">

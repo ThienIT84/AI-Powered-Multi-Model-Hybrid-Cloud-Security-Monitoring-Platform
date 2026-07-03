@@ -7,6 +7,7 @@ import { EndpointDetailPanel } from "../components/endpoint/EndpointDetailPanel"
 import { EndpointAlertToast } from "../components/endpoint/EndpointAlertToast";
 import { Shield, Sparkles } from "lucide-react";
 import { cn } from "../lib/utils";
+import { DataModeNotice, EmptyState } from "../components/common/DataState";
 
 export function EndpointPage() {
   const {
@@ -36,6 +37,8 @@ export function EndpointPage() {
     setCurrentPage,
     alertPopup,
     setAlertPopup,
+    isSimulated,
+    dataMode,
   } = useEndpointState();
 
   // Selected Endpoint object computed from the endpoints state array
@@ -100,11 +103,18 @@ export function EndpointPage() {
         <div className="flex items-center gap-2 bg-indigo-500/10 dark:bg-cyan-500/10 border border-indigo-500/20 dark:border-cyan-500/20 px-3 py-1.5 rounded-lg select-none">
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-550 dark:bg-cyan-400 animate-ping" />
           <span className="text-[9px] font-black text-indigo-600 dark:text-cyan-400 tracking-wider uppercase font-mono">
-            EDR Pipeline: Active
+            EDR Pipeline: {isSimulated ? "Active" : "Waiting for Telemetry"}
           </span>
         </div>
       </div>
 
+      <DataModeNotice mode={dataMode} />
+      {!isSimulated && endpoints.length === 0 && (
+        <EmptyState label="Waiting for live endpoint telemetry." />
+      )}
+
+      {isSimulated && (
+        <>
       {/* 2. Structured Two-Column EDR Panel Layout (Stacked Table + Overview & Forensic Slide-in/Toggle panel) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:items-start items-start">
         
@@ -191,6 +201,8 @@ export function EndpointPage() {
         alertPopup={alertPopup} 
         onClose={() => setAlertPopup(null)} 
       />
+        </>
+      )}
 
     </motion.div>
   );

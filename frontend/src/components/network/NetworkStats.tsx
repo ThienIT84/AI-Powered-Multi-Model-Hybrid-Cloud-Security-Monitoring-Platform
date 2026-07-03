@@ -28,9 +28,7 @@ function useSparklineHistory(value: number, length = 15) {
   if (historyRef.current.length === 0) {
     historyRef.current = Array(length).fill(value);
   } else {
-    // Add slightly noisy historical values for natural-looking sparklines
-    const noise = (Math.random() - 0.5) * (value * 0.05);
-    historyRef.current = [...historyRef.current.slice(1), value + noise];
+    historyRef.current = [...historyRef.current.slice(1), value];
   }
   
   return historyRef.current;

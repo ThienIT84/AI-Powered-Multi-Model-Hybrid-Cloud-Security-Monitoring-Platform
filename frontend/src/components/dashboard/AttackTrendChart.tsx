@@ -23,9 +23,9 @@ export function AttackTrendChart() {
       const baseHour = range === "7d" ? `Day ${idx}` : range === "30d" ? `Wk ${Math.ceil(idx / 3)}` : `Month ${Math.ceil(idx / 5)}`;
       return {
         name: baseHour,
-        critical: 4 + Math.floor(Math.sin(idx / 2) * 2) + Math.floor(Math.random() * 3),
-        general: 12 + Math.floor(Math.cos(idx / 1.5) * 6) + Math.floor(Math.random() * 8),
-        totalRate: 16 + Math.floor(Math.cos(idx) * 8) + Math.floor(Math.random() * 12)
+        critical: 4 + Math.max(0, Math.floor(Math.sin(idx / 2) * 3)),
+        general: 12 + Math.max(0, Math.floor(Math.cos(idx / 1.5) * 7)),
+        totalRate: 16 + Math.max(0, Math.floor(Math.cos(idx) * 9))
       };
     });
   }, [range]);

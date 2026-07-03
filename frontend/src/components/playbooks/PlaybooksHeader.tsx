@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { PlusCircle, LogIn, ShieldCheck } from "lucide-react";
 
 interface PlaybooksHeaderProps {
@@ -13,6 +13,7 @@ export function PlaybooksHeader({
   utcTime,
 }: PlaybooksHeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -22,9 +23,11 @@ export function PlaybooksHeader({
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
+        setImportMessage(null);
         onImportTrigger(parsed);
       } catch (err) {
-        alert("Invalid playbook JSON file format.");
+        setImportMessage("Invalid playbook JSON file format.");
+        window.setTimeout(() => setImportMessage(null), 3500);
       }
     };
     reader.readAsText(file);
@@ -92,6 +95,11 @@ export function PlaybooksHeader({
           </div>
         </div>
       </div>
+      {importMessage && (
+        <div className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-500 px-3 py-2 text-[9px] font-black uppercase tracking-widest">
+          {importMessage}
+        </div>
+      )}
     </div>
   );
 }

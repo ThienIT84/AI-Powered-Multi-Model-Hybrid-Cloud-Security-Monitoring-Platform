@@ -33,6 +33,11 @@ export enum SeverityLevel {
 
 export interface NetworkLog {
   id: string;
+  sensorId?: string;
+  source?: "demo" | "replay" | "live" | string;
+  correlationId?: string;
+  relatedAlertId?: string;
+  relatedCaseId?: string;
   timestamp: string;
   srcIp?: string;
   sourceIp?: string;

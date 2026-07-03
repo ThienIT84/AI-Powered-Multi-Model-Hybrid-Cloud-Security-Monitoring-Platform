@@ -9,6 +9,7 @@ import { ThreatEvent } from "../components/aiThreatDetection/types";
 import { Shield, Sparkles, Terminal } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "../lib/utils";
+import { DataModeNotice, EmptyState } from "../components/common/DataState";
 
 export function AIThreatDetectionPage() {
   const [selectedEvent, setSelectedEvent] = useState<ThreatEvent | null>(null);
@@ -22,6 +23,8 @@ export function AIThreatDetectionPage() {
     liveFpReduction,
     throughput,
     alertFeed,
+    isSimulated,
+    dataMode,
   } = useThreatSimulation();
 
   return (
@@ -48,18 +51,27 @@ export function AIThreatDetectionPage() {
         <div className="flex items-center gap-2.5 bg-secondary/35 border border-border/60 px-3 py-1.5 rounded-lg text-[9.5px]">
           <Terminal size={12} className="text-cyan-400 animate-pulse" />
           <span className="uppercase text-muted-foreground font-semibold">FEED RESOLVER STATUS:</span>
-          <span className="font-bold text-emerald-400">ONLINE</span>
+          <span className={cn("font-bold", isSimulated ? "text-emerald-400" : "text-amber-400")}>
+            {isSimulated ? "ONLINE" : "WAITING FOR TELEMETRY"}
+          </span>
         </div>
       </div>
 
+      <DataModeNotice mode={dataMode} />
+      {!isSimulated && alertFeed.length === 0 && (
+        <EmptyState label="Waiting for live AI inference telemetry." />
+      )}
+
       {/* ── 2. Top KPI Metrics bar ────────────────────────────────── */}
-      <SOCHeaderKPI
-        liveInferences={liveInferences}
-        liveDetections={liveDetections}
-        liveFusionAlerts={liveFusionAlerts}
-        liveLatency={liveLatency}
-        liveFpReduction={liveFpReduction}
-      />
+      {isSimulated && (
+        <>
+          <SOCHeaderKPI
+            liveInferences={liveInferences}
+            liveDetections={liveDetections}
+            liveFusionAlerts={liveFusionAlerts}
+            liveLatency={liveLatency}
+            liveFpReduction={liveFpReduction}
+          />
 
       {/* ── 3. Main Center Layout (Grid containing Real-Time Stream + Forensic Detail / Slide-in Panel) ────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -105,10 +117,12 @@ export function AIThreatDetectionPage() {
       </div>
 
       {/* ── 4. Bottom System Health Diagnostic panel ──────────────── */}
-      <SystemHealthPanel
-        throughput={throughput}
-        liveDetections={liveDetections}
-      />
+          <SystemHealthPanel
+            throughput={throughput}
+            liveDetections={liveDetections}
+          />
+        </>
+      )}
 
     </div>
   );

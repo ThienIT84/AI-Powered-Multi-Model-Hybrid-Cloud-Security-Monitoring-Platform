@@ -11,13 +11,17 @@ import {
   Award
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { UserRole } from "../../types/auth";
+import { canPerform, permissionTitle } from "../../lib/permissions";
+import { addCaseNote, assignCase, closeCase, updateCaseStatus } from "../../services/cases.service";
 
 interface CaseActionPanelProps {
   activeCase: Case | null;
-  onUpdateCase: (caseId: string, updates: Partial<Case>) => void;
+  onUpdateCase: (caseId: string, updates: Partial<Case>, persist?: () => Promise<Case>) => void;
+  userRole?: UserRole;
 }
 
-export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelProps) {
+export function CaseActionPanel({ activeCase, onUpdateCase, userRole }: CaseActionPanelProps) {
   const [commentInput, setCommentInput] = useState("");
 
   if (!activeCase) {
@@ -35,6 +39,7 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
   }
 
   const handleStatusChange = (status: CaseStatus) => {
+    if (!canPerform(userRole, status === "Resolved" ? "case:close" : "case:update")) return;
     const nowStr = new Date().toISOString();
     const eventText = `Status switched to [${status}] in SOC workstation.`;
     
@@ -43,10 +48,11 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
       timeline: {
         events: [...activeCase.timeline.events, `${nowStr} - ${eventText}`]
       }
-    });
+    }, () => updateCaseStatus(activeCase.id, status));
   };
 
   const handleAssignToAnalyst = (analystName: string) => {
+    if (!canPerform(userRole, "case:assign")) return;
     const nowStr = new Date().toISOString();
     const eventText = `Incident delegated to analyst: ${analystName}.`;
 
@@ -56,15 +62,16 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
       timeline: {
         events: [...activeCase.timeline.events, `${nowStr} - ${eventText}`]
       }
-    });
+    }, () => assignCase(activeCase.id, analystName));
   };
 
   const handleToggleBlockIp = () => {
+    if (!canPerform(userRole, "case:respond")) return;
     const nowStr = new Date().toISOString();
     const nextBlockState = !activeCase.isIpBlocked;
     const eventText = nextBlockState
-      ? `Simulated firewall block rule issued globally for attacker source IP ${activeCase.source_ip}.`
-      : `Simulated firewall block rule lifted for attacker source IP ${activeCase.source_ip}.`;
+      ? `Firewall block requested for attacker source IP ${activeCase.source_ip}.`
+      : `Firewall block removal requested for attacker source IP ${activeCase.source_ip}.`;
 
     onUpdateCase(activeCase.id, {
       isIpBlocked: nextBlockState,
@@ -75,6 +82,7 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
   };
 
   const handleMarkFalsePositive = () => {
+    if (!canPerform(userRole, "case:close")) return;
     const nowStr = new Date().toISOString();
     const eventText = "Marked as FALSE_POSITIVE during forensic review. Status closed.";
 
@@ -86,12 +94,13 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
       timeline: {
         events: [...activeCase.timeline.events, `${nowStr} - ${eventText}`]
       }
-    });
+    }, () => closeCase(activeCase.id, "False positive after forensic review"));
   };
 
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentInput.trim()) return;
+    if (!canPerform(userRole, "case:comment")) return;
 
     const nowStr = new Date().toISOString();
     const newComment = {
@@ -109,7 +118,7 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
       timeline: {
         events: [...activeCase.timeline.events, `${nowStr} - ${eventText}`]
       }
-    });
+    }, () => addCaseNote(activeCase.id, commentInput.trim(), "Analyst"));
 
     setCommentInput("");
   };
@@ -126,16 +135,20 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
         <div className="grid grid-cols-2 gap-2">
           {(["Open", "In Progress", "Resolved", "Pending Review"] as CaseStatus[]).map((status) => {
             const isActive = activeCase.status === status;
+            const allowed = canPerform(userRole, status === "Resolved" ? "case:close" : "case:update");
             return (
               <button
                 key={status}
                 type="button"
                 onClick={() => handleStatusChange(status)}
+                disabled={!allowed}
+                title={permissionTitle(allowed)}
                 className={cn(
                   "px-2.5 py-2 text-[8px] font-black uppercase tracking-widest rounded-lg border transition-all cursor-pointer text-center",
                   isActive
                     ? "bg-cyan-500/15 border-cyan-500/40 text-cyan-400 font-extrabold"
-                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    : "border-border bg-muted/40 text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                  !allowed && "opacity-40 cursor-not-allowed hover:bg-muted/40 hover:text-muted-foreground"
                 )}
               >
                 {status}
@@ -157,11 +170,14 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
           <button
             type="button"
             onClick={handleToggleBlockIp}
+            disabled={!canPerform(userRole, "case:respond")}
+            title={permissionTitle(canPerform(userRole, "case:respond"))}
             className={cn(
               "w-full py-2.5 text-[8.5px] font-black uppercase tracking-widest rounded-lg border flex items-center justify-center gap-2 transition-all cursor-pointer leading-none",
               activeCase.isIpBlocked
                 ? "bg-red-500/10 hover:bg-red-500/15 border-red-500/25 text-red-500"
-                : "bg-cyan-600 hover:bg-cyan-500 border-transparent text-white shadow-sm"
+                : "bg-cyan-600 hover:bg-cyan-500 border-transparent text-white shadow-sm",
+              !canPerform(userRole, "case:respond") && "opacity-40 cursor-not-allowed"
             )}
           >
             {activeCase.isIpBlocked ? (
@@ -185,16 +201,20 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
             <div className="grid grid-cols-2 gap-1.5">
               {["Sarah Smith", "John Doe", "Emily Wilson", "David Lee"].map((n) => {
                 const assigned = activeCase.assignedTo === n;
+                const allowed = canPerform(userRole, "case:assign");
                 return (
                   <button
                     key={n}
                     type="button"
                     onClick={() => handleAssignToAnalyst(n)}
+                    disabled={!allowed}
+                    title={permissionTitle(allowed)}
                     className={cn(
                       "px-2 py-1.5 text-[7.5px] font-bold uppercase tracking-wider rounded border transition-all cursor-pointer text-left truncate leading-none",
                       assigned
                         ? "bg-amber-500/10 border-amber-500/25 text-amber-500"
-                        : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        : "border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted hover:text-foreground",
+                      !allowed && "opacity-40 cursor-not-allowed hover:bg-muted/20 hover:text-muted-foreground"
                     )}
                   >
                     {assigned ? `✓ ${n.split(" ")[0]}` : n}
@@ -208,7 +228,12 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
           <button
             type="button"
             onClick={handleMarkFalsePositive}
-            className="w-full py-2 bg-secondary border border-border text-foreground hover:bg-muted font-black uppercase text-[8.5px] tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none mt-1"
+            disabled={!canPerform(userRole, "case:close")}
+            title={permissionTitle(canPerform(userRole, "case:close"))}
+            className={cn(
+              "w-full py-2 bg-secondary border border-border text-foreground hover:bg-muted font-black uppercase text-[8.5px] tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none mt-1",
+              !canPerform(userRole, "case:close") && "opacity-40 cursor-not-allowed hover:bg-secondary"
+            )}
           >
             Dismiss / False Positive
           </button>
@@ -251,11 +276,17 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
             placeholder="Add quick triage notes..."
             value={commentInput}
             onChange={(e) => setCommentInput(e.target.value)}
+            disabled={!canPerform(userRole, "case:comment")}
             className="flex-1 bg-background border border-border rounded-lg px-2.5 py-1.5 text-[8px] font-medium text-foreground placeholder:text-muted-foreground/45 focus:outline-none focus:border-cyan-500/40"
           />
           <button
             type="submit"
-            className="px-2.5 bg-cyan-600 hover:bg-cyan-500 transition-colors text-white text-[8px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center cursor-pointer"
+            disabled={!canPerform(userRole, "case:comment")}
+            title={permissionTitle(canPerform(userRole, "case:comment"))}
+            className={cn(
+              "px-2.5 bg-cyan-600 hover:bg-cyan-500 transition-colors text-white text-[8px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center cursor-pointer",
+              !canPerform(userRole, "case:comment") && "opacity-40 cursor-not-allowed hover:bg-cyan-600"
+            )}
           >
             <Send size={10} />
           </button>

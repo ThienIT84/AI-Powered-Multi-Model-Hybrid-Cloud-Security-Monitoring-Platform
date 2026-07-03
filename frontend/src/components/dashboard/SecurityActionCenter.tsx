@@ -14,7 +14,7 @@ export function SecurityActionCenter() {
   const [toasts, setToasts] = useState<{ id: string; msg: string; type: "info" | "success" | "warn" }[]>([]);
 
   const addToast = (msg: string, type: "info" | "success" | "warn" = "info") => {
-    const id = Math.random().toString();
+    const id = `${Date.now()}-${toasts.length}`;
     setToasts(prev => [...prev, { id, msg, type }]);
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));

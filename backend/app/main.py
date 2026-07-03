@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.contracts import normalize_event
@@ -22,6 +23,11 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/status")
+def platform_status() -> dict[str, Any]:
+    return store.status()
 
 
 @app.post("/api/events")
@@ -58,9 +64,186 @@ def list_alerts(limit: int = 50) -> list[dict[str, Any]]:
     return store.list(limit=limit)
 
 
+@app.get("/api/alerts/{alert_id}")
+def get_alert(alert_id: str) -> dict[str, Any]:
+    alert = store.get(alert_id)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return alert
+
+
+@app.post("/api/alerts/{alert_id}/acknowledge")
+async def acknowledge_alert(alert_id: str) -> dict[str, Any]:
+    alert = store.update(alert_id, {"status": "investigating", "audit_action": "alert.acknowledged"})
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    await websockets.broadcast_alert(alert, created=False)
+    return alert
+
+
+@app.post("/api/alerts/{alert_id}/assign")
+async def assign_alert(alert_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    analyst = str(payload.get("analyst") or "").strip()
+    if not analyst:
+        raise HTTPException(status_code=400, detail="analyst is required")
+    alert = store.update(alert_id, {"assigned_analyst": analyst, "audit_action": "alert.assigned"})
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    await websockets.broadcast_alert(alert, created=False)
+    return alert
+
+
+@app.patch("/api/alerts/{alert_id}/status")
+async def update_alert_status(alert_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    status = str(payload.get("status") or "").strip()
+    if not status:
+        raise HTTPException(status_code=400, detail="status is required")
+    alert = store.update(alert_id, {"status": status, "audit_action": "alert.status_updated"})
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    await websockets.broadcast_alert(alert, created=False)
+    return alert
+
+
+@app.post("/api/alerts/{alert_id}/false-positive")
+async def mark_false_positive(alert_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    alert = store.update(
+        alert_id,
+        {
+            "status": "false_positive",
+            "false_positive_reason": payload.get("reason"),
+            "audit_action": "alert.false_positive_marked",
+        },
+    )
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    await websockets.broadcast_alert(alert, created=False)
+    return alert
+
+
+@app.post("/api/alerts/{alert_id}/notes")
+async def add_alert_note(alert_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    alert = store.get(alert_id)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    note = str(payload.get("note") or "").strip()
+    if not note:
+        raise HTTPException(status_code=400, detail="note is required")
+    item = {
+        "id": f"note-{alert_id}-{len(alert.get('analyst_notes') or []) + 1}",
+        "alert_id": alert_id,
+        "analyst": payload.get("analyst") or "SOC Analyst",
+        "note": note,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    notes = [*list(alert.get("analyst_notes") or []), item]
+    updated = store.update(alert_id, {"analyst_notes": notes, "audit_action": "alert.note_added"})
+    if updated:
+        await websockets.broadcast_alert(updated, created=False)
+    return item
+
+
+@app.post("/api/alerts/{alert_id}/case")
+async def create_case_from_alert(alert_id: str) -> dict[str, str]:
+    case = store.create_case_from_alert(alert_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    alert = store.get(alert_id)
+    if alert:
+        await websockets.broadcast_alert(alert, created=False)
+    return {"caseId": case["id"]}
+
+
 @app.get("/api/summary")
 def summary() -> dict[str, Any]:
     return store.summary()
+
+
+@app.get("/api/network/flows")
+def network_flows(limit: int = 200) -> list[dict[str, Any]]:
+    return store.network_flows(limit=limit)
+
+
+@app.get("/api/network/flows/{flow_id}")
+def get_network_flow(flow_id: str) -> dict[str, Any]:
+    flow = store.get_network_flow(flow_id)
+    if not flow:
+        raise HTTPException(status_code=404, detail="Network flow not found")
+    return flow
+
+
+@app.get("/api/cases")
+def list_cases() -> list[dict[str, Any]]:
+    return store.list_cases()
+
+
+@app.get("/api/cases/{case_id}")
+def get_case(case_id: str) -> dict[str, Any]:
+    case = store.get_case(case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return case
+
+
+@app.post("/api/cases")
+def create_case(payload: dict[str, Any]) -> dict[str, Any]:
+    return store.upsert_case(payload)
+
+
+@app.patch("/api/cases/{case_id}")
+def update_case(case_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    case = store.update_case(case_id, payload)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return case
+
+
+@app.post("/api/cases/{case_id}/assign")
+def assign_case(case_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    analyst = str(payload.get("analyst") or "").strip()
+    if not analyst:
+        raise HTTPException(status_code=400, detail="analyst is required")
+    case = store.assign_case(case_id, analyst)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return case
+
+
+@app.post("/api/cases/{case_id}/notes")
+def add_case_note(case_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    note = str(payload.get("note") or "").strip()
+    if not note:
+        raise HTTPException(status_code=400, detail="note is required")
+    case = store.add_case_note(case_id, note, str(payload.get("author") or "SOC Analyst"))
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return case
+
+
+@app.post("/api/cases/{case_id}/close")
+def close_case(case_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    resolution = str(payload.get("resolution") or "").strip()
+    if not resolution:
+        raise HTTPException(status_code=400, detail="resolution is required")
+    case = store.close_case(case_id, resolution)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return case
+
+
+@app.get("/api/rules")
+def list_rules() -> list[dict[str, Any]]:
+    return store.list_rules()
+
+
+@app.post("/api/rules")
+def create_rule(payload: dict[str, Any]) -> dict[str, Any]:
+    return store.create_rule(payload)
+
+
+@app.post("/api/rules/test")
+def test_rule(payload: dict[str, Any]) -> dict[str, Any]:
+    return store.test_rule(payload)
 
 
 @app.post("/api/replay/demo")

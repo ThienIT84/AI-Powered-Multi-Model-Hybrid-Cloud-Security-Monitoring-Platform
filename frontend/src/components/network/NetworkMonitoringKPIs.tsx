@@ -13,16 +13,18 @@ export const NetworkMonitoringKPIs: React.FC<NetworkMonitoringKPIsProps> = ({
   anomalousFlowsCount,
 }) => {
   const totalFlows24h = useMemo(() => {
-    return logs.length * 15 + 4182; // Dynamic increment
+    return logs.length;
   }, [logs]);
 
   const activeConnectionsCount = useMemo(() => {
-    return isRunning ? Math.round(logs.length * 0.45 + 23) : 0;
+    if (!isRunning) return 0;
+    return new Set(logs.map((log) => `${log.srcIp ?? log.sourceIp}-${log.destIp}-${log.destPort}`)).size;
   }, [logs, isRunning]);
 
   const throughputRate = useMemo(() => {
     if (!isRunning) return "0.0 Mbps";
-    return (logs.length * 0.12 + 15.4 + Math.random() * 2).toFixed(1) + " Mbps";
+    const totalBytes = logs.reduce((sum, log) => sum + log.origBytes + (log.respBytes ?? 0), 0);
+    return ((totalBytes * 8) / 1_000_000).toFixed(2) + " Mbps";
   }, [logs, isRunning]);
 
   const attackRatio = useMemo(() => {
@@ -33,8 +35,10 @@ export const NetworkMonitoringKPIs: React.FC<NetworkMonitoringKPIsProps> = ({
   // Basic latency indicator (UI only)
   const averageLatency = useMemo(() => {
     if (!isRunning) return "0.0 ms";
-    return (4.2 + Math.random() * 0.8).toFixed(1) + " ms";
-  }, [isRunning]);
+    if (logs.length === 0) return "Unavailable";
+    const avgDuration = logs.reduce((sum, log) => sum + log.duration, 0) / logs.length;
+    return `${avgDuration.toFixed(1)} ms`;
+  }, [logs, isRunning]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5" id="kpi-panel-matrix">
@@ -43,7 +47,7 @@ export const NetworkMonitoringKPIs: React.FC<NetworkMonitoringKPIsProps> = ({
         <span className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">Total Flows (24h)</span>
         <div className="flex items-baseline gap-1.5 mt-1">
           <span className="text-base font-black text-foreground">{totalFlows24h.toLocaleString()}</span>
-          <span className="text-[8.5px] font-bold text-emerald-500 dark:text-emerald-400">+12.4%</span>
+          <span className="text-[8.5px] font-bold text-muted-foreground">Observed</span>
         </div>
         <span className="text-[8px] text-muted-foreground mt-1 uppercase block leading-none">Zeek conn.log feeds</span>
       </div>

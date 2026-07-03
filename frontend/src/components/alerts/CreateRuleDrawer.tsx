@@ -17,11 +17,12 @@ import { cn } from "../../lib/utils";
 interface CreateRuleDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveRule: (ruleData: any) => void;
-  onTestRule: (ruleData: any) => void;
+  onSaveRule: (ruleData: any) => Promise<void> | void;
+  onTestRule: (ruleData: any) => Promise<void> | void;
+  actionState?: "idle" | "pending" | "success" | "failed";
 }
 
-export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: CreateRuleDrawerProps) {
+export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule, actionState = "idle" }: CreateRuleDrawerProps) {
   // Setup Rule Form state
   const [ruleName, setRuleName] = useState("");
   const [description, setDescription] = useState("");
@@ -50,6 +51,7 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
 
   // Rule Status
   const [isActive, setIsActive] = useState(true);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   // Quick preset loader function for an outstanding analyst workflow
   const loadPreset = (presetName: string) => {
@@ -117,53 +119,49 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
     setActions(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const buildRuleDraft = () => ({
+    ruleName,
+    description,
+    ruleType,
+    conditions: {
+      severity,
+      attackType,
+      protocol,
+      sourceIp,
+      destPort,
+      cloudProvider,
+      confidence
+    },
+    mitreId,
+    actions,
+    isActive
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ruleName.trim()) {
-      alert("Please provide a descriptive rule name.");
+      setValidationMessage("Please provide a descriptive rule name.");
       return;
     }
-    onSaveRule({
-      ruleName,
-      description,
-      ruleType,
-      conditions: {
-        severity,
-        attackType,
-        protocol,
-        sourceIp,
-        destPort,
-        cloudProvider,
-        confidence
-      },
-      mitreId,
-      actions,
-      isActive
-    });
+    setValidationMessage(null);
+    try {
+      await onSaveRule(buildRuleDraft());
+    } catch (error) {
+      setValidationMessage(error instanceof Error ? error.message : "Rule save failed.");
+    }
   };
 
-  const handleTest = () => {
+  const handleTest = async () => {
     if (!ruleName.trim()) {
-      alert("Please enter a rule name before testing.");
+      setValidationMessage("Please enter a rule name before testing.");
       return;
     }
-    onTestRule({
-      ruleName,
-      description,
-      ruleType,
-      conditions: {
-        severity,
-        attackType,
-        protocol,
-        sourceIp,
-        destPort,
-        cloudProvider,
-        confidence
-      },
-      mitreId,
-      actions,
-      isActive
-    });
+    setValidationMessage(null);
+    try {
+      await onTestRule(buildRuleDraft());
+    } catch (error) {
+      setValidationMessage(error instanceof Error ? error.message : "Rule test failed.");
+    }
   };
 
   if (!isOpen) return null;
@@ -208,6 +206,17 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
               <X size={15} />
             </button>
           </div>
+
+          {validationMessage && (
+            <div className="mx-4 mt-3 rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-500 px-3 py-2 text-[9px] font-black uppercase tracking-widest">
+              {validationMessage}
+            </div>
+          )}
+          {actionState !== "idle" && (
+            <div className="mx-4 mt-3 rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-400 px-3 py-2 text-[9px] font-black uppercase tracking-widest">
+              Rule sync: {actionState}
+            </div>
+          )}
 
           {/* Modal Content Split Grid (Scrollable Body) */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
@@ -622,6 +631,7 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
             <button 
               type="button" 
               onClick={handleTest}
+              disabled={actionState === "pending"}
               className="py-3 bg-purple-600/10 hover:bg-purple-600 border border-purple-500/25 text-purple-400 hover:text-white text-[9.5px] font-black uppercase tracking-widest rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 leading-none"
             >
               <Play size={11} /> Test Rule
@@ -630,6 +640,7 @@ export function CreateRuleDrawer({ isOpen, onClose, onSaveRule, onTestRule }: Cr
             <button 
               type="submit"
               onClick={handleSubmit}
+              disabled={actionState === "pending"}
               className="py-3 bg-cyan-600 hover:bg-cyan-500 text-white text-[9.5px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-cyan-500/10 transition-all cursor-pointer flex items-center justify-center gap-1 leading-none"
             >
               <Save size={11} /> Save Rule

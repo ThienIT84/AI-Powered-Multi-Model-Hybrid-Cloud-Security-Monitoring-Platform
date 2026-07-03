@@ -11,15 +11,19 @@ import { InternetFacingAssetsPanel } from "../components/attackSurface/InternetF
 import { FusionRiskInventory } from "../components/attackSurface/FusionRiskInventory";
 import { CloudResourceStatus } from "../components/attackSurface/CloudResourceStatus";
 import { AssetDetailDrawer } from "../components/attackSurface/AssetDetailDrawer";
+import { appConfig } from "../config";
+import { DataModeNotice, EmptyState } from "../components/common/DataState";
 
 export function AttackSurfacePage() {
-  const [assets, setAssets] = useState<Asset[]>(() => INITIAL_ASSETS);
-  const [cloudResources, setCloudResources] = useState<CloudResource[]>(() => CLOUD_RESOURCES_MOCK);
+  const isSimulated = appConfig.dataMode !== "live";
+  const [assets, setAssets] = useState<Asset[]>(() => isSimulated ? INITIAL_ASSETS : []);
+  const [cloudResources, setCloudResources] = useState<CloudResource[]>(() => isSimulated ? CLOUD_RESOURCES_MOCK : []);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [lastUpdateSec, setLastUpdateSec] = useState<number>(0);
 
   // Periodic Telemetry Simulator to simulate WebSocket asset status changes
   useEffect(() => {
+    if (!isSimulated) return;
     // Increment timer
     const secondsTimer = setInterval(() => {
       setLastUpdateSec((p) => p + 1);
@@ -56,7 +60,7 @@ export function AttackSurfacePage() {
       clearInterval(secondsTimer);
       clearInterval(simulationTimer);
     };
-  }, []);
+  }, [isSimulated]);
 
   // Compute Active selected asset object
   const activeAsset = useMemo(() => {
@@ -74,6 +78,36 @@ export function AttackSurfacePage() {
     const sum = assets.reduce((acc, a) => acc + a.riskScore, 0);
     return Math.round(sum / assets.length);
   }, [assets]);
+
+  if (!isSimulated) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans antialiased space-y-6 transition-colors duration-300"
+      >
+        <div className="flex flex-col sm:flex-row items-baseline sm:items-center justify-between gap-3 border-b border-border/20 pb-4_">
+          <div>
+            <h2 className="text-xl font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+              <span className="w-2.5 h-2.5 bg-cyan-500 rounded-xs shrink-0" />
+              Asset Discovery & Attack Surface Inventory
+            </h2>
+            <p className="text-[10px] sm:text-xs text-muted-foreground font-mono mt-1 uppercase tracking-wider">
+              Enterprise Hybrid Cloud Visibility & Risk Inventory Layer
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5 font-mono text-[9px] bg-background border border-border px-3 py-1.5 rounded-lg select-none">
+            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 inline-block" />
+            <span className="text-muted-foreground uppercase">Discovery Engine:</span>
+            <span className="text-foreground tracking-widest font-black uppercase">Waiting for telemetry</span>
+          </div>
+        </div>
+        <DataModeNotice mode={appConfig.dataMode} />
+        <EmptyState label="Waiting for live asset discovery telemetry." />
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -98,10 +132,15 @@ export function AttackSurfacePage() {
           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 inline-block animate-ping" />
           <span className="text-muted-foreground uppercase">ZEEK TELEMETRY DISCOVERY ENGINE:</span>
           <span className="text-foreground tracking-widest font-black uppercase">
-            {lastUpdateSec === 0 ? "RECEIVED UPDATE" : `${lastUpdateSec}S AGO`}
+            {isSimulated ? (lastUpdateSec === 0 ? "RECEIVED UPDATE" : `${lastUpdateSec}S AGO`) : "WAITING FOR TELEMETRY"}
           </span>
         </div>
       </div>
+
+      <DataModeNotice mode={appConfig.dataMode} />
+      {!isSimulated && assets.length === 0 && (
+        <EmptyState label="Waiting for live asset discovery telemetry." />
+      )}
 
       {/* ─── 2. HEADER KPI BAR ─── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5 select-none w-full">

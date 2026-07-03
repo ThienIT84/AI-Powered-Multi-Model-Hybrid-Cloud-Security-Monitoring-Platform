@@ -83,7 +83,7 @@ export function LoginForm({ onNavigateToRegister, onSuccess }: LoginFormProps) {
 
   const handleForgotPassword = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert("CREDENTIALS RESTORATION: Please contact your commanding Agency Security Officer (ASO) to request terminal password synthesis.");
+    setValidationError("CREDENTIALS RESTORATION: Contact the Agency Security Officer to initiate password recovery.");
   };
 
   return (

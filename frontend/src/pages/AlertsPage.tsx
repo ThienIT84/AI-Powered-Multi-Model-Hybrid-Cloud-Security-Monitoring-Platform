@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Search, 
@@ -17,6 +18,10 @@ import { AlertDetailDrawer } from "../components/alerts/AlertDetailDrawer";
 import { CreateRuleDrawer } from "../components/alerts/CreateRuleDrawer";
 import { Alert, Severity, AlertStatus } from "../types";
 import { cn } from "../lib/utils";
+import { createDetectionRule, DetectionRuleDraft, testDetectionRule } from "../services/rules.service";
+import { getAlertDetail } from "../services/alerts.service";
+import { useAuth } from "../hooks/useAuth";
+import { ErrorState } from "../components/common/DataState";
 
 interface AlertsPageProps {
   alerts: Alert[];
@@ -44,7 +49,12 @@ function matchesIpFilter(ip: string, filterVal: string) {
 }
 
 export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
+  const params = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+  const [loadedDetailAlert, setLoadedDetailAlert] = useState<Alert | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   
   // Sliding drawer for policy creation state
   const [isCreateRuleOpen, setIsCreateRuleOpen] = useState(false);
@@ -68,6 +78,7 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
   ]);
 
   const [toastNotification, setToastNotification] = useState<string | null>(null);
+  const [ruleActionState, setRuleActionState] = useState<"idle" | "pending" | "success" | "failed">("idle");
 
   // Local state overrides to show instant results of analyst quick actions
   const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<Alert>>>({});
@@ -84,23 +95,53 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
     setSearchQuery(searchVal);
   };
 
-  const handleUpdateAlert = (alertId: string, updates: Partial<Alert>) => {
+  const handleUpdateAlert = async (
+    alertId: string,
+    updates: Partial<Alert>,
+    persist?: () => Promise<unknown>
+  ) => {
+    const previousOverride = localOverrides[alertId];
     setLocalOverrides(prev => ({
       ...prev,
-      [alertId] : {
+      [alertId]: {
         ...(prev[alertId] || {}),
         ...updates
       }
     }));
+
+    if (!persist) return;
+
+    try {
+      await persist();
+      setToastNotification("Alert action synced");
+      setTimeout(() => setToastNotification(null), 2500);
+    } catch (error) {
+      setLocalOverrides(prev => {
+        const next = { ...prev };
+        if (previousOverride) {
+          next[alertId] = previousOverride;
+        } else {
+          delete next[alertId];
+        }
+        return next;
+      });
+      setToastNotification(error instanceof Error ? `Action failed: ${error.message}` : "Action failed");
+      setTimeout(() => setToastNotification(null), 3500);
+      throw error;
+    }
   };
 
   // Pre-mapping alerts with analyst modifications overrides
   const updatedAlerts = useMemo(() => {
-    return alerts.map(alert => ({
+    const base = alerts.map(alert => ({
       ...alert,
       ...(localOverrides[alert.id] || {})
     }));
-  }, [alerts, localOverrides]);
+    if (loadedDetailAlert && !base.some((alert) => alert.id === loadedDetailAlert.id)) {
+      return [{ ...loadedDetailAlert, ...(localOverrides[loadedDetailAlert.id] || {}) }, ...base];
+    }
+    return base;
+  }, [alerts, localOverrides, loadedDetailAlert]);
 
   // Combined active view of the selected alert
   const activeSelectedAlert = useMemo(() => {
@@ -108,6 +149,44 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
     const mapped = updatedAlerts.find(a => a.id === selectedAlert.id);
     return mapped || selectedAlert;
   }, [selectedAlert, updatedAlerts]);
+
+  useEffect(() => {
+    if (!params.id) {
+      setLoadedDetailAlert(null);
+      setDetailError(null);
+      return;
+    }
+    const match = updatedAlerts.find((alert) => alert.id === params.id || `THR-${alert.id}` === params.id);
+    if (match) {
+      setSelectedAlert(match);
+      setDetailError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setDetailError(null);
+    getAlertDetail(params.id, updatedAlerts)
+      .then((detail) => {
+        if (cancelled) return;
+        if (detail) {
+          setLoadedDetailAlert(detail);
+          setSelectedAlert(detail);
+        } else {
+          setDetailError("Alert detail not found.");
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setDetailError(error instanceof Error ? error.message : "Alert detail unavailable.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id, updatedAlerts]);
+
+  const handleSelectAlert = (alert: Alert | null) => {
+    setSelectedAlert(alert);
+    navigate(alert ? `/alerts/${encodeURIComponent(alert.id)}` : "/alerts", { replace: false });
+  };
 
   // Debouncing & filter processing pipeline
   const filteredAlerts = useMemo(() => {
@@ -241,15 +320,35 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
     setIsCreateRuleOpen(true);
   };
 
-  const handleSaveRule = (ruleData: any) => {
-    setToastNotification(`Enterprise Rule Established: "${ruleData.ruleName}" successfully compiled to active SOC boundary!`);
-    setIsCreateRuleOpen(false);
-    setTimeout(() => setToastNotification(null), 4500);
+  const handleSaveRule = async (ruleData: DetectionRuleDraft) => {
+    setRuleActionState("pending");
+    try {
+      const rule = await createDetectionRule(ruleData);
+      setRuleActionState("success");
+      setToastNotification(`Rule saved: ${rule.id}`);
+      setIsCreateRuleOpen(false);
+    } catch (error) {
+      setRuleActionState("failed");
+      setToastNotification(error instanceof Error ? `Rule save failed: ${error.message}` : "Rule save failed");
+      throw error;
+    } finally {
+      setTimeout(() => setToastNotification(null), 4500);
+    }
   };
 
-  const handleTestRule = (ruleData: any) => {
-    setToastNotification(`Policy Dry-Run: Evaluated conditions for "${ruleData.ruleName}". Identified 0 anomalously matched packets in historic buffer logs.`);
-    setTimeout(() => setToastNotification(null), 4500);
+  const handleTestRule = async (ruleData: DetectionRuleDraft) => {
+    setRuleActionState("pending");
+    try {
+      const result = await testDetectionRule(ruleData);
+      setRuleActionState("success");
+      setToastNotification(`Rule test ${result.status}: ${result.matches} matches`);
+    } catch (error) {
+      setRuleActionState("failed");
+      setToastNotification(error instanceof Error ? `Rule test failed: ${error.message}` : "Rule test failed");
+      throw error;
+    } finally {
+      setTimeout(() => setToastNotification(null), 4500);
+    }
   };
 
   return (
@@ -391,10 +490,12 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
         )}>
           <AlertTable 
             alerts={filteredAlerts}
-            onSelectAlert={setSelectedAlert}
+            onSelectAlert={handleSelectAlert}
             selectedAlertId={activeSelectedAlert?.id}
             onUpdateAlert={handleUpdateAlert}
+            userRole={user?.role}
           />
+          {detailError && <ErrorState label={detailError} />}
         </div>
 
         {/* RIGHT PANEL: Alert Detail / Evidence Viewer */}
@@ -409,8 +510,9 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
             >
               <AlertDetailDrawer 
                 alert={activeSelectedAlert}
-                onClose={() => setSelectedAlert(null)}
+                onClose={() => handleSelectAlert(null)}
                 onUpdateAlert={handleUpdateAlert}
+                userRole={user?.role}
                />
             </motion.div>
           )}
@@ -426,6 +528,7 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
             onClose={() => setIsCreateRuleOpen(false)}
             onSaveRule={handleSaveRule}
             onTestRule={handleTestRule}
+            actionState={ruleActionState}
           />
         )}
       </AnimatePresence>

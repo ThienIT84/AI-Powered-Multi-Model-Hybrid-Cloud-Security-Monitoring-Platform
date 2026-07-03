@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import React from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { Sidebar } from "./components/layout/Sidebar";
@@ -47,68 +48,86 @@ import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "./lib/utils";
-import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/securityData";
 import { AppView } from "./types/views";
 import { useTheme } from "./context/ThemeContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
+import { usePlatformStatus } from "./hooks/usePlatformStatus";
+import { appConfig } from "./config";
+
+function viewFromPath(pathname: string): AppView {
+  if (pathname.startsWith("/alerts")) return "alerts";
+  if (pathname.startsWith("/network")) return "network";
+  if (pathname.startsWith("/endpoints")) return "endpoints";
+  if (pathname.startsWith("/cloud")) return "cloud";
+  if (pathname.startsWith("/threat-intel")) return "threat-intel";
+  if (pathname.startsWith("/ai-threat-detection")) return "ai-threat-detection";
+  if (pathname.startsWith("/attack-surface")) return "attack-surface";
+  if (pathname.startsWith("/mitre")) return "mitre-attack";
+  if (pathname.startsWith("/cases")) return "case-management";
+  if (pathname.startsWith("/integrations")) return "integrations";
+  if (pathname.startsWith("/playbooks")) return "playbooks";
+  if (pathname.startsWith("/reports")) return "reports";
+  if (pathname.startsWith("/settings")) return "settings";
+  return "dashboard";
+}
+
+function pathForView(view: AppView): string {
+  const paths: Record<AppView, string> = {
+    dashboard: "/dashboard",
+    alerts: "/alerts",
+    network: "/network",
+    endpoints: "/endpoints/default",
+    cloud: "/cloud/assets/default",
+    "threat-intel": "/threat-intel",
+    integrations: "/integrations",
+    playbooks: "/playbooks",
+    reports: "/reports",
+    settings: "/settings",
+    "ai-threat-detection": "/ai-threat-detection",
+    "attack-surface": "/attack-surface",
+    "mitre-attack": "/mitre",
+    "case-management": "/cases",
+  };
+  return paths[view];
+}
 
 export default function App() {
   const { isAuthenticated, loading } = useAuth();
-
-  // Track deep auth pathway
-  const [authScreen, setAuthScreen] = useState<"login" | "register">(() => {
-    if (typeof window !== "undefined") {
-      const path = window.location.pathname;
-      if (path === "/register") return "register";
-    }
-    return "login";
-  });
-
-  // Keep routing synced to popstate events
-  useEffect(() => {
-    const handlePopState = () => {
-      const path = window.location.pathname;
-      if (path === "/register") {
-        setAuthScreen("register");
-      } else if (path === "/login") {
-        setAuthScreen("login");
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Enforce unauthorized redirection
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      const path = window.location.pathname;
+      const path = location.pathname;
       if (path !== "/login" && path !== "/register") {
-        window.history.pushState({}, "", "/login");
-        setAuthScreen("login");
+        navigate("/login", { replace: true });
       }
     }
-  }, [isAuthenticated, loading]);
+  }, [isAuthenticated, loading, location.pathname, navigate]);
 
   // Push main page URLs if already authorized
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      const path = window.location.pathname;
+      const path = location.pathname;
       if (path === "/login" || path === "/register") {
-        window.history.pushState({}, "", "/");
+        navigate("/dashboard", { replace: true });
+      } else if (path === "/") {
+        navigate("/dashboard", { replace: true });
       }
     }
-  }, [isAuthenticated, loading]);
+  }, [isAuthenticated, loading, location.pathname, navigate]);
 
   const handleNavigateToAuth = (screen: "login" | "register") => {
-    setAuthScreen(screen);
-    window.history.pushState({}, "", `/${screen}`);
+    navigate(`/${screen}`);
   };
 
   const handleAuthSuccess = () => {
-    window.history.pushState({}, "", "/");
+    navigate("/dashboard", { replace: true });
   };
 
-  const { isConnected, alerts, traffic } = useSocket();
+  const { isConnected, socketStatus, alerts, traffic, error: socketError, reconnect } = useSocket();
+  const { status: platformStatus, refresh: refreshPlatformStatus } = usePlatformStatus(socketStatus);
 
   // Call unified SOC command center dashboard hooks
   const {
@@ -124,14 +143,17 @@ export default function App() {
 
   const handleRefresh = React.useCallback(() => {
     setIsSyncing(true);
-    setTimeout(() => {
+    refreshPlatformStatus().finally(() => {
       setIsSyncing(false);
-    }, 600);
-  }, []);
+    });
+  }, [refreshPlatformStatus]);
 
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState<AppView>("dashboard");
+  const currentView = viewFromPath(location.pathname);
+  const setCurrentView = React.useCallback((view: AppView) => {
+    navigate(pathForView(view));
+  }, [navigate]);
   const { theme, isDarkMode, setTheme } = useTheme();
   const [disabledAttackTypes, setDisabledAttackTypes] = useState<string[]>([]);
   
@@ -174,6 +196,18 @@ export default function App() {
     );
   });
 
+  const handleSearchSubmit = React.useCallback(() => {
+    const q = searchQuery.trim();
+    if (!q) return;
+    if (/^case[-_\w]*/i.test(q)) {
+      navigate(`/cases/${encodeURIComponent(q)}`);
+    } else if (/^(asset|host|endpoint|10\.|192\.|172\.)/i.test(q)) {
+      navigate(`/endpoints/${encodeURIComponent(q)}`);
+    } else {
+      navigate(`/alerts?query=${encodeURIComponent(q)}`);
+    }
+  }, [navigate, searchQuery]);
+
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-[#030303] text-cyan-500 font-mono flex flex-col items-center justify-center space-y-4">
@@ -184,19 +218,32 @@ export default function App() {
   }
 
   if (!isAuthenticated) {
-    if (authScreen === "register") {
-      return (
-        <RegisterPage
-          onNavigateToLogin={() => handleNavigateToAuth("login")}
-          onSuccess={handleAuthSuccess}
-        />
-      );
-    }
     return (
-      <LoginPage
-        onNavigateToRegister={() => handleNavigateToAuth("register")}
-        onSuccess={handleAuthSuccess}
-      />
+      <Routes>
+        <Route
+          path="/register"
+          element={<RegisterPage onNavigateToLogin={() => handleNavigateToAuth("login")} onSuccess={handleAuthSuccess} />}
+        />
+        <Route
+          path="*"
+          element={<LoginPage onNavigateToRegister={() => handleNavigateToAuth("register")} onSuccess={handleAuthSuccess} />}
+        />
+      </Routes>
+    );
+  }
+
+  if (appConfig.configurationError) {
+    return (
+      <div className="min-h-screen w-full bg-[#030303] text-red-400 font-mono flex flex-col items-center justify-center space-y-4 px-6 text-center">
+        <ShieldAlert size={36} className="text-red-500" />
+        <div className="space-y-2 max-w-xl">
+          <h1 className="text-sm font-black uppercase tracking-widest text-red-300">Configuration Error</h1>
+          <p className="text-xs text-zinc-300 leading-relaxed">{appConfig.configurationError}</p>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
+            Set VITE_DATA_MODE before starting the frontend.
+          </p>
+        </div>
+      </div>
     );
   }
 
@@ -220,6 +267,11 @@ export default function App() {
           onToggleAlerts={() => openPanel('alerts')}
           onToggleSettings={() => openPanel('settings')}
           onClosePanels={closePanel}
+          socketError={socketError || platformStatus.lastError}
+          platformStatus={platformStatus}
+          socketStatus={socketStatus}
+          onReconnect={reconnect}
+          onSearchSubmit={handleSearchSubmit}
         />
         
         <div className={cn(
@@ -227,7 +279,9 @@ export default function App() {
           currentView === "settings" ? "p-0 overflow-hidden flex flex-col" : "p-4 space-y-4"
         )}>
           <AnimatePresence mode="wait">
-            {currentView === "dashboard" ? (
+            <Routes location={location}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={(
               <motion.div
                 key="dashboard"
                 initial={{ opacity: 0, x: -10 }}
@@ -240,6 +294,8 @@ export default function App() {
                   isConnected={isConnected} 
                   onRefresh={handleRefresh} 
                   isSyncing={isSyncing} 
+                  platformStatus={platformStatus}
+                  socketStatus={socketStatus}
                 />
 
                 {/* SECTION B — EXECUTIVE KPI BAR */}
@@ -312,33 +368,26 @@ export default function App() {
                   </div>
                 </div>
               </motion.div>
-
-            ) : currentView === "alerts" ? (
-              <AlertsPage key="alerts" alerts={alerts} isConnected={isConnected} />
-            ) : currentView === "network" ? (
-              <NetworkMonitoringPage key="network" />
-            ) : currentView === "endpoints" ? (
-              <EndpointPage key="endpoints" />
-            ) : currentView === "cloud" ? (
-              <CloudPage key="cloud" />
-            ) : currentView === "threat-intel" ? (
-              <ThreatIntelPage key="threat-intel" />
-            ) : currentView === "ai-threat-detection" ? (
-              <AIThreatDetectionPage key="ai-threat-detection" />
-            ) : currentView === "attack-surface" ? (
-              <AttackSurfacePage key="attack-surface" />
-            ) : currentView === "mitre-attack" ? (
-              <MitreAttackPage key="mitre-attack" />
-            ) : currentView === "case-management" ? (
-              <CaseManagementPage key="case-management" />
-            ) : currentView === "integrations" ? (
-              <IntegrationsPage key="integrations" />
-            ) : currentView === "playbooks" ? (
-              <PlaybooksPage key="playbooks" />
-            ) : currentView === "reports" ? (
-              <ReportsPage key="reports" />
-            ) : (
-              <SettingsPage 
+              )} />
+              <Route path="/alerts" element={<AlertsPage key="alerts" alerts={alerts} isConnected={isConnected} />} />
+              <Route path="/alerts/:id" element={<AlertsPage key="alert-detail" alerts={alerts} isConnected={isConnected} />} />
+              <Route path="/network" element={<NetworkMonitoringPage key="network" />} />
+              <Route path="/network/flows/:flowId" element={<NetworkMonitoringPage key="network-flow" />} />
+              <Route path="/endpoints/:id" element={<EndpointPage key="endpoints" />} />
+              <Route path="/cloud/assets/:id" element={<CloudPage key="cloud" />} />
+              <Route path="/threat-intel" element={<ThreatIntelPage key="threat-intel" />} />
+              <Route path="/ai-threat-detection" element={<AIThreatDetectionPage key="ai-threat-detection" />} />
+              <Route path="/attack-surface" element={<AttackSurfacePage key="attack-surface" />} />
+              <Route path="/mitre" element={<MitreAttackPage key="mitre-attack" />} />
+              <Route path="/mitre/:techniqueId" element={<MitreAttackPage key="mitre-technique" />} />
+              <Route path="/cases" element={<CaseManagementPage key="case-management" />} />
+              <Route path="/cases/:id" element={<CaseManagementPage key="case-detail" />} />
+              <Route path="/integrations" element={<IntegrationsPage key="integrations" />} />
+              <Route path="/playbooks" element={<PlaybooksPage key="playbooks" />} />
+              <Route path="/reports" element={<ReportsPage key="reports" />} />
+              <Route path="/reports/:id" element={<ReportsPage key="report-detail" />} />
+              <Route path="/settings" element={(
+                <SettingsPage 
                 key="settings" 
                 isDarkMode={isDarkMode} 
                 onThemeToggle={() => setTheme(isDarkMode ? "Light" : "Dark")} 
@@ -346,7 +395,9 @@ export default function App() {
                   setTheme(themeVal);
                 }}
               />
-            )}
+              )} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
           </AnimatePresence>
         </div>
       </main>

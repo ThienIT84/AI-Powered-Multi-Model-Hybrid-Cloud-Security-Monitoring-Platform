@@ -53,7 +53,9 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
         const destMatch = log.destIp.toLowerCase().includes(term);
         const uidMatch = log.id.toLowerCase().includes(term);
         const reasonMatch = log.reason.toLowerCase().includes(term);
-        if (!srcMatch && !destMatch && !uidMatch && !reasonMatch) {
+        const correlationMatch = (log.correlationId || "").toLowerCase().includes(term);
+        const sensorMatch = (log.sensorId || "").toLowerCase().includes(term);
+        if (!srcMatch && !destMatch && !uidMatch && !reasonMatch && !correlationMatch && !sensorMatch) {
           return false;
         }
       }
@@ -180,6 +182,8 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
             <tr className="border-b border-border">
               <th className="px-3 py-2">Timestamp</th>
               <th className="px-3 py-2">UID</th>
+              <th className="px-3 py-2">Sensor / Source</th>
+              <th className="px-3 py-2">Correlation</th>
               <th className="px-3 py-2">Source (IP:Port)</th>
               <th className="px-3 py-2">Destination (IP:Port)</th>
               <th className="px-3 py-2">Protocol</th>
@@ -202,7 +206,7 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
           <tbody className="divide-y divide-border/30 text-[10px]">
             {paginatedLogs.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-12 text-center text-muted-foreground italic">
+                <td colSpan={13} className="px-4 py-12 text-center text-muted-foreground italic">
                   No active flows match selected network filters.
                 </td>
               </tr>
@@ -247,6 +251,18 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
                   >
                     <td className="px-3 py-1 text-muted-foreground/80 font-extrabold whitespace-nowrap">{log.timestamp}</td>
                     <td className="px-3 py-1 text-slate-705 dark:text-slate-350 font-black whitespace-nowrap">{log.id}</td>
+                    <td className="px-3 py-1 text-muted-foreground font-bold whitespace-nowrap">
+                      <div className="flex flex-col leading-tight">
+                        <span>{log.sensorId || "unknown"}</span>
+                        <span className="text-[8px] text-cyan-500 uppercase">{log.source || "unknown"}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-1 text-muted-foreground font-bold whitespace-nowrap">
+                      <div className="flex flex-col leading-tight">
+                        <span>{log.correlationId || log.id}</span>
+                        {log.relatedAlertId && <span className="text-[8px] text-amber-500 uppercase">Alert {log.relatedAlertId}</span>}
+                      </div>
+                    </td>
                     <td className="px-3 py-1 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{log.srcIp}:{log.srcPort}</td>
                     <td className="px-3 py-1 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{log.destIp}:{log.destPort}</td>
                     <td className="px-3 py-1 font-bold whitespace-nowrap">

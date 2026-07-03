@@ -1,8 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { UserPlus, MoreVertical, Shield, User, Clock, Activity, Users } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export function UserManagementSettings() {
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const showActionMessage = (message: string) => {
+    setActionMessage(message);
+    window.setTimeout(() => setActionMessage(null), 3500);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
       
@@ -18,12 +24,18 @@ export function UserManagementSettings() {
         
         {/* Action button */}
         <button 
-          onClick={() => alert('Invite User modal trigger')}
+          onClick={() => showActionMessage("Invite operator workflow queued.")}
           className="flex items-center justify-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all cursor-pointer shrink-0 border border-cyan-500/20"
         >
           <UserPlus size={13} /> Invite User
         </button>
       </div>
+
+      {actionMessage && (
+        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-500 px-3 py-2 text-[9px] font-black uppercase tracking-widest">
+          {actionMessage}
+        </div>
+      )}
 
       {/* Users Database list table */}
       <div className="space-y-3">
@@ -73,7 +85,7 @@ export function UserManagementSettings() {
                     <td className="px-6 py-4 text-right">
                       {/* Action trigger */}
                       <button 
-                        onClick={() => alert(`Opening context menu for user ${user.name}`)}
+                        onClick={() => showActionMessage(`Operator context selected for ${user.name}.`)}
                         className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer inline-block"
                       >
                         <MoreVertical size={14} />

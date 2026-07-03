@@ -10,6 +10,8 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   LineChart, Line, BarChart, Bar, Cell, PieChart, Pie, Legend
 } from "recharts";
+import { appConfig } from "../config";
+import { DataModeNotice, EmptyState, ErrorState } from "../components/common/DataState";
 
 // Mock Aggregated Datasets for Historical Reporting ONLY
 const MOCK_REPORT_LOGS = [
@@ -22,12 +24,13 @@ const MOCK_REPORT_LOGS = [
 ];
 
 export function ReportsPage() {
+  const isSimulated = appConfig.dataMode !== "live";
   // Navigation & Page Layout Settings
   const [timeframe, setTimeframe] = useState<"24h" | "7d" | "30d" | "90d">("7d");
   const [activeSection, setActiveSection] = useState<string>("executive-summary");
 
   // Interactive Export Center States
-  const [exportFormat, setExportFormat] = useState<"PDF" | "CSV" | "XLSX">("PDF");
+  const [exportFormat, setExportFormat] = useState<"PDF" | "CSV" | "JSON" | "XLSX">("PDF");
   const [exportSelections, setExportSelections] = useState({
     executive: true,
     secops: true,
@@ -41,6 +44,7 @@ export function ReportsPage() {
   const [exportProgress, setExportProgress] = useState<number>(0);
   const [exportStep, setExportStep] = useState<string>("Queued in secure compliance build pipeline");
   const [exportTitle, setExportTitle] = useState<string>("");
+  const [reportError, setReportError] = useState<string | null>(isSimulated ? null : "Live reporting service is not connected.");
 
   // Refs for Scroll Jumping
   const sectionRefs = {
@@ -62,6 +66,7 @@ export function ReportsPage() {
 
   // Timeframe-specific multiplier system to dynamically scale aggregated metrics
   const multiplier = useMemo(() => {
+    if (!isSimulated) return 0;
     switch (timeframe) {
       case "24h": return 0.12;
       case "7d": return 1.0;
@@ -69,7 +74,7 @@ export function ReportsPage() {
       case "90d": return 12.8;
       default: return 1.0;
     }
-  }, [timeframe]);
+  }, [timeframe, isSimulated]);
 
   // Dynamic calculated metrics based on timeframe selection
   const liveKPIs = useMemo(() => {
@@ -79,9 +84,9 @@ export function ReportsPage() {
       highAlerts: Math.floor(1824 * multiplier),
       mediumAlerts: Math.floor(5129 * multiplier),
       lowAlerts: Math.floor(5047 * multiplier),
-      meanTimeToRespond: timeframe === "24h" ? "10.5 mins" : "12.4 mins",
-      meanTimeToResolve: timeframe === "24h" ? "38.2 mins" : "42.5 mins",
-      slaCompliance: timeframe === "24h" ? "96.4%" : "94.2%",
+      meanTimeToRespond: isSimulated ? (timeframe === "24h" ? "10.5 mins" : "12.4 mins") : "Unavailable",
+      meanTimeToResolve: isSimulated ? (timeframe === "24h" ? "38.2 mins" : "42.5 mins") : "Unavailable",
+      slaCompliance: isSimulated ? (timeframe === "24h" ? "96.4%" : "94.2%") : "Unavailable",
       failedSlaCases: Math.max(1, Math.floor(3 * multiplier)),
       openCases: timeframe === "24h" ? 4 : timeframe === "7d" ? 12 : timeframe === "30d" ? 38 : 94,
       resolvedCases: Math.floor(302 * multiplier),
@@ -89,10 +94,14 @@ export function ReportsPage() {
       totalFusionAlerts: Math.floor(1489 * multiplier),
       criticalFusionAlerts: Math.floor(41 * multiplier),
     };
-  }, [timeframe, multiplier]);
+  }, [timeframe, multiplier, isSimulated]);
 
   // Trigger Report Compilation Simulator
   const triggerCompilation = (title: string, format: string) => {
+    if (!isSimulated) {
+      setReportError("Live report export requires backend reporting service.");
+      return;
+    }
     setExportTitle(title);
     setExportProgress(0);
     setExportStep("Registering signature and allocating secure buffers...");
@@ -101,11 +110,11 @@ export function ReportsPage() {
 
   // Run the Export Simulation Progress loop
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (exportModalOpen && exportProgress < 100) {
       interval = setInterval(() => {
         setExportProgress((prev) => {
-          const next = prev + Math.floor(Math.random() * 18) + 6;
+          const next = prev + 14;
           if (next >= 100) {
             setExportStep("Completed and SHA-256 cryptographically notarized!");
             clearInterval(interval);
@@ -122,7 +131,9 @@ export function ReportsPage() {
         });
       }, 500);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [exportModalOpen, exportProgress, timeframe]);
 
   // ==========================================
@@ -231,6 +242,32 @@ export function ReportsPage() {
     { title: "Establish SSH Gateways Session Controls", desc: "Mandate hardware key MFA and absolute session timeout parameters globally.", impact: "HIGH IMPACT", regulatory: "NIST CSF PR.AC" }
   ];
 
+  if (!isSimulated) {
+    return (
+      <div className="space-y-6 pb-20 select-none text-slate-800 dark:text-slate-100 min-h-screen" id="hybrid-reporting-system">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between pb-4 border-b border-border/80 gap-4" id="reports-header">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 bg-cyan-500 rounded-full" />
+              <span className="text-[10px] font-mono font-black tracking-[0.25em] text-cyan-600 dark:text-cyan-400 uppercase">
+                Security Reporting & Executive Reporting Layer
+              </span>
+            </div>
+            <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase font-sans">
+              Executive Security Reports Hub
+            </h2>
+            <p className="text-[10.5px] text-slate-500 dark:text-zinc-500 uppercase tracking-wider font-mono font-bold leading-normal">
+              Operational compliance auditing and historical performance indices ledger
+            </p>
+          </div>
+        </div>
+        <DataModeNotice mode={appConfig.dataMode} />
+        {reportError && <ErrorState label={reportError} onRetry={() => setReportError("Live reporting service is not connected.")} />}
+        <EmptyState label="Waiting for live reporting datasets." />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-20 select-none text-slate-800 dark:text-slate-100 min-h-screen" id="hybrid-reporting-system">
       
@@ -284,6 +321,12 @@ export function ReportsPage() {
           </button>
         </div>
       </div>
+
+      <DataModeNotice mode={appConfig.dataMode} />
+      {reportError && <ErrorState label={reportError} onRetry={() => setReportError("Live reporting service is not connected.")} />}
+      {!isSimulated && (
+        <EmptyState label="Waiting for live reporting datasets." />
+      )}
 
       {/* Main Container: Sidebar Quick Links + Long Scrolling Report binder */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start relative">
@@ -921,7 +964,7 @@ export function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/25 font-semibold text-slate-300">
-                  {MOCK_REPORT_LOGS.map((rep) => (
+                  {(isSimulated ? MOCK_REPORT_LOGS : []).map((rep) => (
                     <tr key={rep.id} className="hover:bg-secondary/10 transition duration-150">
                       <td className="py-3">
                         <span className="text-foreground font-black block font-sans text-[9.5px]">
@@ -1001,7 +1044,7 @@ export function ReportsPage() {
                   </span>
 
                   <div className="bg-background border border-border p-0.5 rounded-lg flex overflow-hidden">
-                    {(["PDF", "CSV", "XLSX"] as const).map((fmt) => (
+                    {(["PDF", "CSV", "JSON", "XLSX"] as const).map((fmt) => (
                       <button
                         key={fmt}
                         onClick={() => setExportFormat(fmt)}

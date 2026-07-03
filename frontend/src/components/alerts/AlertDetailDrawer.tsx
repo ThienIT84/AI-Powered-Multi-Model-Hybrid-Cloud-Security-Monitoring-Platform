@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
 import { cn } from "../../lib/utils";
+import { addAnalystNote, markFalsePositive, updateAlertStatus } from "../../services/alerts.service";
+import { UserRole } from "../../types/auth";
+import { canPerform, permissionTitle } from "../../lib/permissions";
 
 // Custom imported modules from alerts directory
 import { FusionDecisionFlow } from "./FusionDecisionFlow";
@@ -26,7 +29,8 @@ import { RawLogViewer } from "./RawLogViewer";
 interface AlertDetailDrawerProps {
   alert: Alert;
   onClose: () => void;
-  onUpdateAlert?: (alertId: string, updates: Partial<Alert>) => void;
+  onUpdateAlert?: (alertId: string, updates: Partial<Alert>, persist?: () => Promise<unknown>) => Promise<void> | void;
+  userRole?: UserRole;
 }
 
 function ModelStatusRow({ name, label, status, source, scope }: { name: string; label: string; status: string; source: string; scope?: string }) {
@@ -54,37 +58,53 @@ function ModelStatusRow({ name, label, status, source, scope }: { name: string; 
   );
 }
 
-export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetailDrawerProps) {
+export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: AlertDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "decision_flow" | "mitre" | "raw_logs">("overview");
   const meta = getAlertFusionMeta(alert);
+  const canResolve = canPerform(userRole, "alert:resolve");
+  const canTriage = canPerform(userRole, "alert:triage");
+  const canRespond = canPerform(userRole, "alert:response");
+
+  const runAlertUpdate = (updates: Partial<Alert>, persist: () => Promise<unknown>) => {
+    if (!onUpdateAlert) return;
+    void Promise.resolve(onUpdateAlert(alert.id, updates, persist)).catch(() => undefined);
+  };
 
   const handleResolve = () => {
-    if (onUpdateAlert) {
-      onUpdateAlert(alert.id, { status: AlertStatus.RESOLVED });
-    }
+    if (!canResolve) return;
+    runAlertUpdate(
+      { status: AlertStatus.RESOLVED },
+      () => updateAlertStatus(alert.id, AlertStatus.RESOLVED)
+    );
   };
 
   const handleIsolate = () => {
-    if (onUpdateAlert) {
-      onUpdateAlert(alert.id, { 
-        status: AlertStatus.MITIGATED, 
-        description: alert.description + " [EMERGENCY ASSET ISOLATED BY ANALYST]" 
-      });
-    }
+    if (!canRespond) return;
+    runAlertUpdate(
+      {
+        status: AlertStatus.MITIGATED,
+        description: `${alert.description} [EMERGENCY ASSET ISOLATED BY ANALYST]`,
+      },
+      () => updateAlertStatus(alert.id, AlertStatus.MITIGATED)
+    );
   };
 
   const handleBlockDomain = () => {
-    if (onUpdateAlert) {
-      onUpdateAlert(alert.id, { 
-        description: alert.description + " [DESTINATION DOMAIN BLOCKED ON GATEWAY]" 
-      });
-    }
+    if (!canRespond) return;
+    runAlertUpdate(
+      {
+        description: `${alert.description} [DESTINATION DOMAIN BLOCKED ON GATEWAY]`,
+      },
+      () => addAnalystNote(alert.id, "Destination gateway block requested from alert drawer.")
+    );
   };
 
   const handleDiscard = () => {
-    if (onUpdateAlert) {
-      onUpdateAlert(alert.id, { status: AlertStatus.FALSE_POSITIVE });
-    }
+    if (!canTriage) return;
+    runAlertUpdate(
+      { status: AlertStatus.FALSE_POSITIVE },
+      () => markFalsePositive(alert.id)
+    );
   };
 
   const displayId = alert.id.toLowerCase().startsWith('thr-')
@@ -384,14 +404,24 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetail
         <div className="grid grid-cols-2 gap-2">
           <button 
             onClick={handleIsolate}
-            className="flex items-center justify-center gap-1.5 py-2 hover:bg-red-605 border border-red-500/30 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none hover:bg-red-500/10"
+            disabled={!canRespond}
+            title={permissionTitle(canRespond)}
+            className={cn(
+              "flex items-center justify-center gap-1.5 py-2 hover:bg-red-605 border border-red-500/30 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none hover:bg-red-500/10",
+              !canRespond && "opacity-40 cursor-not-allowed hover:text-red-500 hover:bg-transparent"
+            )}
           >
             Isolate Host
           </button>
           
           <button 
             onClick={handleBlockDomain}
-            className="flex items-center justify-center gap-1.5 py-2 hover:bg-border border border-border text-foreground text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none"
+            disabled={!canRespond}
+            title={permissionTitle(canRespond)}
+            className={cn(
+              "flex items-center justify-center gap-1.5 py-2 hover:bg-border border border-border text-foreground text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none",
+              !canRespond && "opacity-40 cursor-not-allowed hover:bg-transparent"
+            )}
           >
             Block Gateway
           </button>
@@ -399,7 +429,12 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetail
 
         <button 
           onClick={handleResolve}
-          className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[9.5px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none"
+          disabled={!canResolve}
+          title={permissionTitle(canResolve)}
+          className={cn(
+            "w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[9.5px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none",
+            !canResolve && "opacity-40 cursor-not-allowed hover:bg-cyan-600"
+          )}
         >
           <CheckCircle2 size={12} /> Mark as Resolved
         </button>

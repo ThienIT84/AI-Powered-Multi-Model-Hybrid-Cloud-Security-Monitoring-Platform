@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useSettingsStore } from "../../store/useSettingsStore";
 import { cn } from "../../lib/utils";
 import { Shield, Key, Laptop, Smartphone, AlertCircle, Plus, Trash2, ShieldCheck, Lock, Globe, User, AlertTriangle } from "lucide-react";
@@ -6,6 +6,11 @@ import { Shield, Key, Laptop, Smartphone, AlertCircle, Plus, Trash2, ShieldCheck
 export function SecuritySettings() {
   const { draftSettings, updateDraft } = useSettingsStore();
   const data = draftSettings.security;
+  const [sessionMessage, setSessionMessage] = useState<string | null>(null);
+  const showSessionMessage = (message: string) => {
+    setSessionMessage(message);
+    window.setTimeout(() => setSessionMessage(null), 3500);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -36,6 +41,12 @@ export function SecuritySettings() {
           </div>
         </div>
       </div>
+
+      {sessionMessage && (
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 px-3 py-2 text-[9px] font-black uppercase tracking-widest">
+          {sessionMessage}
+        </div>
+      )}
 
       {/* Main grid splits settings and admin logs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -179,11 +190,7 @@ export function SecuritySettings() {
                   </div>
                 </div>
                 <button 
-                  onClick={() => {
-                    if (confirm(`Terminate session on ${session.device}?`)) {
-                      alert(`Session for ${session.device} revoked successfully.`);
-                    }
-                  }}
+                  onClick={() => showSessionMessage(`Session revocation queued for ${session.device}.`)}
                   className="text-[9px] font-mono font-black text-muted-foreground hover:text-red-500 hover:border-red-500/20 border border-transparent transition-colors uppercase tracking-widest cursor-pointer px-2.5 py-1.5 rounded bg-muted/60 hover:bg-red-500/5"
                 >
                   TERMINATE SESSION

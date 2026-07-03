@@ -1,42 +1,60 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { NetworkLog, ChartDataPoint } from "../components/network/NetworkConfig";
-import { 
-  generateRandomLog, 
-  generateInitialLogsList 
-} from "../components/network/NetworkGenerator";
 import { useRealtimeBuffer } from "./useRealtimeBuffer";
+import { getNetworkTelemetryAdapter } from "../adapters/network.adapters";
+import { appConfig } from "../config";
 
 const MAX_LOGS_LIMIT = 200;
 const CHART_HISTORY_LIMIT = 30;
 
 export function useNetworkStream() {
+  const adapter = useMemo(() => getNetworkTelemetryAdapter(), []);
   const [isRunning, setIsRunning] = useState<boolean>(true);
-  const [logs, setLogs] = useState<NetworkLog[]>(() => generateInitialLogsList(60));
-  const [chartHistory, setChartHistory] = useState<ChartDataPoint[]>(() => {
-    // Generate initial historical charts
-    const data: ChartDataPoint[] = [];
-    const now = new Date();
-    for (let i = CHART_HISTORY_LIMIT - 1; i >= 0; i--) {
-      const historicalTime = new Date(now.getTime() - i * 2000);
-      const timeLabel = `${historicalTime.getHours().toString().padStart(2, "0")}:${historicalTime.getMinutes().toString().padStart(2, "0")}:${historicalTime.getSeconds().toString().padStart(2, "0")}`;
-      const baseFlows = Math.floor(Math.random() * 12) + 14;
-      const isAnomaly = Math.random() < 0.10;
-      const flows = isAnomaly ? baseFlows * 2.5 : baseFlows;
-      data.push({
-        timeLabel,
-        flows: Math.round(flows),
-        bandwidth: Math.round(isAnomaly ? (Math.random() * 8000 + 4000) : (Math.random() * 1200 + 340)),
-        anomalyScore: isAnomaly ? Math.floor(Math.random() * 40) + 60 : Math.floor(Math.random() * 15) + 2,
-        isAnomaly
-      });
-    }
-    return data;
-  });
+  const [logs, setLogs] = useState<NetworkLog[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [chartHistory, setChartHistory] = useState<ChartDataPoint[]>([]);
 
   const isRunningRef = useRef(isRunning);
   useEffect(() => {
     isRunningRef.current = isRunning;
   }, [isRunning]);
+
+  const buildChartHistory = useCallback((items: NetworkLog[]): ChartDataPoint[] => {
+    const source = items.slice(0, CHART_HISTORY_LIMIT).reverse();
+    if (source.length === 0) return [];
+    return source.map((log) => {
+      const bytes = log.origBytes + (log.respBytes ?? 0);
+      return {
+        timeLabel: log.timestamp,
+        flows: Math.max(1, log.respPkts ?? 1),
+        bandwidth: Math.round(bytes / 1024),
+        anomalyScore: log.verdict === "ANOMALY" ? log.threatScore ?? 75 : log.threatScore ?? 0,
+        isAnomaly: log.verdict === "ANOMALY",
+        eventAnnotation: log.verdict === "ANOMALY" ? log.reason?.split(":")[0] : undefined,
+      };
+    });
+  }, []);
+
+  const loadInitialLogs = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const initialLogs = await adapter.initialLogs();
+      setLogs(initialLogs);
+      setChartHistory(buildChartHistory(initialLogs));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network telemetry unavailable.");
+      setLogs([]);
+      setChartHistory([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [adapter, buildChartHistory]);
+
+  useEffect(() => {
+    loadInitialLogs();
+  }, [loadInitialLogs]);
 
   // Buffer aggregator that updates React logs state in batch
   const handleFlushLogs = useCallback((newLogs: NetworkLog[]) => {
@@ -52,23 +70,22 @@ export function useNetworkStream() {
       const hasAnomaly = newLogs.some(l => l.verdict === "ANOMALY");
       const anomalyLog = newLogs.find(l => l.verdict === "ANOMALY");
       
-      const flowsCount = Math.round(Math.floor(Math.random() * 8) + 12 + newLogs.length * 1.5);
       const activeBandwidth = newLogs.reduce((acc, log) => acc + log.origBytes / 1024, 0);
-      const normalizedBandwidth = Math.max(300, activeBandwidth > 200 ? activeBandwidth : (Math.random() * 800 + 300));
+      const normalizedBandwidth = Math.max(0, activeBandwidth);
       const anomalyScore = hasAnomaly 
         ? (anomalyLog?.threatScore || 85)
-        : Math.min(45, Math.max(1, Math.round(newLogs.length * 2.5 + Math.random() * 8)));
+        : Math.min(45, Math.max(0, Math.round(newLogs.length * 2.5)));
 
       const nextTime = new Date();
       const timeLabel = `${nextTime.getHours().toString().padStart(2, "0")}:${nextTime.getMinutes().toString().padStart(2, "0")}:${nextTime.getSeconds().toString().padStart(2, "0")}`;
 
       const nextPoint: ChartDataPoint = {
         timeLabel,
-        flows: Math.round(flowsCount),
+        flows: newLogs.length,
         bandwidth: Math.round(normalizedBandwidth),
         anomalyScore: Math.round(anomalyScore),
         isAnomaly: hasAnomaly,
-        eventAnnotation: hasAnomaly ? anomalyLog?.reason.split(":")[0] : undefined
+        eventAnnotation: hasAnomaly ? anomalyLog?.reason?.split(":")[0] : undefined
       };
 
       return [...prev.slice(1), nextPoint];
@@ -77,23 +94,25 @@ export function useNetworkStream() {
 
   const { queueEvent } = useRealtimeBuffer<NetworkLog>(handleFlushLogs, 400);
 
-  // Background random stream generation (Low noise traffic loop)
+  // Demo and replay adapters can emit simulated telemetry. Live mode never generates synthetic traffic.
   useEffect(() => {
+    if (!adapter.canSimulate) return;
     const timer = setInterval(() => {
       if (!isRunningRef.current) return;
-      
-      // Introduce variable frequency
-      const packetsCount = Math.floor(Math.random() * 3) + 1; // 1-3 packet ticks per generation
-      for (let i = 0; i < packetsCount; i++) {
-        queueEvent(generateRandomLog());
-      }
+
+      adapter.nextLogs().then((next) => {
+        next.forEach(queueEvent);
+      }).catch((err) => {
+        setError(err instanceof Error ? err.message : "Network telemetry stream failed.");
+      });
     }, 1500);
 
     return () => clearInterval(timer);
-  }, [queueEvent]);
+  }, [adapter, queueEvent]);
 
   // Injector 1: Port Scan reconnaissance diagnostics
   const injectPortScan = useCallback(() => {
+    if (appConfig.dataMode === "live") return;
     const now = new Date();
     const portsToScan = [21, 22, 23, 25, 80, 110, 139, 443, 445];
     const srcIp = "185.190.240.8"; // external suspicious tracer
@@ -103,7 +122,7 @@ export function useNetworkStream() {
       const timestamp = `${offsetTime.getHours().toString().padStart(2, "0")}:${offsetTime.getMinutes().toString().padStart(2, "0")}:${offsetTime.getSeconds().toString().padStart(2, "0")}.${offsetTime.getMilliseconds().toString().padStart(3, "0")}`;
 
       const scanLog: NetworkLog = {
-        id: `inject_scan_${Math.random().toString(36).substring(2, 11)}`,
+        id: `inject_scan_${Date.now()}_${idx}`,
         timestamp,
         srcIp,
         srcPort: 34890 + idx,
@@ -130,11 +149,12 @@ export function useNetworkStream() {
 
   // Injector 2: Massive critical Exfiltration database dump
   const injectMassiveExfiltration = useCallback(() => {
+    if (appConfig.dataMode === "live") return;
     const now = new Date();
     const timestamp = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}.${now.getMilliseconds().toString().padStart(3, "0")}`;
 
     const exfilLog: NetworkLog = {
-      id: `inject_exfil_${Math.random().toString(36).substring(2, 11)}`,
+      id: `inject_exfil_${Date.now()}`,
       timestamp,
       srcIp: "10.0.12.3", // local Database server
       srcPort: 5432,
@@ -158,11 +178,12 @@ export function useNetworkStream() {
 
   // Injector 3: Onion Tor connection through DNS tunnelling protocols
   const injectTorDnsTunnel = useCallback(() => {
+    if (appConfig.dataMode === "live") return;
     const now = new Date();
     const timestamp = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}.${now.getMilliseconds().toString().padStart(3, "0")}`;
 
     const torLog: NetworkLog = {
-      id: `inject_tor_${Math.random().toString(36).substring(2, 11)}`,
+      id: `inject_tor_${Date.now()}`,
       timestamp,
       srcIp: "192.168.1.109",
       srcPort: 5353,
@@ -197,6 +218,11 @@ export function useNetworkStream() {
     setIsRunning,
     logs,
     chartHistory,
+    isLoading,
+    error,
+    dataMode: appConfig.dataMode,
+    isSimulated: appConfig.dataMode !== "live",
+    retry: loadInitialLogs,
     injectPortScan,
     injectMassiveExfiltration,
     injectTorDnsTunnel,

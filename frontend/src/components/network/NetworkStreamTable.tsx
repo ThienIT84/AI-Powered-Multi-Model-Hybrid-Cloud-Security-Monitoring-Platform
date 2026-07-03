@@ -32,6 +32,7 @@ export const NetworkStreamTable: React.FC<NetworkStreamTableProps> = React.memo(
   // Sort variables
   const [sortField, setSortField] = useState<SortField>("timestamp");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
   // Search & Inner Filter variables
   const [innerQuery, setInnerQuery] = useState("");
@@ -446,12 +447,21 @@ export const NetworkStreamTable: React.FC<NetworkStreamTableProps> = React.memo(
                                 </div>
                                 <div className="mt-1 flex justify-end">
                                   <button
-                                    onClick={() => alert(`Raw SIEM payload reference ID copied.`)}
+                                    onClick={() => {
+                                      navigator.clipboard?.writeText(log.id);
+                                      setCopyMessage(`Reference token copied: ${log.id}`);
+                                      window.setTimeout(() => setCopyMessage(null), 2500);
+                                    }}
                                     className="px-2 py-0.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground text-[8px] font-extrabold uppercase rounded border border-border"
                                   >
                                     Copy Reference Token
                                   </button>
                                 </div>
+                                {copyMessage && (
+                                  <div className="mt-1 text-[8px] font-black uppercase tracking-widest text-cyan-500">
+                                    {copyMessage}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>

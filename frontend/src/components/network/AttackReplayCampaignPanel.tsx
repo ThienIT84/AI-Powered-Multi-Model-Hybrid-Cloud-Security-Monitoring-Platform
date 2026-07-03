@@ -291,7 +291,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
             const injectedLog: NetworkLog = {
               ...step.mockLog,
               timestamp: timeLabel,
-              id: `${step.mockLog.id}_${Math.random().toString(36).substring(2, 5)}`
+              id: `${step.mockLog.id}_${Date.now()}`
             };
 
             onInjectLog(injectedLog);

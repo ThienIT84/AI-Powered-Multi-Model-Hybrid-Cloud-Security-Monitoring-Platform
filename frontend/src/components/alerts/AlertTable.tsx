@@ -15,12 +15,16 @@ import {
 import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
+import { markFalsePositive, updateAlertStatus } from "../../services/alerts.service";
+import { UserRole } from "../../types/auth";
+import { canPerform, permissionTitle } from "../../lib/permissions";
 
 interface AlertTableProps {
   alerts: Alert[];
   onSelectAlert: (alert: Alert | null) => void;
   selectedAlertId?: string | null;
-  onUpdateAlert?: (alertId: string, updates: Partial<Alert>) => void;
+  onUpdateAlert?: (alertId: string, updates: Partial<Alert>, persist?: () => Promise<unknown>) => Promise<void> | void;
+  userRole?: UserRole;
 }
 
 function formatModelCell(value: string, status: string, source: string) {
@@ -70,7 +74,7 @@ function ModelBadge({ value, status, source, center = false }: { value: string; 
   );
 }
 
-export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert }: AlertTableProps) {
+export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert, userRole }: AlertTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 15; 
 
@@ -164,6 +168,13 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
       setSortOrder("desc");
     }
   };
+
+  const runAlertUpdate = (alertId: string, updates: Partial<Alert>, persist: () => Promise<unknown>) => {
+    if (!onUpdateAlert) return;
+    void Promise.resolve(onUpdateAlert(alertId, updates, persist)).catch(() => undefined);
+  };
+  const canResolve = canPerform(userRole, "alert:resolve");
+  const canTriage = canPerform(userRole, "alert:triage");
 
   const headerSortIcon = (field: "timestamp" | "riskScore" | "severity") => {
     if (sortField !== field) return <ArrowUpDown size={10} className="text-muted-foreground/35 ml-1.5 transition-colors" />;
@@ -460,21 +471,37 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                              </button>
                              <button
                                onClick={() => {
-                                 if (onUpdateAlert) {
-                                   onUpdateAlert(alert.id, { status: AlertStatus.FALSE_POSITIVE });
-                                 }
+                                 if (!canTriage) return;
+                                 runAlertUpdate(
+                                   alert.id,
+                                   { status: AlertStatus.FALSE_POSITIVE },
+                                   () => markFalsePositive(alert.id)
+                                 );
                                }}
-                               className="px-1 py-0.5 rounded bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border border-orange-500/20 text-[7px] font-black uppercase transition-all"
+                               disabled={!canTriage}
+                               title={permissionTitle(canTriage)}
+                               className={cn(
+                                 "px-1 py-0.5 rounded bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border border-orange-500/20 text-[7px] font-black uppercase transition-all",
+                                 !canTriage && "opacity-40 cursor-not-allowed hover:bg-orange-500/10 hover:text-orange-400"
+                               )}
                              >
                                FP
                              </button>
                              <button
                                onClick={() => {
-                                 if (onUpdateAlert) {
-                                   onUpdateAlert(alert.id, { status: AlertStatus.RESOLVED });
-                                 }
+                                 if (!canResolve) return;
+                                 runAlertUpdate(
+                                   alert.id,
+                                   { status: AlertStatus.RESOLVED },
+                                   () => updateAlertStatus(alert.id, AlertStatus.RESOLVED)
+                                 );
                                }}
-                               className="px-1 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-[7px] font-black uppercase transition-all"
+                               disabled={!canResolve}
+                               title={permissionTitle(canResolve)}
+                               className={cn(
+                                 "px-1 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-[7px] font-black uppercase transition-all",
+                                 !canResolve && "opacity-40 cursor-not-allowed hover:bg-emerald-500/10 hover:text-emerald-400"
+                               )}
                              >
                                Resolve
                              </button>

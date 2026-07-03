@@ -10,8 +10,12 @@ import { CloudThreatMonitoringCenter } from "../components/cloud/CloudThreatMoni
 import { CloudSecurityInsights } from "../components/cloud/CloudSecurityInsights";
 import { CloudResourceSecurity } from "../components/cloud/CloudResourceSecurity";
 import { CloudIncidentFeed } from "../components/cloud/CloudIncidentFeed";
+import { appConfig } from "../config";
+import { DataModeNotice, EmptyState, ErrorState } from "../components/common/DataState";
 
 export function CloudPage() {
+  const isSimulated = appConfig.dataMode !== "live";
+  const cloudAssets = isSimulated ? MOCK_CLOUD_ASSETS : [];
   // Primary operational search and filter states passed to layout components
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedService, setSelectedService] = useState("ALL");
@@ -21,15 +25,23 @@ export function CloudPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [showExportToast, setShowExportToast] = useState(false);
+  const [error, setError] = useState<string | null>(isSimulated ? null : "Live cloud security service is not connected.");
 
   const handleRefresh = () => {
     setIsSyncing(true);
     setTimeout(() => {
       setIsSyncing(false);
+      if (!isSimulated) {
+        setError("Live cloud security service is not connected.");
+      }
     }, 850);
   };
 
   const handleExport = () => {
+    if (!isSimulated) {
+      setError("Live cloud export requires backend cloud service.");
+      return;
+    }
     setExporting(true);
     setTimeout(() => {
       setExporting(false);
@@ -136,34 +148,43 @@ export function CloudPage() {
 
       </div>
 
-      {/* ROW 1: SECURITY KPI BAR */}
-      <CloudSecurityKPIs assets={MOCK_CLOUD_ASSETS} />
+      <DataModeNotice mode={appConfig.dataMode} />
+      {error && <ErrorState label={error} onRetry={handleRefresh} />}
+      {!error && cloudAssets.length === 0 && <EmptyState label="Waiting for cloud security telemetry." />}
 
-      {/* ROW 2: PRIMARY OPERATIONS AREA (70 / 30 SPLIT) */}
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-stretch">
-        
-        {/* LEFT (70%) - Threat Monitoring Operations Center */}
-        <div className="lg:col-span-7">
-          <CloudThreatMonitoringCenter
-            searchQuery={searchQuery}
-            selectedService={selectedService}
-            selectedSeverity={selectedSeverity}
-            onRefreshTrigger={isSyncing}
-          />
-        </div>
+      {isSimulated && (
+        <>
+          {/* ROW 1: SECURITY KPI BAR */}
+          <CloudSecurityKPIs assets={cloudAssets} />
 
-        {/* RIGHT (30%) - Operational Insights Panel */}
-        <div className="lg:col-span-3">
-          <CloudSecurityInsights />
-        </div>
+          {/* ROW 2: PRIMARY OPERATIONS AREA (70 / 30 SPLIT) */}
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-stretch">
+            
+            {/* LEFT (70%) - Threat Monitoring Operations Center */}
+            <div className="lg:col-span-7">
+              <CloudThreatMonitoringCenter
+                searchQuery={searchQuery}
+                selectedService={selectedService}
+                selectedSeverity={selectedSeverity}
+                onRefreshTrigger={isSyncing}
+                isSimulated={isSimulated}
+              />
+            </div>
 
-      </div>
+            {/* RIGHT (30%) - Operational Insights Panel */}
+            <div className="lg:col-span-3">
+              <CloudSecurityInsights />
+            </div>
 
-      {/* ROW 3: THREE EQUAL-WIDTH PANELS DESIGN */}
-      <CloudResourceSecurity onSelectAsset={(name) => setSearchQuery(name)} />
+          </div>
 
-      {/* ROW 4: INTERACTIVE INCIDENTS FEED TIMELINE */}
-      <CloudIncidentFeed onRefreshTrigger={isSyncing} />
+          {/* ROW 3: THREE EQUAL-WIDTH PANELS DESIGN */}
+          <CloudResourceSecurity onSelectAsset={(name) => setSearchQuery(name)} />
+
+          {/* ROW 4: INTERACTIVE INCIDENTS FEED TIMELINE */}
+          <CloudIncidentFeed onRefreshTrigger={isSyncing} />
+        </>
+      )}
 
     </div>
   );

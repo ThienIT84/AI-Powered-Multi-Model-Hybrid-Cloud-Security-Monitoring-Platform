@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Play, 
@@ -23,8 +24,11 @@ import { NetworkFlowTable } from "../components/network/NetworkFlowTable";
 // Custom hooks & type references
 import { useNetworkStream } from "../hooks/useNetworkStream";
 import { NetworkLog } from "../components/network/NetworkConfig";
+import { getNetworkFlowById } from "../adapters/network.adapters";
 
 export const NetworkMonitoringPage: React.FC = () => {
+  const params = useParams();
+  const navigate = useNavigate();
   // Load custom streaming logs and hook controllers
   const {
     isRunning,
@@ -32,10 +36,16 @@ export const NetworkMonitoringPage: React.FC = () => {
     logs,
     chartHistory,
     clearLogs,
+    isLoading,
+    error,
+    isSimulated,
+    dataMode,
+    retry,
   } = useNetworkStream();
 
   // Selected Log for inspection inside modal/drawer
   const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
+  const [flowDetailError, setFlowDetailError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Filter for topology clicked IP or text filters
@@ -71,23 +81,55 @@ export const NetworkMonitoringPage: React.FC = () => {
     }
   }, [logs, selectedLog]);
 
+  useEffect(() => {
+    if (!params.flowId) {
+      setFlowDetailError(null);
+      return;
+    }
+    const match = logs.find((log) => log.id === params.flowId);
+    if (match) {
+      setSelectedLog(match);
+      setFlowDetailError(null);
+      return;
+    }
+    let cancelled = false;
+    setFlowDetailError(null);
+    getNetworkFlowById(params.flowId)
+      .then((flow) => {
+        if (cancelled) return;
+        if (flow) setSelectedLog(flow);
+        else setFlowDetailError("Network flow detail not found.");
+      })
+      .catch((err) => {
+        if (!cancelled) setFlowDetailError(err instanceof Error ? err.message : "Network flow detail unavailable.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [logs, params.flowId]);
+
+  const handleSelectLog = useCallback((log: NetworkLog | null) => {
+    setSelectedLog(log);
+    navigate(log ? `/network/flows/${encodeURIComponent(log.id)}` : "/network");
+  }, [navigate]);
+
   // Handle global escape key to clear drawers
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setSelectedLog(null);
+        handleSelectLog(null);
         setIsModalOpen(false);
         setActionFeedback(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [handleSelectLog]);
 
   // Compute dynamic live packet throughput rates
   const livePacketRate = useMemo(() => {
     if (!isRunning) return 0;
-    return Math.round(Math.min(185, logs.length * 0.45 + Math.random() * 8 + 12));
+    return Math.round(Math.min(185, logs.length * 0.45));
   }, [logs, isRunning]);
 
   const anomalousFlowsCount = useMemo(() => {
@@ -96,11 +138,11 @@ export const NetworkMonitoringPage: React.FC = () => {
 
   const handleWipeLogs = useCallback(() => {
     clearLogs();
-    setSelectedLog(null);
+    handleSelectLog(null);
     setIsModalOpen(false);
     setShowWipeConfirm(false);
     setActionFeedback(null);
-  }, [clearLogs]);
+  }, [clearLogs, handleSelectLog]);
 
   return (
     <motion.div
@@ -115,6 +157,31 @@ export const NetworkMonitoringPage: React.FC = () => {
       
       {/* 1. GLOBAL SOC HEADER TELEMETRY AND STATUS PANEL */}
       <NetworkMonitoringHeader isRunning={isRunning} livePacketRate={livePacketRate} />
+
+      {isSimulated && (
+        <div className="border border-amber-500/20 bg-amber-500/10 text-amber-500 rounded-lg px-3 py-2 text-[9px] font-black uppercase tracking-widest">
+          {dataMode === "replay" ? "Replay Data" : "Simulated Demo Data"}
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="border border-border bg-card rounded-lg p-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          Loading network telemetry...
+        </div>
+      )}
+
+      {error && (
+        <div className="border border-red-500/25 bg-red-500/10 rounded-lg p-4 flex items-center justify-between gap-3">
+          <span className="text-[10px] font-black uppercase tracking-widest text-red-400">{error}</span>
+          <button onClick={retry} className="px-3 py-1.5 border border-border rounded text-[9px] font-black uppercase">Retry</button>
+        </div>
+      )}
+
+      {flowDetailError && (
+        <div className="border border-red-500/25 bg-red-500/10 rounded-lg p-4 text-[10px] font-black uppercase tracking-widest text-red-400">
+          {flowDetailError}
+        </div>
+      )}
 
       {/* 2. OPERATIONAL KPI MATRIX CARDS */}
       <NetworkMonitoringKPIs 
@@ -215,7 +282,7 @@ export const NetworkMonitoringPage: React.FC = () => {
             <NetworkFlowTable
               logs={logs}
               selectedLog={selectedLog}
-              onSelectLog={setSelectedLog}
+              onSelectLog={handleSelectLog}
               onActionFeedback={(fb) => {
                 if (fb) {
                   setActionFeedback(fb);
@@ -239,7 +306,7 @@ export const NetworkMonitoringPage: React.FC = () => {
               >
                 <FlowDetailPanel
                   log={selectedLog}
-                  onClose={() => setSelectedLog(null)}
+                  onClose={() => handleSelectLog(null)}
                   onActionFeedback={(msg) => {
                     if (msg) {
                       setActionFeedback({
@@ -259,7 +326,7 @@ export const NetworkMonitoringPage: React.FC = () => {
       {/* 6. INSPECTION POPUP MODAL */}
       <FlowDetailModal
         isOpen={isModalOpen}
-        onClose={() => { setSelectedLog(null); setIsModalOpen(false); }}
+        onClose={() => { handleSelectLog(null); setIsModalOpen(false); }}
         log={selectedLog}
         onActionFeedback={(msg) => {
           if (msg) {

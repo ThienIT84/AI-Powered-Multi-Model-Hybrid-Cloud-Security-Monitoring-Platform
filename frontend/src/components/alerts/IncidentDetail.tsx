@@ -30,6 +30,7 @@ interface IncidentDetailProps {
 export function IncidentDetail({ alert, onClose }: IncidentDetailProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "payload" | "ai" | "timeline">("overview");
   const [copied, setCopied] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   if (!alert) return null;
 
@@ -44,6 +45,10 @@ export function IncidentDetail({ alert, onClose }: IncidentDetailProps) {
   };
 
   const vectorId = alert.id ? (alert.id.charCodeAt(0) * 11 + (alert.id.charCodeAt(1) || 54)).toString() : "2355";
+  const showActionMessage = (message: string) => {
+    setActionMessage(message);
+    window.setTimeout(() => setActionMessage(null), 3500);
+  };
 
   // Mock contributing features for AI Explainability
   const contributingFeatures = [
@@ -422,11 +427,16 @@ export function IncidentDetail({ alert, onClose }: IncidentDetailProps) {
 
       {/* 5.8 ACTION BUTTONS */}
       <div className="p-3 bg-secondary/15 border-t border-border shrink-0 space-y-2">
+        {actionMessage && (
+          <div className="rounded border border-cyan-500/20 bg-cyan-500/10 text-cyan-500 px-2 py-1.5 text-[8px] font-black uppercase tracking-widest">
+            {actionMessage}
+          </div>
+        )}
         {/* Core SOC investigations */}
         <div className="flex gap-2">
           <button 
             onClick={() => {
-              window.alert(`Incident confirmation status changed: CONFIRMED`);
+              showActionMessage("Incident confirmation status changed: CONFIRMED");
             }}
             className="flex-1 py-1.5 px-2 bg-rose-600 border border-rose-500 text-[8.5px] font-black uppercase tracking-wider text-white hover:bg-rose-700 transition-colors rounded cursor-pointer leading-none flex items-center justify-center gap-1"
           >
@@ -435,7 +445,7 @@ export function IncidentDetail({ alert, onClose }: IncidentDetailProps) {
           </button>
           <button 
             onClick={() => {
-              window.alert(`Downloading threat report for INC-${alert.id}`);
+              showActionMessage(`Evidence export queued for INC-${alert.id}`);
             }}
             className="flex-1 py-1.5 px-2 bg-background border border-border text-[8.5px] font-black uppercase tracking-wider text-foreground hover:bg-muted transition-colors rounded cursor-pointer leading-none flex items-center justify-center gap-1"
           >
@@ -448,7 +458,7 @@ export function IncidentDetail({ alert, onClose }: IncidentDetailProps) {
         <div className="flex gap-2 pt-1 border-t border-border/10">
           <button 
             onClick={() => {
-              window.alert(`Initiated host isolation sequence for client IP ${alert.sourceIp}`);
+              showActionMessage(`Host isolation requested for ${alert.sourceIp}`);
             }}
             className="flex-1 py-1 px-1 border border-border text-[7.5px] font-black uppercase tracking-wider text-muted-foreground hover:text-red-500 hover:border-red-500/30 hover:bg-red-500/5 transition-all rounded cursor-pointer"
           >
@@ -456,7 +466,7 @@ export function IncidentDetail({ alert, onClose }: IncidentDetailProps) {
           </button>
           <button 
             onClick={() => {
-              window.alert(`Enacted cloud firewall policy blocking inbound packets from ${alert.sourceIp}`);
+              showActionMessage(`Firewall block requested for ${alert.sourceIp}`);
             }}
             className="flex-1 py-1 px-1 border border-border text-[7.5px] font-black uppercase tracking-wider text-muted-foreground hover:text-amber-500 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all rounded cursor-pointer"
           >

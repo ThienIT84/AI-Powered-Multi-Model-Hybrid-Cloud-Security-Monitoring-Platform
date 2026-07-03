@@ -1,17 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { ThreatEvent, GraphColors } from "./types";
 import { PRESEEDED_THREAT_EVENTS } from "./mockData";
+import { appConfig } from "../../config";
 
 export function useThreatSimulation() {
+  const isSimulated = appConfig.dataMode !== "live";
   const [ticker, setTicker] = useState(0);
-  const [liveInferences, setLiveInferences] = useState(384912);
-  const [liveDetections, setLiveDetections] = useState(8429);
-  const [liveFusionAlerts, setLiveFusionAlerts] = useState(2145);
-  const [liveLatency, setLiveLatency] = useState(14.8);
-  const [liveFpReduction, setLiveFpReduction] = useState(42.6);
-  const [throughput, setThroughput] = useState(1280); // events per second
+  const [liveInferences, setLiveInferences] = useState(isSimulated ? 384912 : 0);
+  const [liveDetections, setLiveDetections] = useState(isSimulated ? 8429 : 0);
+  const [liveFusionAlerts, setLiveFusionAlerts] = useState(isSimulated ? 2145 : 0);
+  const [liveLatency, setLiveLatency] = useState(isSimulated ? 14.8 : 0);
+  const [liveFpReduction, setLiveFpReduction] = useState(isSimulated ? 42.6 : 0);
+  const [throughput, setThroughput] = useState(isSimulated ? 1280 : 0); // events per second
 
-  const [alertFeed, setAlertFeed] = useState<ThreatEvent[]>(PRESEEDED_THREAT_EVENTS);
+  const [alertFeed, setAlertFeed] = useState<ThreatEvent[]>(isSimulated ? PRESEEDED_THREAT_EVENTS : []);
 
   // Monitor Light/Dark Theme to update Recharts colors cleanly
   const [isDark, setIsDark] = useState(true);
@@ -57,6 +59,7 @@ export function useThreatSimulation() {
   }, [isDark]);
 
   useEffect(() => {
+    if (!isSimulated) return;
     const interval = setInterval(() => {
       setTicker((t) => t + 1);
 
@@ -141,7 +144,7 @@ export function useThreatSimulation() {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isSimulated]);
 
   return {
     ticker,
@@ -153,6 +156,8 @@ export function useThreatSimulation() {
     throughput,
     alertFeed,
     isDark,
-    graphColors
+    graphColors,
+    isSimulated,
+    dataMode: appConfig.dataMode
   };
 }

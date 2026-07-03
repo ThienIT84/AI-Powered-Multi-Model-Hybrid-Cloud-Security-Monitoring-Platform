@@ -6,17 +6,24 @@ import {
   SuricataAlert, 
   IncidentFCAJ 
 } from "../components/endpoint/endpointFCAJData";
+import { appConfig } from "../config";
 
 export const useEndpointState = () => {
+  const isSimulated = appConfig.dataMode !== "live";
   // 1. Core dataset loaded from FCAJ mock database engine
-  const [data] = useState(() => generateFCAJData());
+  const [data] = useState(() => isSimulated ? generateFCAJData() : {
+    endpoints: [] as EndpointFCAJItem[],
+    flows: [] as ZeekConnLog[],
+    alerts: [] as SuricataAlert[],
+    incidents: [] as IncidentFCAJ[],
+  });
   const [endpoints, setEndpoints] = useState<EndpointFCAJItem[]>(() => data.endpoints);
   const [flows] = useState<ZeekConnLog[]>(() => data.flows);
   const [alerts] = useState<SuricataAlert[]>(() => data.alerts);
   const [incidents] = useState<IncidentFCAJ[]>(() => data.incidents);
 
   // Interaction States
-  const [selectedId, setSelectedId] = useState<string | null>("EP-FCAJ-2012"); // defaults to high threat EP
+  const [selectedId, setSelectedId] = useState<string | null>(isSimulated ? "EP-FCAJ-2012" : null); // defaults to high threat EP
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
   const [selectedIncident, setSelectedIncident] = useState<IncidentFCAJ | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,6 +63,7 @@ export const useEndpointState = () => {
 
   // Real-time background update simulation (updates every 4 seconds)
   useEffect(() => {
+    if (!isSimulated) return;
     const timer = setInterval(() => {
       // Pick a random healthy endpoint and tick its traffic & metrics
       setEndpoints(prev => {
@@ -100,7 +108,7 @@ export const useEndpointState = () => {
     }, 4000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [isSimulated]);
 
   // Cleanup alert popup toast automatically
   useEffect(() => {
@@ -114,6 +122,15 @@ export const useEndpointState = () => {
 
   // Isolate machine callback helper
   const handleIsolate = useCallback((ep: EndpointFCAJItem) => {
+    if (!isSimulated) {
+      setAlertPopup({
+        id: `act-${Date.now()}`,
+        title: "ACTION UNAVAILABLE",
+        message: "Live endpoint response requires backend EDR integration.",
+        severity: "Medium"
+      });
+      return;
+    }
     setEndpoints(prev => 
       prev.map(item => 
         item.id === ep.id 
@@ -136,7 +153,7 @@ export const useEndpointState = () => {
       message: `Quarantine logic dispatched to vpc domain controller. Node completely isolated.`,
       severity: "Medium"
     });
-  }, []);
+  }, [isSimulated]);
 
   // Block router IP helper
   const handleBlockIp = useCallback((ep: EndpointFCAJItem) => {
@@ -154,9 +171,9 @@ export const useEndpointState = () => {
     const active = endpoints.filter(e => e.status !== "Offline").length;
     const alertList = endpoints.filter(e => e.alertCount > 0).length;
     const critical = endpoints.filter(e => e.status === "Critical").length;
-    const newCount = Math.floor(total * 0.08) + 1; // mock telemetry
+    const newCount = isSimulated ? Math.floor(total * 0.08) + 1 : 0; // demo/replay telemetry
     return { total, active, alertList, critical, newCount };
-  }, [endpoints]);
+  }, [endpoints, isSimulated]);
 
   // Pagination page state
   const [currentPage, setCurrentPage] = useState(1);
@@ -240,6 +257,8 @@ export const useEndpointState = () => {
     stats,
     filteredEndpoints,
     currentPage,
-    setCurrentPage
+    setCurrentPage,
+    isSimulated,
+    dataMode: appConfig.dataMode
   };
 };

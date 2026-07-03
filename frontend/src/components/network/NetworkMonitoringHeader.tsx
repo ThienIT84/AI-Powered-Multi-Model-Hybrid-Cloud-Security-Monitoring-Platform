@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Database, Server, Cpu, Radio } from "lucide-react";
+import { Database, Server, Radio } from "lucide-react";
 
 interface NetworkMonitoringHeaderProps {
   isRunning: boolean;
@@ -12,8 +12,9 @@ export const NetworkMonitoringHeader: React.FC<NetworkMonitoringHeaderProps> = (
 }) => {
   const dynamicLatency = useMemo(() => {
     if (!isRunning) return "0.0 ms";
-    return (4.1 + Math.random() * 0.7).toFixed(1) + " ms";
-  }, [isRunning]);
+    if (livePacketRate <= 0) return "Unavailable";
+    return `${Math.max(1, Math.min(250, Math.round(1000 / Math.max(1, livePacketRate))))}.0 ms`;
+  }, [isRunning, livePacketRate]);
 
   return (
     <div 
@@ -29,7 +30,7 @@ export const NetworkMonitoringHeader: React.FC<NetworkMonitoringHeaderProps> = (
           </span>
           <span className="text-muted-foreground font-bold uppercase tracking-wider">ZEEK_SENSOR:</span>
           <span className={`font-black tracking-widest ${isRunning ? "text-emerald-500 dark:text-emerald-405" : "text-neutral-500"}`}>
-            {isRunning ? "STREAMING" : "OFFLINE"}
+            {isRunning ? "STREAMING" : "WAITING"}
           </span>
         </div>
 
@@ -44,7 +45,7 @@ export const NetworkMonitoringHeader: React.FC<NetworkMonitoringHeaderProps> = (
         <div className="flex items-center gap-2 border-l border-border pl-4">
           <Database className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 animate-pulse" />
           <span className="text-muted-foreground font-bold uppercase tracking-wider">LOCAL DATASTORE:</span>
-          <span className="font-black text-indigo-600 dark:text-indigo-400 font-mono">CONN_BUFFER_RAM</span>
+          <span className="font-black text-indigo-600 dark:text-indigo-400 font-mono">{isRunning ? "CONN_BUFFER_RAM" : "Unavailable"}</span>
         </div>
       </div>
 

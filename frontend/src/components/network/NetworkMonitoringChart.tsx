@@ -32,10 +32,10 @@ export const NetworkMonitoringChart: React.FC<NetworkMonitoringChartProps> = ({
   const parsedChartData = useMemo(() => {
     return chartHistory.map(pt => {
       const normal = pt.isAnomaly 
-        ? Math.max(2, Math.round(pt.flows * 0.5 + Math.random() * 3)) 
+        ? Math.max(1, Math.round(pt.flows * 0.5)) 
         : pt.flows;
       const anomaly = pt.isAnomaly 
-        ? Math.max(4, Math.round(pt.flows * 0.5 + Math.random() * 5)) 
+        ? Math.max(1, pt.flows - normal) 
         : 0;
       return {
         ...pt,

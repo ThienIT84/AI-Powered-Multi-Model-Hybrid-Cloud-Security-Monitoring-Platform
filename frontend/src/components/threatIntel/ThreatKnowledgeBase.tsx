@@ -193,14 +193,14 @@ export function ThreatKnowledgeBase({ articles }: ThreatKnowledgeBaseProps) {
               </div>
 
               <div className="border-t border-border/40 pt-2 mt-4 text-center">
-                <a
-                  href="#"
-                  onClick={(e) => e.preventDefault()}
+                <button
+                  type="button"
+                  onClick={() => setInspectedArticleId(inspectedArticle.id)}
                   className="inline-flex items-center gap-1 text-[8.5px] text-purple-600 dark:text-purple-400 hover:underline uppercase font-extrabold"
                 >
                   <ExternalLink size={10} />
-                  Access Full Internal Technical brief Document
-                </a>
+                  Internal Technical Brief Selected
+                </button>
               </div>
             </motion.div>
           )}

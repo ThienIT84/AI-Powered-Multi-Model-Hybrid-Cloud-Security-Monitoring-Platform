@@ -18,8 +18,35 @@ import {
   MOCK_KNOWLEDGE_BASE,
   MOCK_CORRELATIONS,
 } from "../components/threatIntel/mockData";
+import { appConfig } from "../config";
+import { DataModeNotice, EmptyState, ErrorState } from "../components/common/DataState";
 
 export function ThreatIntelPage() {
+  if (appConfig.dataMode === "live") {
+    return (
+      <div className="space-y-6 pb-12 select-none text-foreground" id="threat-intel-portal">
+        <div className="bg-card border border-border rounded-xl p-4 md:p-5 shadow-xs">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg shrink-0 mt-0.5">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-black text-foreground uppercase tracking-tight leading-none mb-1.5">
+                Threat Intelligence Portal
+              </h1>
+              <p className="text-[10px] md:text-xs font-semibold text-muted-foreground uppercase font-mono tracking-wider">
+                External Intelligence Correlation & IOC Enrichment
+              </p>
+            </div>
+          </div>
+        </div>
+        <DataModeNotice mode={appConfig.dataMode} />
+        <ErrorState label="Live threat intelligence service is not connected." />
+        <EmptyState label="Waiting for live IOC and feed telemetry." />
+      </div>
+    );
+  }
+
   // Aggregate stats dynamically for KPI bar
   const actorCount = MOCK_THREAT_ACTORS.length;
   const feedCount = MOCK_THREAT_FEEDS.length;

@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { appConfig } from "./config";
 import { Alert, BackendAlertDTO, TrafficData } from "./types";
 import { mapBackendAlertToAlert } from "./lib/alertMapper";
+import { SocketStatus } from "./types/platform";
+import { socketMessageSchema } from "./types/socket";
+import { applyPersistedAlertActions } from "./services/alerts.service";
 
 function coerceIncomingAlert(raw: any): Alert {
   if (raw?.source_ip || raw?.attack_type || raw?.ai_analysis) {
@@ -89,53 +92,103 @@ function upsertAlert(alerts: Alert[], alert: Alert): Alert[] {
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
+  const [socketStatus, setSocketStatus] = useState<SocketStatus>("Disconnected");
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [traffic, setTraffic] = useState<TrafficData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const retryRef = useRef(0);
+  const retryTimerRef = useRef<number | null>(null);
+  const manuallyClosedRef = useRef(false);
+  const [reconnectNonce, setReconnectNonce] = useState(0);
+
+  const reconnect = () => {
+    manuallyClosedRef.current = false;
+    retryRef.current = 0;
+    if (retryTimerRef.current) {
+      window.clearTimeout(retryTimerRef.current);
+    }
+    socketRef.current?.close();
+    setReconnectNonce((value) => value + 1);
+  };
 
   useEffect(() => {
-    const socketUrl = appConfig.dataMode === "api" ? appConfig.wsUrl : appConfig.mockWsUrl;
+    manuallyClosedRef.current = false;
+    const socketUrl = appConfig.dataMode === "live" ? appConfig.wsUrl : appConfig.mockWsUrl;
+    if (appConfig.dataMode === "live" && !socketUrl) {
+      setSocketStatus("Error");
+      setIsConnected(false);
+      setError("Live mode is missing VITE_WS_URL. Configure the backend WebSocket endpoint.");
+      return;
+    }
+
+    setSocketStatus(retryRef.current > 0 ? "Reconnecting" : "Connecting");
     const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
+      retryRef.current = 0;
       setIsConnected(true);
+      setSocketStatus("Connected");
       setError(null);
     };
 
     socket.onerror = () => {
+      setSocketStatus("Error");
       setError(`Unable to connect to ${socketUrl}`);
     };
 
-    socket.onclose = () => setIsConnected(false);
+    socket.onclose = () => {
+      setIsConnected(false);
+      if (manuallyClosedRef.current) {
+        setSocketStatus("Disconnected");
+        return;
+      }
+      const retryMs = Math.min(30000, 1000 * 2 ** retryRef.current);
+      retryRef.current += 1;
+      setSocketStatus(retryRef.current > 1 ? "Reconnecting" : "Disconnected");
+      retryTimerRef.current = window.setTimeout(() => {
+        setReconnectNonce((value) => value + 1);
+      }, retryMs);
+    };
     
     socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      
-      switch (message.type) {
-        case "INITIAL_DATA":
-          setAlerts((message.data as unknown[]).map(coerceIncomingAlert));
-          break;
-        case "NEW_ALERT":
-          setAlerts((prev) => upsertAlert(prev, coerceIncomingAlert(message.data)));
-          break;
-        case "alert.created":
-          setAlerts((prev) => upsertAlert(prev, coerceIncomingAlert(message.data)));
-          break;
-        case "alert.updated":
-          setAlerts((prev) => upsertAlert(prev, coerceIncomingAlert(message.data)));
-          break;
-        case "TRAFFIC_UPDATE":
-          setTraffic((prev) => [...prev, message.data].slice(-100));
-          break;
+      try {
+        const parsed = socketMessageSchema.safeParse(JSON.parse(event.data));
+        if (!parsed.success) {
+          setError("Ignored invalid WebSocket message schema.");
+          console.warn("Ignored invalid SOC socket message", parsed.error.flatten());
+          return;
+        }
+        const message = parsed.data;
+
+        switch (message.type) {
+          case "INITIAL_DATA":
+            setAlerts(applyPersistedAlertActions(message.data.map(coerceIncomingAlert)));
+            break;
+          case "NEW_ALERT":
+          case "alert.created":
+          case "alert.updated":
+            setAlerts((prev) => applyPersistedAlertActions(upsertAlert(prev, coerceIncomingAlert(message.data))));
+            break;
+          case "TRAFFIC_UPDATE":
+            setTraffic((prev) => [...prev, message.data].slice(-100));
+            break;
+        }
+      } catch (err) {
+        setError("Ignored invalid WebSocket message payload.");
+        console.warn("Ignored invalid SOC socket message", err);
       }
     };
 
     return () => {
+      manuallyClosedRef.current = true;
+      if (retryTimerRef.current) {
+        window.clearTimeout(retryTimerRef.current);
+      }
       socket.close();
     };
-  }, []);
+  }, [reconnectNonce]);
 
-  return { isConnected, alerts, traffic, error, dataMode: appConfig.dataMode };
+  return { isConnected, socketStatus, alerts, traffic, error, dataMode: appConfig.dataMode, reconnect };
 }

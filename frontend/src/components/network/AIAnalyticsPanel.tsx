@@ -150,7 +150,7 @@ export const AIAnalyticsPanel: React.FC<AIAnalyticsPanelProps> = ({ logs }) => {
     const anomaliesCount = logs.filter(l => l.verdict === "ANOMALY").length;
     // Massive spikes shift PSI higher:
     const basePSI = anomaliesCount > 8 ? 0.28 : anomaliesCount > 4 ? 0.14 : 0.04;
-    const psiScore = parseFloat((basePSI + (Math.random() * 0.015)).toFixed(3));
+    const psiScore = parseFloat((basePSI + Math.min(0.015, logs.length * 0.0005)).toFixed(3));
 
     let status: "HEALTHY" | "WARNING" | "CRITICAL_DRIFT" = "HEALTHY";
     let color = "text-emerald-450 bg-emerald-950/30 border-emerald-500/30";
