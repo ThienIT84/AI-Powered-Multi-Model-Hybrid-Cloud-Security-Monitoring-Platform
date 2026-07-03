@@ -75,6 +75,7 @@ export function ThreatIntelPage() {
           </div>
         </div>
       </div>
+      <DataModeNotice mode={appConfig.dataMode} />
 
       {/* 2. Top row KPI Cards */}
       <ThreatIntelKPIBar

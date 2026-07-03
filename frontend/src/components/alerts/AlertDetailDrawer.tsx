@@ -18,8 +18,10 @@ import {
 import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
 import { cn } from "../../lib/utils";
 import { addAnalystNote, markFalsePositive, updateAlertStatus } from "../../services/alerts.service";
+import { createCaseFromAlert } from "../../services/alerts.service";
 import { UserRole } from "../../types/auth";
 import { canPerform, permissionTitle } from "../../lib/permissions";
+import { appConfig } from "../../config";
 
 // Custom imported modules from alerts directory
 import { FusionDecisionFlow } from "./FusionDecisionFlow";
@@ -31,6 +33,7 @@ interface AlertDetailDrawerProps {
   onClose: () => void;
   onUpdateAlert?: (alertId: string, updates: Partial<Alert>, persist?: () => Promise<unknown>) => Promise<void> | void;
   userRole?: UserRole;
+  actionState?: "idle" | "pending" | "success" | "failed";
 }
 
 function ModelStatusRow({ name, label, status, source, scope }: { name: string; label: string; status: string; source: string; scope?: string }) {
@@ -58,7 +61,17 @@ function ModelStatusRow({ name, label, status, source, scope }: { name: string; 
   );
 }
 
-export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: AlertDetailDrawerProps) {
+function fieldOrUnavailable<T>(value: T | null | undefined, fallback: T): T | string {
+  if (value !== null && value !== undefined && value !== "") return value;
+  return appConfig.dataMode === "live" ? "Unavailable" : fallback;
+}
+
+function evidenceSourceLabel(hasRealValue: boolean) {
+  if (hasRealValue) return appConfig.dataMode === "live" ? "REAL" : appConfig.dataMode.toUpperCase();
+  return appConfig.dataMode === "live" ? "MISSING" : "SIMULATED";
+}
+
+export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole, actionState = "idle" }: AlertDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "decision_flow" | "mitre" | "raw_logs">("overview");
   const meta = getAlertFusionMeta(alert);
   const canResolve = canPerform(userRole, "alert:resolve");
@@ -104,6 +117,14 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: A
     runAlertUpdate(
       { status: AlertStatus.FALSE_POSITIVE },
       () => markFalsePositive(alert.id)
+    );
+  };
+
+  const handleCreateCase = () => {
+    if (!canTriage) return;
+    runAlertUpdate(
+      { status: AlertStatus.ESCALATED },
+      () => createCaseFromAlert(alert.id)
     );
   };
 
@@ -239,7 +260,7 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: A
                 </div>
                 <div>
                   <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Destination Host</span>
-                  <span className="text-foreground">{alert.destinationIp || "10.0.12.15"}</span>
+                  <span className="text-foreground">{fieldOrUnavailable(alert.destinationIp, "10.0.12.15")}</span>
                 </div>
               </div>
 
@@ -301,18 +322,21 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: A
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Log Source</span>
                     <span className="text-[#06b6d4] font-bold">zeek http.log</span>
+                    <span className="ml-1 text-[6px] uppercase text-muted-foreground">
+                      {evidenceSourceLabel(Boolean(alert.zeekData?.uri || alert.zeekData?.method))}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">HTTP Method</span>
-                    <span className="text-foreground">{alert.zeekData?.method || "POST"}</span>
+                    <span className="text-foreground">{fieldOrUnavailable(alert.zeekData?.method, "POST")}</span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">HTTP URI Trigger</span>
-                    <span className="text-foreground truncate block max-w-70 font-bold">{alert.zeekData?.uri || "/api/v1/auth/gateway"}</span>
+                    <span className="text-foreground truncate block max-w-70 font-bold">{fieldOrUnavailable(alert.zeekData?.uri, "/api/v1/auth/gateway")}</span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">User Agent Header</span>
-                    <span className="text-foreground text-[8px] break-all leading-normal block">{alert.zeekData?.userAgent || "Mozilla/5.0 (PentestBot/1.0; CLI)"}</span>
+                    <span className="text-foreground text-[8px] break-all leading-normal block">{fieldOrUnavailable(alert.zeekData?.userAgent, "Mozilla/5.0 (PentestBot/1.0; CLI)")}</span>
                   </div>
                 </div>
               ) : (
@@ -321,26 +345,29 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: A
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Log Source</span>
                     <span className="text-[#06b6d4] font-bold">zeek conn.log</span>
+                    <span className="ml-1 text-[6px] uppercase text-muted-foreground">
+                      {evidenceSourceLabel(Boolean(alert.zeekData?.connState || alert.zeekData?.origBytes))}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Connection State</span>
-                    <span className="text-foreground">{alert.zeekData?.connState || "SF (Successful Connection)"}</span>
+                    <span className="text-foreground">{fieldOrUnavailable(alert.zeekData?.connState, "SF (Successful Connection)")}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Duration</span>
-                    <span className="text-foreground">{alert.zeekData?.duration || "1.24s"}</span>
+                    <span className="text-foreground">{fieldOrUnavailable(alert.zeekData?.duration, "1.24s")}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Originator Bytes</span>
-                    <span className="text-foreground">{alert.zeekData?.origBytes || 3824} bytes</span>
+                    <span className="text-foreground">{fieldOrUnavailable(alert.zeekData?.origBytes, 3824)} bytes</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Originator Packets</span>
-                    <span className="text-foreground">{alert.zeekData?.origPkts || 14} pkts</span>
+                    <span className="text-foreground">{fieldOrUnavailable(alert.zeekData?.origPkts, 14)} pkts</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Responder Packets</span>
-                    <span className="text-foreground">{alert.zeekData?.respPkts || 12} pkts</span>
+                    <span className="text-foreground">{fieldOrUnavailable(alert.zeekData?.respPkts, 12)} pkts</span>
                   </div>
                 </div>
               )}
@@ -360,15 +387,18 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: A
               <div className="grid grid-cols-2 gap-3 text-[8.5px] font-mono leading-none">
                 <div>
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Signature ID</span>
-                  <span className="text-blue-400 font-bold">{alert.suricataData?.signatureId || "SID: 2010915"}</span>
+                  <span className="text-blue-400 font-bold">{fieldOrUnavailable(alert.suricataData?.signatureId, "SID: 2010915")}</span>
+                  <span className="ml-1 text-[6px] uppercase text-muted-foreground">
+                    {evidenceSourceLabel(Boolean(alert.suricataData?.signatureId || alert.suricataData?.signature))}
+                  </span>
                 </div>
                 <div>
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Category Category</span>
-                  <span className="text-foreground truncate block max-w-37.5">{alert.suricataData?.category || "Detection Mechanism Bypass"}</span>
+                  <span className="text-foreground truncate block max-w-37.5">{fieldOrUnavailable(alert.suricataData?.category, "Detection Mechanism Bypass")}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Intrusion signature Rule matched</span>
-                  <span className="text-foreground leading-normal block">{alert.suricataData?.signature || alert.attackType + " Attempt Detected (FCAJ Fusion Rule)"}</span>
+                  <span className="text-foreground leading-normal block">{fieldOrUnavailable(alert.suricataData?.signature, alert.attackType + " Attempt Detected (FCAJ Fusion Rule)")}</span>
                 </div>
               </div>
             </div>
@@ -401,6 +431,18 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: A
 
       {/* Quick Actions Panel */}
       <div className="p-3 bg-muted/30 border-t border-border space-y-2 shrink-0 select-none">
+        {actionState !== "idle" && (
+          <div className={cn(
+            "rounded border px-2 py-1.5 text-[8px] font-black uppercase tracking-widest",
+            actionState === "failed"
+              ? "border-red-500/25 bg-red-500/10 text-red-400"
+              : actionState === "success"
+                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-400"
+                : "border-cyan-500/25 bg-cyan-500/10 text-cyan-400"
+          )}>
+            Action sync: {actionState}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <button 
             onClick={handleIsolate}
@@ -426,6 +468,18 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, userRole }: A
             Block Gateway
           </button>
         </div>
+
+        <button
+          onClick={handleCreateCase}
+          disabled={!canTriage}
+          title={permissionTitle(canTriage)}
+          className={cn(
+            "w-full py-2 border border-amber-500/30 text-amber-500 hover:bg-amber-500/10 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none",
+            !canTriage && "opacity-40 cursor-not-allowed hover:bg-transparent"
+          )}
+        >
+          Create Case
+        </button>
 
         <button 
           onClick={handleResolve}

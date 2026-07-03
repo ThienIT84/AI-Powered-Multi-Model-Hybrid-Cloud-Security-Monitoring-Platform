@@ -3,7 +3,7 @@ import { Database, Server, Radio } from "lucide-react";
 
 interface NetworkMonitoringHeaderProps {
   isRunning: boolean;
-  livePacketRate: number;
+  livePacketRate: number | null;
 }
 
 export const NetworkMonitoringHeader: React.FC<NetworkMonitoringHeaderProps> = ({
@@ -12,7 +12,7 @@ export const NetworkMonitoringHeader: React.FC<NetworkMonitoringHeaderProps> = (
 }) => {
   const dynamicLatency = useMemo(() => {
     if (!isRunning) return "0.0 ms";
-    if (livePacketRate <= 0) return "Unavailable";
+    if (livePacketRate === null || livePacketRate <= 0) return "Unavailable";
     return `${Math.max(1, Math.min(250, Math.round(1000 / Math.max(1, livePacketRate))))}.0 ms`;
   }, [isRunning, livePacketRate]);
 
@@ -54,7 +54,7 @@ export const NetworkMonitoringHeader: React.FC<NetworkMonitoringHeaderProps> = (
           <Server className="w-3.5 h-3.5 text-slate-400" />
           <span className="text-muted-foreground font-medium font-sans uppercase tracking-wide">THROUGHPUT:</span>
           <span className="font-extrabold text-foreground font-mono">
-            {isRunning ? `${livePacketRate} pkts/s` : "0 pkts/s"}
+            {isRunning ? (livePacketRate === null ? "Unavailable" : `${livePacketRate} pkts/s`) : "0 pkts/s"}
           </span>
         </div>
       </div>

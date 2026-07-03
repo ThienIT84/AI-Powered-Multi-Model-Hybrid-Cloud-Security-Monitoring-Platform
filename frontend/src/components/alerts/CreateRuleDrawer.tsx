@@ -13,12 +13,13 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "../../lib/utils";
+import { DetectionRuleDraft } from "../../services/rules.service";
 
 interface CreateRuleDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveRule: (ruleData: any) => Promise<void> | void;
-  onTestRule: (ruleData: any) => Promise<void> | void;
+  onSaveRule: (ruleData: DetectionRuleDraft) => Promise<void> | void;
+  onTestRule: (ruleData: DetectionRuleDraft) => Promise<void> | void;
   actionState?: "idle" | "pending" | "success" | "failed";
 }
 

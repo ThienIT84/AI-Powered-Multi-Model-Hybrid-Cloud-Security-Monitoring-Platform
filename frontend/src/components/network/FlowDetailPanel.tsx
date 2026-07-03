@@ -34,8 +34,8 @@ export const FlowDetailPanel: React.FC<FlowDetailPanelProps> = ({
     }
   };
 
-  const origPackets = Math.max(1, Math.ceil(log.origBytes / 1460));
-  const respBytes = Math.round(log.origBytes * (log.verdict === "ANOMALY" ? 0.05 : 1.35) + (log.respPkts * 64));
+  const origPackets = null;
+  const respBytes = log.respBytes ?? null;
   const connectionState = log.destPort === 22 && log.verdict === "ANOMALY" 
     ? "REJ" 
     : log.verdict === "ANOMALY" && log.origBytes > 50000000 
@@ -74,7 +74,7 @@ export const FlowDetailPanel: React.FC<FlowDetailPanelProps> = ({
         <div className="flex items-center gap-2">
           <Binary className="w-4 h-4 text-emerald-500 animate-pulse" />
           <div className="min-w-0">
-            <span className="text-[9px] text-muted-foreground font-extrabold uppercase tracking-widest block leading-none">ZEEK CONN INSPECTOR</span>
+              <span className="text-[9px] text-muted-foreground font-extrabold uppercase tracking-widest block leading-none">FLOW INSPECTOR</span>
             <span className="text-[10px] font-black text-foreground uppercase tracking-tight truncate block mt-0.5">
               UID: <span className="text-emerald-500 dark:text-emerald-400">{log.id}</span>
             </span>
@@ -149,7 +149,7 @@ export const FlowDetailPanel: React.FC<FlowDetailPanelProps> = ({
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground uppercase tracking-widest border-b border-border pb-0.5">
             <Database className="w-3 h-3 text-slate-500" />
-            <span>2. ZEEK CONN.LOG METRICS</span>
+            <span>2. FLOW TELEMETRY METRICS</span>
           </div>
 
           <div className="bg-secondary/15 dark:bg-slate-900/15 rounded border border-border p-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[9.5px]">
@@ -163,7 +163,7 @@ export const FlowDetailPanel: React.FC<FlowDetailPanelProps> = ({
             </div>
             <div>
               <span className="text-muted-foreground block text-[9px]">resp_bytes</span>
-              <span className="text-foreground font-bold">{respBytes.toLocaleString()} B</span>
+              <span className="text-foreground font-bold">{respBytes === null ? "Unavailable" : `${respBytes.toLocaleString()} B`}</span>
             </div>
             <div>
               <span className="text-muted-foreground block text-[9px]">conn_state</span>
@@ -171,7 +171,7 @@ export const FlowDetailPanel: React.FC<FlowDetailPanelProps> = ({
             </div>
             <div>
               <span className="text-muted-foreground block text-[9px]">orig_pkts</span>
-              <span className="text-foreground font-bold">{origPackets}</span>
+              <span className="text-foreground font-bold">{origPackets === null ? "Unavailable" : origPackets}</span>
             </div>
             <div>
               <span className="text-muted-foreground block text-[9px]">resp_pkts</span>

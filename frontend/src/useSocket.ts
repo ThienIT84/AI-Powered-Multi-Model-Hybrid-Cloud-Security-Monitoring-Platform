@@ -1,13 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { appConfig } from "./config";
-import { Alert, BackendAlertDTO, TrafficData } from "./types";
+import { AiDecision, Alert, AlertStatus, BackendAlertDTO, TrafficData } from "./types";
 import { mapBackendAlertToAlert } from "./lib/alertMapper";
 import { SocketStatus } from "./types/platform";
 import { socketMessageSchema } from "./types/socket";
 import { applyPersistedAlertActions } from "./services/alerts.service";
 
-function coerceIncomingAlert(raw: any): Alert {
-  if (raw?.source_ip || raw?.attack_type || raw?.ai_analysis) {
+type IncomingAlertPayload = Record<string, unknown> & Partial<Alert> & Partial<BackendAlertDTO>;
+
+function asIncomingAlertPayload(raw: unknown): IncomingAlertPayload {
+  return (raw && typeof raw === "object" ? raw : {}) as IncomingAlertPayload;
+}
+
+function coerceIncomingAlert(rawValue: unknown): Alert {
+  const raw = asIncomingAlertPayload(rawValue);
+  if (raw.source_ip || raw.attack_type || raw.ai_analysis) {
     return mapBackendAlertToAlert(raw as BackendAlertDTO);
   }
 
@@ -35,19 +42,20 @@ function coerceIncomingAlert(raw: any): Alert {
     suricataData: raw.suricataData || {},
     aiDecision: legacyAiDecision,
     decisionFlow: raw.decisionFlow || [],
-    status: raw.status || "new"
-  };
+    status: raw.status || AlertStatus.NEW
+  } as Alert;
 }
 
-function normalizeLegacyAiDecision(raw: any) {
+function normalizeLegacyAiDecision(raw: IncomingAlertPayload): AiDecision {
   const attackType = raw.attackType || "Normal";
   const confidence = raw.confidence !== undefined ? raw.confidence : (raw.confidenceScore || 0);
   if (!raw.aiDecision || typeof raw.aiDecision.ai1 === "object") {
-    return raw.aiDecision || {};
+    return (raw.aiDecision || {}) as AiDecision;
   }
+  const legacyDecision = raw.aiDecision as unknown as Record<string, string | undefined>;
   return {
     ai1: {
-      verdict: raw.aiDecision.ai1 || (raw.riskScore > 35 ? "ANOMALY" : "NORMAL"),
+      verdict: legacyDecision.ai1 || ((raw.riskScore || 0) > 35 ? "ANOMALY" : "NORMAL"),
       anomalyScore: confidence,
       status: "completed",
       source: "mock",
@@ -55,7 +63,7 @@ function normalizeLegacyAiDecision(raw: any) {
       inputScope: "ZEEK_CONN_FLOW",
     },
     ai2a: {
-      attackType: raw.aiDecision.ai2a || attackType,
+      attackType: legacyDecision.ai2a || attackType,
       confidenceScore: confidence,
       status: "completed",
       source: "mock",
@@ -63,7 +71,7 @@ function normalizeLegacyAiDecision(raw: any) {
       inputScope: "ZEEK_CONN_FLOW",
     },
     ai2b: {
-      webAttackType: raw.aiDecision.ai2b || attackType,
+      webAttackType: legacyDecision.ai2b || attackType,
       confidenceScore: confidence,
       status: "completed",
       source: "mock",

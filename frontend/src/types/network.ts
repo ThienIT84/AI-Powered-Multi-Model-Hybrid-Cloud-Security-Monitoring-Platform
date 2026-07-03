@@ -1,7 +1,16 @@
+export type NetworkTelemetrySource =
+  | "Zeek conn.log"
+  | "Zeek http.log"
+  | "Suricata alert"
+  | "VPC Flow Logs"
+  | "Demo simulation"
+  | "Replay dataset"
+  | "Unknown telemetry";
+
 export interface NetworkFlow {
   id: string;
   sensorId: string;
-  source: "demo" | "replay" | "live";
+  source: NetworkTelemetrySource;
   timestamp: string;
   srcIp: string;
   dstIp: string;
@@ -13,4 +22,3 @@ export interface NetworkFlow {
   relatedAlertId?: string;
   relatedCaseId?: string;
 }
-

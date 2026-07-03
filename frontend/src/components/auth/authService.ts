@@ -1,5 +1,7 @@
 import { LoginRequest, RegisterRequest } from "../../types/auth";
 import { getAuthAdapter } from "../../adapters/auth.adapters";
+import { appConfig } from "../../config";
+import { apiFetch } from "../../services/http";
 
 export const authService = {
   login(credentials: LoginRequest) {
@@ -14,7 +16,14 @@ export const authService = {
   getCurrentSession() {
     return getAuthAdapter().getCurrentSession();
   },
-  async verifyMfa(_email: string, code: string): Promise<boolean> {
+  async verifyMfa(email: string, code: string): Promise<boolean> {
+    if (appConfig.authMode === "backend") {
+      const result = await apiFetch<{ verified: boolean }>("/auth/mfa/verify", {
+        method: "POST",
+        body: JSON.stringify({ email, code }),
+      });
+      return result.verified;
+    }
     return code.length === 6;
   },
 };

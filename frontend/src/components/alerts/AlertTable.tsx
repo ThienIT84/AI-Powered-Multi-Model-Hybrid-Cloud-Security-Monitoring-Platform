@@ -16,6 +16,7 @@ import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import { markFalsePositive, updateAlertStatus } from "../../services/alerts.service";
+import { AlertActionState } from "../../services/alerts.service";
 import { UserRole } from "../../types/auth";
 import { canPerform, permissionTitle } from "../../lib/permissions";
 
@@ -25,6 +26,7 @@ interface AlertTableProps {
   selectedAlertId?: string | null;
   onUpdateAlert?: (alertId: string, updates: Partial<Alert>, persist?: () => Promise<unknown>) => Promise<void> | void;
   userRole?: UserRole;
+  actionStates?: Record<string, AlertActionState>;
 }
 
 function formatModelCell(value: string, status: string, source: string) {
@@ -74,7 +76,7 @@ function ModelBadge({ value, status, source, center = false }: { value: string; 
   );
 }
 
-export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert, userRole }: AlertTableProps) {
+export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert, userRole, actionStates = {} }: AlertTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 15; 
 
@@ -327,6 +329,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                   
                   // Compute the dynamic Fusion fields on-the-fly
                   const meta = getAlertFusionMeta(alert);
+                  const actionState = actionStates[alert.id] ?? "idle";
 
                   // Map to mock Incident group
                   const incidentGroup = alert.attackType.includes("Scan") || alert.attackType.includes("Force") ? "INC-2051" : "INC-2049";
@@ -456,6 +459,14 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                           )}>
                             {alert.status}
                           </span>
+                          {actionState !== "idle" && (
+                            <span className={cn(
+                              "mt-1 text-[6.5px] font-black uppercase tracking-widest block",
+                              actionState === "failed" ? "text-red-400" : actionState === "success" ? "text-emerald-400" : "text-cyan-400"
+                            )}>
+                              {actionState}
+                            </span>
+                          )}
                        </td>
 
                        {/* SECTION 3 & 4: Quick Action column */}

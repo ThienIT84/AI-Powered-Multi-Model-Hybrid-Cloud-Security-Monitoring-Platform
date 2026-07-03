@@ -19,7 +19,7 @@ import { CreateRuleDrawer } from "../components/alerts/CreateRuleDrawer";
 import { Alert, Severity, AlertStatus } from "../types";
 import { cn } from "../lib/utils";
 import { createDetectionRule, DetectionRuleDraft, testDetectionRule } from "../services/rules.service";
-import { getAlertDetail } from "../services/alerts.service";
+import { AlertActionState, getAlertDetail } from "../services/alerts.service";
 import { useAuth } from "../hooks/useAuth";
 import { ErrorState } from "../components/common/DataState";
 
@@ -79,6 +79,7 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
 
   const [toastNotification, setToastNotification] = useState<string | null>(null);
   const [ruleActionState, setRuleActionState] = useState<"idle" | "pending" | "success" | "failed">("idle");
+  const [alertActionStates, setAlertActionStates] = useState<Record<string, AlertActionState>>({});
 
   // Local state overrides to show instant results of analyst quick actions
   const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<Alert>>>({});
@@ -101,6 +102,9 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
     persist?: () => Promise<unknown>
   ) => {
     const previousOverride = localOverrides[alertId];
+    if (persist) {
+      setAlertActionStates(prev => ({ ...prev, [alertId]: "pending" }));
+    }
     setLocalOverrides(prev => ({
       ...prev,
       [alertId]: {
@@ -113,9 +117,14 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
 
     try {
       await persist();
+      setAlertActionStates(prev => ({ ...prev, [alertId]: "success" }));
       setToastNotification("Alert action synced");
       setTimeout(() => setToastNotification(null), 2500);
+      setTimeout(() => {
+        setAlertActionStates(prev => ({ ...prev, [alertId]: "idle" }));
+      }, 3000);
     } catch (error) {
+      setAlertActionStates(prev => ({ ...prev, [alertId]: "failed" }));
       setLocalOverrides(prev => {
         const next = { ...prev };
         if (previousOverride) {
@@ -127,6 +136,9 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
       });
       setToastNotification(error instanceof Error ? `Action failed: ${error.message}` : "Action failed");
       setTimeout(() => setToastNotification(null), 3500);
+      setTimeout(() => {
+        setAlertActionStates(prev => ({ ...prev, [alertId]: "idle" }));
+      }, 5000);
       throw error;
     }
   };
@@ -494,6 +506,7 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
             selectedAlertId={activeSelectedAlert?.id}
             onUpdateAlert={handleUpdateAlert}
             userRole={user?.role}
+            actionStates={alertActionStates}
           />
           {detailError && <ErrorState label={detailError} />}
         </div>
@@ -513,6 +526,7 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
                 onClose={() => handleSelectAlert(null)}
                 onUpdateAlert={handleUpdateAlert}
                 userRole={user?.role}
+                actionState={alertActionStates[activeSelectedAlert.id] ?? "idle"}
                />
             </motion.div>
           )}

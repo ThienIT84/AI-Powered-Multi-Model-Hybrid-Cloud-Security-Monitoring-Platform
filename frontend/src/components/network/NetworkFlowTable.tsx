@@ -27,11 +27,16 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
   const [protocolFilter, setProtocolFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL"); // Lightweight anomaly status filter
   const [serviceFilter, setServiceFilter] = useState("ALL");
+  const [sourceFilter, setSourceFilter] = useState("ALL");
 
   // Reset page when filters or selection IP changes to avoid blank views
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedTopologyIP, selectedAssetIP, searchText, protocolFilter, statusFilter, serviceFilter]);
+  }, [selectedTopologyIP, selectedAssetIP, searchText, protocolFilter, statusFilter, serviceFilter, sourceFilter]);
+
+  const availableSources = useMemo(() => {
+    return Array.from(new Set(logs.map((log) => log.source || "Unknown telemetry"))).sort();
+  }, [logs]);
 
   // Filtered logs
   const filteredLogs = useMemo(() => {
@@ -49,10 +54,10 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
       // 3. Search text
       const term = searchText.trim().toLowerCase();
       if (term) {
-        const srcMatch = log.srcIp.toLowerCase().includes(term);
-        const destMatch = log.destIp.toLowerCase().includes(term);
+        const srcMatch = (log.srcIp || "").toLowerCase().includes(term);
+        const destMatch = (log.destIp || "").toLowerCase().includes(term);
         const uidMatch = log.id.toLowerCase().includes(term);
-        const reasonMatch = log.reason.toLowerCase().includes(term);
+        const reasonMatch = (log.reason || "").toLowerCase().includes(term);
         const correlationMatch = (log.correlationId || "").toLowerCase().includes(term);
         const sensorMatch = (log.sensorId || "").toLowerCase().includes(term);
         if (!srcMatch && !destMatch && !uidMatch && !reasonMatch && !correlationMatch && !sensorMatch) {
@@ -82,9 +87,13 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
         if (serviceFilter === "ICMP" && log.protocol !== "ICMP") return false;
       }
 
+      if (sourceFilter !== "ALL" && (log.source || "Unknown telemetry") !== sourceFilter) {
+        return false;
+      }
+
       return true;
     });
-  }, [logs, selectedTopologyIP, selectedAssetIP, searchText, protocolFilter, statusFilter, serviceFilter]);
+  }, [logs, selectedTopologyIP, selectedAssetIP, searchText, protocolFilter, statusFilter, serviceFilter, sourceFilter]);
 
   // Compute pagination
   const totalPages = useMemo(() => {
@@ -118,7 +127,7 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
         <div className="flex items-center gap-2">
           <Binary className="w-4 h-4 text-emerald-500 animate-pulse" />
           <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
-            ZEEK CONN.LOG NETWORK FLOW DISCOVERY
+            NETWORK FLOW DISCOVERY
           </h3>
         </div>
 
@@ -171,6 +180,17 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
             <option value="SSH">SSH (Port 22)</option>
             <option value="DNS">DNS</option>
             <option value="FTP">FTP</option>
+          </select>
+
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="bg-background border border-border rounded py-1 px-1.5 text-foreground focus:outline-none focus:border-cyan-500 cursor-pointer transition-colors"
+          >
+            <option value="ALL">ALL SOURCES</option>
+            {availableSources.map((source) => (
+              <option key={source} value={source}>{source.toUpperCase()}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -380,7 +400,7 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
       )}
 
       <div className="text-[9px] text-muted-foreground uppercase flex flex-col md:flex-row justify-between items-center gap-2">
-        <span>Selected parameters matched {filteredLogs.length} of {logs.length} flows loaded inside active ZEEK RAM memory.</span>
+        <span>Selected parameters matched {filteredLogs.length} of {logs.length} telemetry flows.</span>
         <span>Click any flow row to inspect basic socket configuration and AI1 telemetry.</span>
       </div>
     </>

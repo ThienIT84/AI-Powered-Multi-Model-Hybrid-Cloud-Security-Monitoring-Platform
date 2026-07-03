@@ -129,8 +129,9 @@ export const NetworkMonitoringPage: React.FC = () => {
   // Compute dynamic live packet throughput rates
   const livePacketRate = useMemo(() => {
     if (!isRunning) return 0;
+    if (!isSimulated) return null;
     return Math.round(Math.min(185, logs.length * 0.45));
-  }, [logs, isRunning]);
+  }, [logs, isRunning, isSimulated]);
 
   const anomalousFlowsCount = useMemo(() => {
     return logs.filter(l => l.verdict === "ANOMALY").length;

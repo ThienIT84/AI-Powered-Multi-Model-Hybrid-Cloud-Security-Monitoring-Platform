@@ -2,7 +2,7 @@ import { appConfig } from "../config";
 import { NetworkLog, ProtocolType } from "../components/network/NetworkConfig";
 import { generateInitialLogsList, generateRandomLog } from "../components/network/NetworkGenerator";
 import { apiFetch } from "../services/http";
-import { NetworkFlow } from "../types/network";
+import { NetworkFlow, NetworkTelemetrySource } from "../types/network";
 
 export interface NetworkTelemetryAdapter {
   initialLogs(): Promise<NetworkLog[]>;
@@ -24,7 +24,7 @@ const emptyLiveAdapter: NetworkTelemetryAdapter = {
 interface NetworkFlowDTO {
   id: string;
   sensor_id?: string;
-  source?: NetworkFlow["source"];
+  source?: NetworkTelemetrySource | "zeek_conn" | "zeek_http" | "suricata" | "vpc_flow_logs" | string;
   timestamp: string;
   src_ip: string;
   src_port?: number;
@@ -42,6 +42,16 @@ interface NetworkFlowDTO {
   reason?: string;
 }
 
+function normalizeTelemetrySource(source: NetworkFlowDTO["source"], service?: string): NetworkTelemetrySource {
+  const value = (source || "").toLowerCase();
+  if (value.includes("zeek") && value.includes("http")) return "Zeek http.log";
+  if (value.includes("zeek") || value === "conn" || value === "zeek_conn") return "Zeek conn.log";
+  if (value.includes("suricata")) return "Suricata alert";
+  if (value.includes("vpc")) return "VPC Flow Logs";
+  if ((service || "").toLowerCase() === "http") return "Zeek http.log";
+  return "Unknown telemetry";
+}
+
 function normalizeProtocol(value: string): ProtocolType | "TCP" | "UDP" | "ICMP" {
   const normalized = value.toUpperCase();
   if (normalized === "UDP") return ProtocolType.UDP;
@@ -56,7 +66,7 @@ export function mapNetworkFlowToLog(flow: NetworkFlowDTO): NetworkLog {
   return {
     id: flow.id,
     sensorId: flow.sensor_id,
-    source: flow.source || "live",
+    source: normalizeTelemetrySource(flow.source, flow.service),
     correlationId: flow.correlation_id || flow.id,
     relatedAlertId: flow.related_alert_id,
     relatedCaseId: flow.related_case_id,
@@ -74,7 +84,7 @@ export function mapNetworkFlowToLog(flow: NetworkFlowDTO): NetworkLog {
     confidence: riskScore > 0 ? Math.min(99, Math.max(50, riskScore)) : 0,
     duration: 0,
     reason: flow.reason || `${flow.service || "unknown"} telemetry`,
-    hexDump: `sensor=${flow.sensor_id || "unknown"} correlation=${flow.correlation_id || flow.id} source=${flow.source || "live"}`,
+    hexDump: `sensor=${flow.sensor_id || "unknown"} correlation=${flow.correlation_id || flow.id} source=${normalizeTelemetrySource(flow.source, flow.service)}`,
   };
 }
 
@@ -87,10 +97,10 @@ export async function getNetworkFlowById(flowId: string): Promise<NetworkLog | n
 const demoAdapter: NetworkTelemetryAdapter = {
   canSimulate: true,
   async initialLogs() {
-    return generateInitialLogsList(60);
+    return generateInitialLogsList(60).map((log) => ({ ...log, source: "Demo simulation" }));
   },
   async nextLogs() {
-    return [generateRandomLog()];
+    return [{ ...generateRandomLog(), source: "Demo simulation" }];
   },
 };
 
@@ -100,11 +110,12 @@ const replayAdapter: NetworkTelemetryAdapter = {
     return generateInitialLogsList(60).map((log, index) => ({
       ...log,
       id: `replay-${index}-${log.id}`,
+      source: "Replay dataset",
       timestamp: log.timestamp,
     }));
   },
   async nextLogs() {
-    return [generateRandomLog()];
+    return [{ ...generateRandomLog(), source: "Replay dataset" }];
   },
 };
 

@@ -18,11 +18,12 @@ import { appConfig } from "../config";
 import { DataModeNotice, EmptyState, ErrorState } from "../components/common/DataState";
 
 export function PlaybooksPage() {
+  const isSimulated = appConfig.dataMode !== "live";
   // Master procedure database list state
-  const [playbooks, setPlaybooks] = useState<Playbook[]>(MOCK_PLAYBOOKS);
+  const [playbooks, setPlaybooks] = useState<Playbook[]>(() => isSimulated ? MOCK_PLAYBOOKS : []);
 
   // Chronological usage log state
-  const [usages, setUsages] = useState<PlaybookUsageEvent[]>(MOCK_USAGES);
+  const [usages, setUsages] = useState<PlaybookUsageEvent[]>(() => isSimulated ? MOCK_USAGES : []);
 
   // Selection inspection target for standard detail drawer
   const [inspectedPlaybookId, setInspectedPlaybookId] = useState<string | null>("pb-sqli");
@@ -197,7 +198,7 @@ export function PlaybooksPage() {
 
   const inspectedPlaybook = playbooks.find((p) => p.id === inspectedPlaybookId) || playbooks[0];
 
-  if (appConfig.dataMode === "live") {
+  if (!isSimulated) {
     return (
       <motion.div
         key="playbooks-page-canvas"
@@ -242,6 +243,7 @@ export function PlaybooksPage() {
         onImportTrigger={handleImportPlaybook}
         utcTime={utcTime}
       />
+      <DataModeNotice mode={appConfig.dataMode} />
 
       {/* 2. Page KPI Metrics */}
       <PlaybooksKPIs playbooks={playbooks} />
