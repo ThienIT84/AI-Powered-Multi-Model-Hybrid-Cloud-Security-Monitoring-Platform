@@ -1,4 +1,5 @@
 import { LoginRequest, RegisterRequest, User, UserRole } from "../../types/auth";
+import { appConfig } from "../../config";
 
 const DEFAULT_USERS: User[] = [
   {
@@ -26,24 +27,45 @@ const ACCOUNTS_STORAGE_KEY = "hybrid_soc_accounts_db";
 const SESSION_TOKEN_KEY = "hybrid_soc_session_token";
 const SESSION_USER_KEY = "hybrid_soc_session_user";
 
+function buildDefaultUserSeed(): Record<string, { user: User; pass: string }> {
+  const seed: Record<string, { user: User; pass: string }> = {};
+  DEFAULT_USERS.forEach((u) => {
+    seed[u.email.toLowerCase()] = {
+      user: u,
+      pass: "Password123!",
+    };
+  });
+  return seed;
+}
+
 function getStoredUsers(): Record<string, { user: User; pass: string }> {
   const data = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
   if (!data) {
-    const seed: Record<string, { user: User; pass: string }> = {};
-    DEFAULT_USERS.forEach((u) => {
-      // Seed with password: "Password123!" for ease of use
-      seed[u.email.toLowerCase()] = {
-        user: u,
-        pass: "Password123!",
-      };
-    });
+    const seed = buildDefaultUserSeed();
     localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(seed));
     return seed;
   }
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data) as Record<string, { user: User; pass: string }>;
+    let changed = false;
+    DEFAULT_USERS.forEach((u) => {
+      const key = u.email.toLowerCase();
+      if (!parsed[key]) {
+        parsed[key] = {
+          user: u,
+          pass: "Password123!",
+        };
+        changed = true;
+      }
+    });
+    if (changed) {
+      localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(parsed));
+    }
+    return parsed;
   } catch {
-    return {};
+    const seed = buildDefaultUserSeed();
+    localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(seed));
+    return seed;
   }
 }
 
@@ -51,7 +73,34 @@ function saveStoredUsers(users: Record<string, { user: User; pass: string }>) {
   localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(users));
 }
 
-export const authService = {
+function parseTokenExpiry(token: string): number | null {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    const parsed = JSON.parse(atob(payload)) as { exp?: number };
+    if (!parsed.exp) return null;
+    return parsed.exp > 10_000_000_000 ? parsed.exp : parsed.exp * 1000;
+  } catch {
+    return null;
+  }
+}
+
+function isTokenExpired(token: string) {
+  const expiry = parseTokenExpiry(token);
+  return expiry !== null && expiry <= Date.now();
+}
+
+async function requestBackendAuth<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${appConfig.apiBaseUrl}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`Authentication API returned HTTP ${response.status}`);
+  return response.json() as Promise<T>;
+}
+
+const demoAuthAdapter = {
   /**
    * Performs an asynchronous login simulation with realistic response latency
    */
@@ -159,21 +208,15 @@ export const authService = {
     });
   },
 
-  /**
-   * Logs out the current operator and revokes local session tokens
-   */
   logout(): void {
     localStorage.removeItem(SESSION_TOKEN_KEY);
     localStorage.removeItem(SESSION_USER_KEY);
   },
 
-  /**
-   * Attempts to restore active user session from localStorage
-   */
   getCurrentSession(): { token: string; user: User } | null {
     const token = localStorage.getItem(SESSION_TOKEN_KEY);
     const userStr = localStorage.getItem(SESSION_USER_KEY);
-    if (token && userStr) {
+    if (token && userStr && !isTokenExpired(token)) {
       try {
         return {
           token,
@@ -198,3 +241,58 @@ export const authService = {
     });
   },
 };
+
+const backendAuthAdapter = {
+  async login(credentials: LoginRequest): Promise<{ token: string; user: User }> {
+    const result = await requestBackendAuth<{ token: string; user: User }>("/api/auth/login", credentials);
+    if (isTokenExpired(result.token)) throw new Error("Authentication token is expired.");
+    localStorage.setItem(SESSION_TOKEN_KEY, result.token);
+    localStorage.setItem(SESSION_USER_KEY, JSON.stringify(result.user));
+    return result;
+  },
+
+  async register(data: RegisterRequest): Promise<{ token: string; user: User }> {
+    const result = await requestBackendAuth<{ token: string; user: User }>("/api/auth/register", data);
+    if (isTokenExpired(result.token)) throw new Error("Authentication token is expired.");
+    localStorage.setItem(SESSION_TOKEN_KEY, result.token);
+    localStorage.setItem(SESSION_USER_KEY, JSON.stringify(result.user));
+    return result;
+  },
+
+  logout(): void {
+    const token = localStorage.getItem(SESSION_TOKEN_KEY);
+    if (token) {
+      fetch(`${appConfig.apiBaseUrl}/api/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }).catch(() => undefined);
+    }
+    localStorage.removeItem(SESSION_TOKEN_KEY);
+    localStorage.removeItem(SESSION_USER_KEY);
+  },
+
+  getCurrentSession(): { token: string; user: User } | null {
+    const token = localStorage.getItem(SESSION_TOKEN_KEY);
+    const userStr = localStorage.getItem(SESSION_USER_KEY);
+    if (!token || !userStr || isTokenExpired(token)) {
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+      localStorage.removeItem(SESSION_USER_KEY);
+      return null;
+    }
+    try {
+      return { token, user: JSON.parse(userStr) as User };
+    } catch {
+      return null;
+    }
+  },
+
+  async verifyMfa(email: string, code: string): Promise<boolean> {
+    const result = await requestBackendAuth<{ verified: boolean }>("/api/auth/mfa/verify", { email, code });
+    return result.verified;
+  },
+};
+
+export const authService = appConfig.dataMode === "live" ? backendAuthAdapter : demoAuthAdapter;

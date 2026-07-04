@@ -66,8 +66,11 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
   // Execute Threat Hunt Query simulation
   const handleExecuteHunt = () => {
     const results = logs.filter(l => {
-      const matchIP = !huntRuleIP || l.srcIp.includes(huntRuleIP) || l.destIp.includes(huntRuleIP);
-      const matchRisk = l.threatScore >= parseInt(huntRuleRisk);
+      const srcIp = l.srcIp ?? l.sourceIp ?? "";
+      const reason = l.reason ?? "";
+      const threatScore = l.threatScore ?? 0;
+      const matchIP = !huntRuleIP || srcIp.includes(huntRuleIP) || l.destIp.includes(huntRuleIP);
+      const matchRisk = threatScore >= parseInt(huntRuleRisk);
       const matchProto = huntRuleProto === "ALL" || l.protocol === huntRuleProto;
       
       let matchAttack = true;
@@ -76,7 +79,7 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
         if (attackStr === "normal") {
           matchAttack = l.verdict === "NORMAL";
         } else {
-          matchAttack = l.verdict === "ANOMALY" && l.reason.toLowerCase().includes(attackStr);
+          matchAttack = l.verdict === "ANOMALY" && reason.toLowerCase().includes(attackStr);
         }
       }
 
@@ -397,7 +400,7 @@ export const ThreatHuntingPanel: React.FC<ThreatHuntingPanelProps> = ({ logs }) 
                     <div key={res.id} className="bg-secondary/40 dark:bg-slate-900/40 p-1.5 rounded border border-border dark:border-slate-900 flex items-center justify-between text-[9px]">
                       <div>
                         <span className="font-extrabold text-muted-foreground dark:text-slate-400">{res.id}</span>
-                        <span className="text-muted-foreground dark:text-slate-500 ml-2">{res.srcIp} -> {res.destIp}</span>
+                        <span className="text-muted-foreground dark:text-slate-500 ml-2">{res.srcIp} {'->'} {res.destIp}</span>
                         <span className="bg-muted dark:bg-slate-800 px-1 py-0.2 rounded font-black text-[8px] text-foreground dark:text-slate-300 ml-2">{res.protocol}</span>
                       </div>
                       <div className="flex items-center gap-2">

@@ -10,8 +10,10 @@ import { CloudThreatMonitoringCenter } from "../components/cloud/CloudThreatMoni
 import { CloudSecurityInsights } from "../components/cloud/CloudSecurityInsights";
 import { CloudResourceSecurity } from "../components/cloud/CloudResourceSecurity";
 import { CloudIncidentFeed } from "../components/cloud/CloudIncidentFeed";
+import { DataMode } from "../config";
+import { DataModeBanner } from "../components/common/DataModeBanner";
 
-export function CloudPage() {
+export function CloudPage({ dataMode }: { dataMode: DataMode }) {
   // Primary operational search and filter states passed to layout components
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedService, setSelectedService] = useState("ALL");
@@ -40,6 +42,7 @@ export function CloudPage() {
 
   return (
     <div className="space-y-6 pb-12 select-none text-foreground" id="cloud-ops-dashboard-hub">
+      <DataModeBanner dataMode={dataMode} label="Cloud assets, exposure findings, and incidents are sample records" />
       
       {/* Dynamic Notification Toast for Export feedback */}
       {showExportToast && (

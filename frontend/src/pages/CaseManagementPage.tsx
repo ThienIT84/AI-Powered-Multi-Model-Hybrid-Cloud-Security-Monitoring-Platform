@@ -1,86 +1,27 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Case, CaseStatus, CaseSeverity } from "../components/caseManagement/caseTypes";
-import { INITIAL_CASES } from "../components/caseManagement/caseDataMock";
+import { Case } from "../components/caseManagement/caseTypes";
 import { CaseManagementHeader } from "../components/caseManagement/CaseManagementHeader";
 import { CaseQueuePanel } from "../components/caseManagement/CaseQueuePanel";
 import { CaseInvestigationPanel } from "../components/caseManagement/CaseInvestigationPanel";
 import { CaseActionPanel } from "../components/caseManagement/CaseActionPanel";
 import { Bell } from "lucide-react";
+import { DataMode } from "../config";
+import { DataModeBanner } from "../components/common/DataModeBanner";
+import { casesService } from "../services/cases.service";
 
-// Robust mapping of raw real-time socket alert items into our strict Case schema
-function mapAlertToCase(alert: any): Case {
-  const attackType = alert.attackType || "Unclassified Port Anomaly";
-  const rawSev = alert.severity;
-  const severity: CaseSeverity = (rawSev === "Critical" || rawSev === "High" || rawSev === "Medium" || rawSev === "Low")
-    ? rawSev
-    : "Medium";
-  const rawStatus = alert.status;
-  const status: CaseStatus = (rawStatus === "Open" || rawStatus === "In Progress" || rawStatus === "Resolved" || rawStatus === "Pending Review")
-    ? rawStatus
-    : "Open";
-
-  const connLog = [
-    `${alert.timestamp} - duration: ${alert.zeekData?.duration || "0.45s"}, conn_state: ${alert.zeekData?.connState || "SF"}, orig_bytes: ${alert.zeekData?.origBytes || 30120}`
-  ];
-  
-  const httpLog = alert.payload ? [
-    `METHOD: POST | URI: /auth/gateway | PAYLOAD: ${alert.payload}`
-  ] : undefined;
-
-  const signatures = alert.suricataData?.signatureId 
-    ? [`SID: ${alert.suricataData.signatureId} - Threat pattern category match: ${alert.suricataData.category || "Initial Reconnaissance"}`]
-    : ["SID: [1:201043:2] L7 malicious signature triggered inside internal subnet"];
-
-  const events = alert.timeline?.map((item: any) => `${item.timestamp} - ${item.description}`) || [
-    `${alert.timestamp} - Automated threat parser parsed packet sequence.`
-  ];
-
-  return {
-    id: alert.id || `CASE-${Date.now().toString().slice(-4)}`,
-    title: alert.description || `Suspicious ${attackType} footprint observed`,
-    severity,
-    status,
-    assignedTo: alert.assignedAnalyst || undefined,
-    timestamp: alert.timestamp || new Date().toISOString(),
-    source_ip: alert.sourceIp || "192.168.1.1",
-    destination_ip: alert.destIp || "10.0.12.15",
-    attack_type: attackType,
-    zeek: {
-      conn_log: connLog,
-      http_log: httpLog,
-      flows: Math.floor(Math.random() * 80) + 20
-    },
-    detection: {
-      ai1: {
-        label: parseFloat(alert.aiDecision?.ai1 || "0.5") > 0.75 ? "ANOMALY" : "NORMAL",
-        score: parseFloat(alert.aiDecision?.ai1 || "0.62")
-      },
-      ai2a: {
-        class: alert.aiDecision?.ai2a || attackType,
-        confidence: Math.round((alert.confidence || 0.88) * 100)
-      },
-      ai2b: alert.aiDecision?.ai2b ? {
-        class: alert.aiDecision?.ai2b,
-        confidence: Math.round((alert.confidence || 0.82) * 100)
-      } : undefined
-    },
-    suricata: {
-      signatures
-    },
-    timeline: {
-      events
-    },
-    comments: [],
-    isIpBlocked: false,
-    notes: "Dynamic network telemetry stream record."
-  };
+interface CaseManagementPageProps {
+  dataMode: DataMode;
+  routeCaseId?: string | null;
+  onRouteCaseChange?: (caseId: string | null) => void;
 }
 
-export function CaseManagementPage() {
-  const [cases, setCases] = useState<Case[]>(INITIAL_CASES);
-  const [activeCaseId, setActiveCaseId] = useState<string | null>(INITIAL_CASES[0]?.id || null);
+export function CaseManagementPage({ dataMode, routeCaseId, onRouteCaseChange }: CaseManagementPageProps) {
+  const [cases, setCases] = useState<Case[]>([]);
+  const [activeCaseId, setActiveCaseId] = useState<string | null>(routeCaseId ?? null);
   const [alertNotification, setAlertNotification] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,39 +29,37 @@ export function CaseManagementPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [assigneeFilter, setAssigneeFilter] = useState("ALL");
 
-  // WebSocket Integration - Highly Scoped updating of Case Queue only
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const socket = new WebSocket(`${protocol}//${host}`);
-
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        if (message.type === "NEW_ALERT") {
-          const newCase = mapAlertToCase(message.data);
-          
-          setCases((prev) => {
-            // Guarantee no duplicates
-            if (prev.some((c) => c.id === newCase.id)) {
-              return prev;
-            }
-            // Keep queue clean, capped at 60 entries
-            return [newCase, ...prev].slice(0, 60);
-          });
-
-          // Post brief non-disruptive feedback regarding incoming logs
-          triggerToast(`Real-time telemetry event registered: ${newCase.id}`);
-        }
-      } catch (err) {
-        console.warn("Scoped SOC WebSocket frame decoding skipped", err);
-      }
-    };
-
+    let isMounted = true;
+    setIsLoading(true);
+    casesService.listCases(dataMode)
+      .then((items) => {
+        if (!isMounted) return;
+        setCases(items);
+        const nextActive = routeCaseId ?? items[0]?.id ?? null;
+        setActiveCaseId(nextActive);
+        if (nextActive) onRouteCaseChange?.(nextActive);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setLoadError(error instanceof Error ? error.message : "Unable to load cases");
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
     return () => {
-      socket.close();
+      isMounted = false;
     };
-  }, []);
+  }, [dataMode, onRouteCaseChange, routeCaseId]);
+
+  useEffect(() => {
+    if (routeCaseId) setActiveCaseId(routeCaseId);
+  }, [routeCaseId]);
+
+  const selectCase = (caseId: string | null) => {
+    setActiveCaseId(caseId);
+    onRouteCaseChange?.(caseId);
+  };
 
   // Memoize assignees list to restrict unnecessary computations
   const assignees: string[] = useMemo(() => {
@@ -129,7 +68,8 @@ export function CaseManagementPage() {
     );
   }, [cases]);
 
-  const handleUpdateCase = (caseId: string, updates: Partial<Case>) => {
+  const handleUpdateCase = async (caseId: string, updates: Partial<Case>) => {
+    const previousCases = cases;
     setCases((prev) =>
       prev.map((c) => {
         if (c.id === caseId) {
@@ -153,6 +93,12 @@ export function CaseManagementPage() {
         return c;
       })
     );
+    try {
+      await casesService.updateCase(caseId, updates, dataMode);
+    } catch (error) {
+      setCases(previousCases);
+      triggerToast(error instanceof Error ? error.message : "Case update failed");
+    }
   };
 
   const triggerToast = (msg: string) => {
@@ -225,6 +171,17 @@ export function CaseManagementPage() {
       transition={{ duration: 0.18 }}
       className="space-y-4 pb-16 select-none relative w-full"
     >
+      <DataModeBanner dataMode={dataMode} label="Case queue and investigation timeline are sample records unless backed by Case API" />
+      {isLoading && (
+        <div className="rounded-lg border border-border bg-card px-3 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          Loading cases...
+        </div>
+      )}
+      {loadError && (
+        <div className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-red-500">
+          {loadError}
+        </div>
+      )}
       {/* Toast alert system banner */}
       <AnimatePresence>
         {alertNotification && (
@@ -261,7 +218,7 @@ export function CaseManagementPage() {
           <CaseQueuePanel
             cases={filteredCases}
             selectedCaseId={activeCaseId}
-            onSelectCase={setActiveCaseId}
+            onSelectCase={selectCase}
           />
         </div>
 

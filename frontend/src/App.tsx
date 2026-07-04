@@ -51,6 +51,7 @@ import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/secu
 import { AppView } from "./types/views";
 import { useTheme } from "./context/ThemeContext";
 import { Loader2 } from "lucide-react";
+import { buildViewPath, parseRoute } from "./lib/routes";
 
 export default function App() {
   const { isAuthenticated, loading } = useAuth();
@@ -94,7 +95,11 @@ export default function App() {
     if (!loading && isAuthenticated) {
       const path = window.location.pathname;
       if (path === "/login" || path === "/register") {
-        window.history.pushState({}, "", "/");
+        const dashboardPath = buildViewPath("dashboard");
+        window.history.pushState({}, "", dashboardPath);
+        const nextRoute = parseRoute(dashboardPath);
+        setRouteState(nextRoute);
+        setCurrentView(nextRoute.view);
       }
     }
   }, [isAuthenticated, loading]);
@@ -105,10 +110,24 @@ export default function App() {
   };
 
   const handleAuthSuccess = () => {
-    window.history.pushState({}, "", "/");
+    const dashboardPath = buildViewPath("dashboard");
+    window.history.pushState({}, "", dashboardPath);
+    const nextRoute = parseRoute(dashboardPath);
+    setRouteState(nextRoute);
+    setCurrentView(nextRoute.view);
+    setAuthScreen("login");
   };
 
-  const { isConnected, alerts, traffic } = useSocket();
+  const {
+    isConnected,
+    socketStatus,
+    alerts,
+    traffic,
+    error: socketError,
+    dataMode,
+    platformStatus,
+    reconnect,
+  } = useSocket();
 
   // Call unified SOC command center dashboard hooks
   const {
@@ -129,9 +148,10 @@ export default function App() {
     }, 600);
   }, []);
 
+  const [routeState, setRouteState] = useState(() => parseRoute(window.location.pathname));
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentView, setCurrentView] = useState<AppView>("dashboard");
+  const [currentView, setCurrentView] = useState<AppView>(routeState.view);
   const { theme, isDarkMode, setTheme } = useTheme();
   const [disabledAttackTypes, setDisabledAttackTypes] = useState<string[]>([]);
   
@@ -141,6 +161,57 @@ export default function App() {
     openPanel, 
     closePanel 
   } = usePanelState();
+
+  const navigateToView = React.useCallback((view: AppView, id?: string | null) => {
+    const path = buildViewPath(view, id);
+    window.history.pushState({}, "", path);
+    const nextRoute = parseRoute(path);
+    setRouteState(nextRoute);
+    setCurrentView(nextRoute.view);
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const nextRoute = parseRoute(window.location.pathname);
+      setRouteState(nextRoute);
+      setCurrentView(nextRoute.view);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const nextRoute = parseRoute(window.location.pathname);
+    setRouteState(nextRoute);
+    setCurrentView(nextRoute.view);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (routeState.alertId) {
+      const match = alerts.find((alert) => alert.id === routeState.alertId);
+      if (match) setSelectedAlert(match);
+    }
+  }, [alerts, routeState.alertId]);
+
+  const handleSelectAlert = React.useCallback((alert: Alert | null) => {
+    setSelectedAlert(alert);
+    if (alert) {
+      navigateToView("alerts", alert.id);
+    }
+  }, [navigateToView]);
+
+  const handleHeaderSearchSubmit = React.useCallback((query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    const alertMatch = alerts.find((alert) => alert.id.toLowerCase() === trimmed.toLowerCase());
+    if (alertMatch) {
+      handleSelectAlert(alertMatch);
+      return;
+    }
+    if (trimmed.toUpperCase().startsWith("CASE-")) {
+      navigateToView("case-management", trimmed);
+    }
+  }, [alerts, handleSelectAlert, navigateToView]);
 
   const toggleAttackType = (typeName: string) => {
     setDisabledAttackTypes(prev => 
@@ -202,7 +273,7 @@ export default function App() {
 
    return (
     <div className="flex h-screen font-sans overflow-hidden transition-colors duration-500 bg-background text-foreground">
-      <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+      <Sidebar currentView={currentView} onViewChange={navigateToView} />
       
       <main className="flex-1 flex flex-col min-w-0 relative">
         <Header 
@@ -212,14 +283,20 @@ export default function App() {
           isDarkMode={isDarkMode}
           onThemeToggle={() => setTheme(isDarkMode ? "Light" : "Dark")}
           currentView={currentView}
-          onViewChange={setCurrentView}
+          onViewChange={navigateToView}
           alerts={alerts}
-          onSelectAlert={setSelectedAlert}
+          onSelectAlert={handleSelectAlert}
           isAlertsOpen={isAlertsOpen}
           isSettingsOpen={isSettingsOpen}
           onToggleAlerts={() => openPanel('alerts')}
           onToggleSettings={() => openPanel('settings')}
           onClosePanels={closePanel}
+          socketError={socketError}
+          dataMode={dataMode}
+          socketStatus={socketStatus}
+          platformStatus={platformStatus}
+          onReconnect={reconnect}
+          onSearchSubmit={handleHeaderSearchSubmit}
         />
         
         <div className={cn(
@@ -235,6 +312,11 @@ export default function App() {
                 exit={{ opacity: 0, x: 10 }}
                 className="space-y-6 pb-12"
               >
+                {dataMode !== "live" && (
+                  <div className="rounded-lg border border-purple-500/25 bg-purple-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-purple-400">
+                    {dataMode === "demo" ? "Simulated data mode" : "Replay data mode"} - not live telemetry
+                  </div>
+                )}
                 {/* SECTION A - HEADER */}
                 <DashboardHeader 
                   isConnected={isConnected} 
@@ -259,7 +341,7 @@ export default function App() {
                       onSelectAlert={setSelectedAlert} 
                       selectedAlertId={selectedAlert?.id}
                       searchQuery={searchQuery}
-                      onViewAlertsClick={() => setCurrentView("alerts")}
+                    onViewAlertsClick={() => navigateToView("alerts")}
                     />
                   </div>
                   
@@ -274,7 +356,10 @@ export default function App() {
                       >
                         <IncidentDetail 
                           alert={selectedAlert} 
-                          onClose={() => setSelectedAlert(null)} 
+                          onClose={() => {
+                            setSelectedAlert(null);
+                            navigateToView("dashboard");
+                          }} 
                         />
                       </motion.div>
                     )}
@@ -308,35 +393,42 @@ export default function App() {
                   
                   <div className="lg:col-span-4 flex flex-col h-full justify-between">
                     {/* SOC QUICK ACTIONS */}
-                    <SOCQuickActions onNavigate={(v) => setCurrentView(v)} />
+                    <SOCQuickActions onNavigate={(v) => navigateToView(v)} />
                   </div>
                 </div>
               </motion.div>
 
             ) : currentView === "alerts" ? (
-              <AlertsPage key="alerts" alerts={alerts} isConnected={isConnected} />
+              <AlertsPage
+                key="alerts"
+                alerts={alerts}
+                isConnected={isConnected}
+                dataMode={dataMode}
+                routeAlertId={routeState.alertId}
+                onRouteAlertChange={(alertId) => navigateToView("alerts", alertId)}
+              />
             ) : currentView === "network" ? (
-              <NetworkMonitoringPage key="network" />
+              <NetworkMonitoringPage key="network" dataMode={dataMode} />
             ) : currentView === "endpoints" ? (
-              <EndpointPage key="endpoints" />
+              <EndpointPage key="endpoints" dataMode={dataMode} />
             ) : currentView === "cloud" ? (
-              <CloudPage key="cloud" />
+              <CloudPage key="cloud" dataMode={dataMode} />
             ) : currentView === "threat-intel" ? (
-              <ThreatIntelPage key="threat-intel" />
+              <ThreatIntelPage key="threat-intel" dataMode={dataMode} />
             ) : currentView === "ai-threat-detection" ? (
-              <AIThreatDetectionPage key="ai-threat-detection" />
+              <AIThreatDetectionPage key="ai-threat-detection" dataMode={dataMode} />
             ) : currentView === "attack-surface" ? (
               <AttackSurfacePage key="attack-surface" />
             ) : currentView === "mitre-attack" ? (
               <MitreAttackPage key="mitre-attack" />
             ) : currentView === "case-management" ? (
-              <CaseManagementPage key="case-management" />
+              <CaseManagementPage key="case-management" dataMode={dataMode} routeCaseId={routeState.caseId} onRouteCaseChange={(caseId) => navigateToView("case-management", caseId)} />
             ) : currentView === "integrations" ? (
-              <IntegrationsPage key="integrations" />
+              <IntegrationsPage key="integrations" dataMode={dataMode} />
             ) : currentView === "playbooks" ? (
-              <PlaybooksPage key="playbooks" />
+              <PlaybooksPage key="playbooks" dataMode={dataMode} />
             ) : currentView === "reports" ? (
-              <ReportsPage key="reports" />
+              <ReportsPage key="reports" dataMode={dataMode} />
             ) : (
               <SettingsPage 
                 key="settings" 

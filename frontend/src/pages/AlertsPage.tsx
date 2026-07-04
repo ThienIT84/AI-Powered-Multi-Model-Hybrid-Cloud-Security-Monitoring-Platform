@@ -17,10 +17,17 @@ import { AlertDetailDrawer } from "../components/alerts/AlertDetailDrawer";
 import { CreateRuleDrawer } from "../components/alerts/CreateRuleDrawer";
 import { Alert, Severity, AlertStatus } from "../types";
 import { cn } from "../lib/utils";
+import { DataMode } from "../config";
+import { AlertActionState, alertActionService } from "../services/alerts.service";
+import { casesService } from "../services/cases.service";
+import { useAuth } from "../hooks/useAuth";
 
 interface AlertsPageProps {
   alerts: Alert[];
   isConnected: boolean;
+  dataMode: DataMode;
+  routeAlertId?: string | null;
+  onRouteAlertChange?: (alertId: string | null) => void;
 }
 
 // IP filtering logic (CIDR & prefixes)
@@ -43,7 +50,9 @@ function matchesIpFilter(ip: string, filterVal: string) {
   return ip.toLowerCase().includes(val);
 }
 
-export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
+export function AlertsPage({ alerts, isConnected, dataMode, routeAlertId, onRouteAlertChange }: AlertsPageProps) {
+  const { user } = useAuth();
+  const canMutateAlerts = user?.role !== "Viewer";
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   
   // Sliding drawer for policy creation state
@@ -70,7 +79,16 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
   const [toastNotification, setToastNotification] = useState<string | null>(null);
 
   // Local state overrides to show instant results of analyst quick actions
-  const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<Alert>>>({});
+  const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<Alert>>>(() =>
+    dataMode === "demo" ? alertActionService.getStoredDemoOverrides() : {}
+  );
+  const [actionStates, setActionStates] = useState<Record<string, AlertActionState>>({});
+
+  useEffect(() => {
+    if (!routeAlertId) return;
+    const match = alerts.find((alert) => alert.id === routeAlertId);
+    if (match) setSelectedAlert(match);
+  }, [alerts, routeAlertId]);
 
   // Trigger search debounce
   useEffect(() => {
@@ -84,7 +102,7 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
     setSearchQuery(searchVal);
   };
 
-  const handleUpdateAlert = (alertId: string, updates: Partial<Alert>) => {
+  const applyLocalOverride = (alertId: string, updates: Partial<Alert>) => {
     setLocalOverrides(prev => ({
       ...prev,
       [alertId] : {
@@ -92,6 +110,43 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
         ...updates
       }
     }));
+  };
+
+  const handleUpdateAlert = async (alertId: string, updates: Partial<Alert>) => {
+    if (!canMutateAlerts) {
+      setToastNotification("Action denied for Viewer role");
+      setTimeout(() => setToastNotification(null), 3500);
+      return;
+    }
+    const previousOverride = localOverrides[alertId];
+    applyLocalOverride(alertId, updates);
+    setActionStates(prev => ({ ...prev, [alertId]: "pending" }));
+
+    try {
+      if (updates.status === AlertStatus.FALSE_POSITIVE) {
+        await alertActionService.markFalsePositive(alertId, "Marked from alert queue", dataMode);
+      } else if (updates.status) {
+        await alertActionService.updateAlertStatus(alertId, updates.status, dataMode);
+      } else if (updates.assignedAnalyst) {
+        await alertActionService.assignAlert(alertId, updates.assignedAnalyst, dataMode);
+      } else {
+        await alertActionService.addAnalystNote(alertId, JSON.stringify(updates), dataMode);
+      }
+      setActionStates(prev => ({ ...prev, [alertId]: "success" }));
+      setToastNotification("Alert action synchronized");
+    } catch (error) {
+      setLocalOverrides(prev => {
+        const next = { ...prev };
+        if (previousOverride) next[alertId] = previousOverride;
+        else delete next[alertId];
+        return next;
+      });
+      setActionStates(prev => ({ ...prev, [alertId]: "failed" }));
+      const message = error instanceof Error ? error.message : "Alert action failed";
+      setToastNotification(message);
+    } finally {
+      setTimeout(() => setToastNotification(null), 3500);
+    }
   };
 
   // Pre-mapping alerts with analyst modifications overrides
@@ -238,18 +293,58 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
 
   // Rule Creation Handler
   const handleCreateRule = () => {
+    if (!canMutateAlerts) {
+      setToastNotification("Action denied for Viewer role");
+      setTimeout(() => setToastNotification(null), 3500);
+      return;
+    }
     setIsCreateRuleOpen(true);
   };
 
-  const handleSaveRule = (ruleData: any) => {
-    setToastNotification(`Enterprise Rule Established: "${ruleData.ruleName}" successfully compiled to active SOC boundary!`);
-    setIsCreateRuleOpen(false);
-    setTimeout(() => setToastNotification(null), 4500);
+  const handleSaveRule = async (ruleData: any) => {
+    if (!canMutateAlerts) return;
+    setToastNotification("Rule sync pending");
+    try {
+      await alertActionService.createRule(ruleData, dataMode);
+      setToastNotification(`Rule created: "${ruleData.ruleName}"`);
+      setIsCreateRuleOpen(false);
+    } catch (error) {
+      setToastNotification(error instanceof Error ? error.message : "Rule creation failed");
+    } finally {
+      setTimeout(() => setToastNotification(null), 4500);
+    }
   };
 
-  const handleTestRule = (ruleData: any) => {
-    setToastNotification(`Policy Dry-Run: Evaluated conditions for "${ruleData.ruleName}". Identified 0 anomalously matched packets in historic buffer logs.`);
-    setTimeout(() => setToastNotification(null), 4500);
+  const handleTestRule = async (ruleData: any) => {
+    if (!canMutateAlerts) return;
+    setToastNotification("Rule test pending");
+    try {
+      const result = await alertActionService.testRule(ruleData, dataMode);
+      setToastNotification(`Rule test complete: ${result.matchedEvents ?? 0} matches`);
+    } catch (error) {
+      setToastNotification(error instanceof Error ? error.message : "Rule test failed");
+    } finally {
+      setTimeout(() => setToastNotification(null), 4500);
+    }
+  };
+
+  const handleCreateCase = async (alert: Alert) => {
+    if (!canMutateAlerts) {
+      setToastNotification("Action denied for Viewer role");
+      setTimeout(() => setToastNotification(null), 3500);
+      return;
+    }
+    setActionStates(prev => ({ ...prev, [alert.id]: "pending" }));
+    try {
+      const createdCase = await casesService.createCaseFromAlert(alert, dataMode);
+      setActionStates(prev => ({ ...prev, [alert.id]: "success" }));
+      setToastNotification(`Case created: ${createdCase.id}`);
+    } catch (error) {
+      setActionStates(prev => ({ ...prev, [alert.id]: "failed" }));
+      setToastNotification(error instanceof Error ? error.message : "Case creation failed");
+    } finally {
+      setTimeout(() => setToastNotification(null), 3500);
+    }
   };
 
   return (
@@ -300,6 +395,11 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
           )}>
             {isConnected ? "Stream Live" : "Stream Offline"}
           </span>
+          {dataMode !== "live" && (
+            <span className="px-2.5 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-widest font-mono bg-purple-500/10 border-purple-500/25 text-purple-400">
+              Simulated
+            </span>
+          )}
 
           {/* ADVANCED SEARCH INPUT */}
           <div className="relative w-48 sm:w-56">
@@ -339,6 +439,7 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
           {/* CREATE RULE BUTTON */}
           <button 
             onClick={handleCreateRule}
+            disabled={!canMutateAlerts}
             className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[9.5px] font-black uppercase tracking-widest shadow-sm hover:shadow-md transition-all cursor-pointer leading-none"
           >
             <Plus size={13} />
@@ -391,9 +492,13 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
         )}>
           <AlertTable 
             alerts={filteredAlerts}
-            onSelectAlert={setSelectedAlert}
+            onSelectAlert={(alert) => {
+              setSelectedAlert(alert);
+              onRouteAlertChange?.(alert?.id ?? null);
+            }}
             selectedAlertId={activeSelectedAlert?.id}
             onUpdateAlert={handleUpdateAlert}
+            actionStates={actionStates}
           />
         </div>
 
@@ -409,8 +514,13 @@ export function AlertsPage({ alerts, isConnected }: AlertsPageProps) {
             >
               <AlertDetailDrawer 
                 alert={activeSelectedAlert}
-                onClose={() => setSelectedAlert(null)}
+                onClose={() => {
+                  setSelectedAlert(null);
+                  onRouteAlertChange?.(null);
+                }}
                 onUpdateAlert={handleUpdateAlert}
+                actionState={actionStates[activeSelectedAlert.id] ?? "idle"}
+                onCreateCase={handleCreateCase}
                />
             </motion.div>
           )}

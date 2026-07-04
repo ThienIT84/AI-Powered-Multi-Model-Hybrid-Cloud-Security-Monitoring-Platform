@@ -75,7 +75,7 @@ export const RealtimeIncidentStream: React.FC<RealtimeIncidentStreamProps> = Rea
             onClick={onViewAlertsClick}
             className="text-[9px] font-mono text-cyan-500 hover:text-cyan-400 font-black uppercase bg-cyan-500/10 border border-cyan-500/20 hover:border-cyan-500/40 px-2.5 py-1 rounded transition-colors flex items-center gap-1"
           >
-            Go to Alerts ->
+            Go to Alerts {'->'}
           </button>
         )}
       </div>
@@ -144,7 +144,7 @@ export const RealtimeIncidentStream: React.FC<RealtimeIncidentStreamProps> = Rea
                           className="text-[8.5px] uppercase font-black text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1"
                         >
                           <Eye size={10} />
-                          View ->
+                          View {'->'}
                         </button>
                       </td>
                     </tr>

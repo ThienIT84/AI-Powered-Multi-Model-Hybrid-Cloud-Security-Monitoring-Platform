@@ -96,9 +96,13 @@ export function generateNetworkLog(forcedAnomaly?: boolean): NetworkLog {
     destIp = temp;
   }
 
+  const attackType = isAnomaly ? ANOMALY_TYPES[Math.floor(Math.random() * ANOMALY_TYPES.length)] : undefined;
+  const threatScore = isAnomaly ? Math.floor(Math.random() * 35) + 65 : Math.floor(Math.random() * 20) + 1;
+
   return {
     id: `conn_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`,
     timestamp: new Date().toLocaleTimeString(),
+    srcIp: sourceIp,
     sourceIp,
     sourcePort: randomPort(true),
     destIp,
@@ -107,7 +111,11 @@ export function generateNetworkLog(forcedAnomaly?: boolean): NetworkLog {
     origBytes,
     respBytes,
     status: isAnomaly ? NetworkStatus.ANOMALY : NetworkStatus.NORMAL,
-    attackType: isAnomaly ? ANOMALY_TYPES[Math.floor(Math.random() * ANOMALY_TYPES.length)] : undefined,
+    verdict: isAnomaly ? "ANOMALY" : "NORMAL",
+    attackType,
+    threatScore,
+    confidence: isAnomaly ? Math.min(99, threatScore + 8) : Math.max(1, 100 - threatScore),
+    reason: attackType ? `${attackType}: generated network anomaly sample.` : "Normal network flow sample.",
     duration: isAnomaly ? Math.random() * 450 + 120 : Math.random() * 15 + 0.1
   };
 }

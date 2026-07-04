@@ -48,7 +48,7 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
 
     logs.forEach(l => {
       if (l.verdict === "ANOMALY") {
-        const r = l.reason.toLowerCase();
+        const r = (l.reason ?? "").toLowerCase();
         if (r.includes("scan") || l.id.includes("scan")) scanCount++;
         else if (r.includes("leak") || r.includes("exfil")) exfilCount++;
         else if (l.destPort === 22) bruteCount++;
@@ -75,7 +75,10 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
         category: "Data Exfiltration",
         severity: "CRITICAL",
         firstSeen: "18:32:15",
-        lastSeen: logs.find(l => l.reason.toLowerCase().includes("leak") || l.reason.toLowerCase().includes("exfil"))?.timestamp || "18:32:15",
+        lastSeen: logs.find(l => {
+          const reason = (l.reason ?? "").toLowerCase();
+          return reason.includes("leak") || reason.includes("exfil");
+        })?.timestamp || "18:32:15",
         matchedCount: exfilCount + 1,
         description: "Detects anomalous large volume byte transfer dispatches over unexpected encrypted channels. Triggers when outbound TCP packets exceed normal transfer baseline ratios on unusual destination IPs.",
         linkedInicident: "Incident #42 (APT multi-stage exfiltration)",
@@ -139,7 +142,7 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
     return logs.filter(l => {
       if (l.verdict !== "ANOMALY") return false;
       const rName = activeRuleDetails?.ruleName.toLowerCase() || "";
-      const reason = l.reason.toLowerCase();
+      const reason = (l.reason ?? "").toLowerCase();
 
       if (rName.includes("scan") && (reason.includes("scan") || l.id.includes("scan"))) return true;
       if (rName.includes("exfil") && (reason.includes("leak") || reason.includes("exfil"))) return true;
@@ -338,7 +341,7 @@ export const SuricataCenter: React.FC<SuricataCenterProps> = ({ logs, onSelectFl
                         className="bg-background/80 dark:bg-slate-955/80 p-1.5 rounded border border-border dark:border-slate-900 flex justify-between items-center text-[9.5px] hover:border-red-500/30 cursor-pointer transition-colors"
                       >
                         <span className="font-extrabold text-muted-foreground dark:text-slate-400 font-mono text-[9px] truncate max-w-30">{flow.id}</span>
-                        <span className="text-foreground/90 dark:text-slate-200 font-bold">{flow.srcIp} -> {flow.destIp}</span>
+                        <span className="text-foreground/90 dark:text-slate-200 font-bold">{flow.srcIp} {'->'} {flow.destIp}</span>
                         <span className="text-red-650 dark:text-red-400 font-bold font-mono">{flow.threatScore}%</span>
                       </div>
                     ))

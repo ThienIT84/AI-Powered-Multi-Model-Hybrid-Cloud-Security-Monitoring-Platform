@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
 import { cn } from "../../lib/utils";
+import { AlertActionState } from "../../services/alerts.service";
 
 // Custom imported modules from alerts directory
 import { FusionDecisionFlow } from "./FusionDecisionFlow";
@@ -27,6 +28,8 @@ interface AlertDetailDrawerProps {
   alert: Alert;
   onClose: () => void;
   onUpdateAlert?: (alertId: string, updates: Partial<Alert>) => void;
+  actionState?: AlertActionState;
+  onCreateCase?: (alert: Alert) => void;
 }
 
 function ModelStatusRow({ name, label, status, source, scope }: { name: string; label: string; status: string; source: string; scope?: string }) {
@@ -54,9 +57,10 @@ function ModelStatusRow({ name, label, status, source, scope }: { name: string; 
   );
 }
 
-export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetailDrawerProps) {
+export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, actionState = "idle", onCreateCase }: AlertDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "decision_flow" | "mitre" | "raw_logs">("overview");
   const meta = getAlertFusionMeta(alert);
+  const isActionPending = actionState === "pending";
 
   const handleResolve = () => {
     if (onUpdateAlert) {
@@ -381,9 +385,22 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetail
 
       {/* Quick Actions Panel */}
       <div className="p-3 bg-muted/30 border-t border-border space-y-2 shrink-0 select-none">
+        {actionState !== "idle" && (
+          <div className={cn(
+            "rounded border px-2 py-1.5 text-[8px] font-black uppercase tracking-widest",
+            actionState === "failed"
+              ? "border-red-500/25 bg-red-500/10 text-red-500"
+              : actionState === "success"
+                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-500"
+                : "border-amber-500/25 bg-amber-500/10 text-amber-500"
+          )}>
+            Action {actionState}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <button 
             onClick={handleIsolate}
+            disabled={isActionPending}
             className="flex items-center justify-center gap-1.5 py-2 hover:bg-red-605 border border-red-500/30 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none hover:bg-red-500/10"
           >
             Isolate Host
@@ -391,14 +408,24 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert }: AlertDetail
           
           <button 
             onClick={handleBlockDomain}
+            disabled={isActionPending}
             className="flex items-center justify-center gap-1.5 py-2 hover:bg-border border border-border text-foreground text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none"
           >
             Block Gateway
           </button>
         </div>
 
+        <button
+          onClick={() => onCreateCase?.(alert)}
+          disabled={isActionPending}
+          className="w-full py-2 border border-border bg-background hover:bg-muted text-foreground text-[9.5px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none"
+        >
+          Create Case
+        </button>
+
         <button 
           onClick={handleResolve}
+          disabled={isActionPending}
           className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-[9.5px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer leading-none"
         >
           <CheckCircle2 size={12} /> Mark as Resolved

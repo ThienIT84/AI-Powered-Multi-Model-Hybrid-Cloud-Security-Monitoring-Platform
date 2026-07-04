@@ -277,6 +277,20 @@ export interface TrafficData {
   isPeak?: boolean;
 }
 
+export type SocketStatus = "connecting" | "connected" | "reconnecting" | "disconnected" | "error";
+
+export interface PlatformStatus {
+  socketStatus: SocketStatus;
+  dataMode: "demo" | "replay" | "live";
+  dataSourcesOnline: number | null;
+  dataSourcesTotal: number | null;
+  modelHealthy: number | null;
+  modelTotal: number | null;
+  eventRatePerSecond: number | null;
+  lastIngestAt: string | null;
+  lastError: string | null;
+}
+
 export type FusionAlert = {
   ai1: string;
   ai2a: string;

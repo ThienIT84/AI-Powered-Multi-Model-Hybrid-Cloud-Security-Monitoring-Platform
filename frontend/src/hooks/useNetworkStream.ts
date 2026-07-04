@@ -1,18 +1,91 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { NetworkLog, ChartDataPoint } from "../components/network/NetworkConfig";
+import { NetworkFlowDTO, NetworkLog, ChartDataPoint } from "../components/network/NetworkConfig";
 import { 
   generateRandomLog, 
   generateInitialLogsList 
 } from "../components/network/NetworkGenerator";
 import { useRealtimeBuffer } from "./useRealtimeBuffer";
+import { DataMode } from "../config";
 
 const MAX_LOGS_LIMIT = 200;
 const CHART_HISTORY_LIMIT = 30;
 
-export function useNetworkStream() {
+const sourceLabelMap: Record<NetworkFlowDTO["source"], NonNullable<NetworkLog["source"]>> = {
+  "zeek.conn": "Zeek conn.log",
+  "zeek.http": "Zeek http.log",
+  "suricata.alert": "Suricata alert",
+  "vpc.flow": "VPC Flow Logs",
+};
+
+function inferService(log: Pick<NetworkLog, "protocol" | "destPort" | "srcPort" | "service">) {
+  if (log.service) return log.service;
+  if (log.protocol === "ICMP") return "ICMP";
+  if (log.destPort === 80) return "HTTP";
+  if (log.destPort === 443) return "HTTPS";
+  if (log.destPort === 22) return "SSH";
+  if (log.destPort === 53 || log.srcPort === 5353) return "DNS";
+  if (log.destPort === 21) return "FTP";
+  return "Unknown";
+}
+
+function enrichNetworkLog(log: NetworkLog): NetworkLog {
+  const service = inferService(log);
+  const packets = log.packets ?? ((log.respPkts ?? 0) + Math.max(1, Math.ceil(log.origBytes / 1460)));
+  return {
+    ...log,
+    sensorId: log.sensorId ?? "demo-sensor-01",
+    source: log.source ?? "Demo sensor",
+    correlationId: log.correlationId ?? `corr-${log.id}`,
+    service,
+    bytes: log.bytes ?? log.origBytes + (log.respBytes ?? 0),
+    packets,
+  };
+}
+
+export function mapNetworkFlowDTO(dto: NetworkFlowDTO): NetworkLog {
+  return enrichNetworkLog({
+    id: dto.id,
+    timestamp: dto.timestamp,
+    sensorId: dto.sensorId,
+    source: sourceLabelMap[dto.source],
+    correlationId: dto.correlationId,
+    relatedAlertId: dto.relatedAlertId,
+    relatedCaseId: dto.relatedCaseId,
+    srcIp: dto.srcIp,
+    srcPort: dto.srcPort,
+    destIp: dto.dstIp,
+    destPort: dto.dstPort,
+    protocol: dto.protocol,
+    service: dto.service,
+    bytes: dto.bytes,
+    packets: dto.packets,
+    origBytes: dto.bytes,
+    respPkts: dto.packets,
+    verdict: dto.verdict ?? "NORMAL",
+    severity: dto.severity,
+    threatScore: dto.anomalyScore ?? 0,
+    confidence: dto.anomalyScore ?? 0,
+    duration: 0,
+    reason: dto.verdict === "ANOMALY" ? "Backend network flow marked anomalous." : "Backend network flow.",
+  });
+}
+
+function buildEmptyChartHistory(): ChartDataPoint[] {
+  return Array.from({ length: CHART_HISTORY_LIMIT }, (_, index) => ({
+    timeLabel: `T-${CHART_HISTORY_LIMIT - index}`,
+    flows: 0,
+    bandwidth: 0,
+    anomalyScore: 0,
+    isAnomaly: false,
+  }));
+}
+
+export function useNetworkStream(dataMode: DataMode) {
+  const isDemoMode = dataMode === "demo";
   const [isRunning, setIsRunning] = useState<boolean>(true);
-  const [logs, setLogs] = useState<NetworkLog[]>(() => generateInitialLogsList(60));
+  const [logs, setLogs] = useState<NetworkLog[]>(() => isDemoMode ? generateInitialLogsList(60).map(enrichNetworkLog) : []);
   const [chartHistory, setChartHistory] = useState<ChartDataPoint[]>(() => {
+    if (!isDemoMode) return buildEmptyChartHistory();
     // Generate initial historical charts
     const data: ChartDataPoint[] = [];
     const now = new Date();
@@ -42,7 +115,7 @@ export function useNetworkStream() {
   const handleFlushLogs = useCallback((newLogs: NetworkLog[]) => {
     setLogs(prev => {
       // Prepend elements, slice at maximum boundary to protect JS memory
-      const merged = [...newLogs, ...prev];
+      const merged = [...newLogs.map(enrichNetworkLog), ...prev];
       return merged.slice(0, MAX_LOGS_LIMIT);
     });
 
@@ -68,7 +141,7 @@ export function useNetworkStream() {
         bandwidth: Math.round(normalizedBandwidth),
         anomalyScore: Math.round(anomalyScore),
         isAnomaly: hasAnomaly,
-        eventAnnotation: hasAnomaly ? anomalyLog?.reason.split(":")[0] : undefined
+        eventAnnotation: hasAnomaly ? anomalyLog?.reason?.split(":")[0] : undefined
       };
 
       return [...prev.slice(1), nextPoint];
@@ -79,21 +152,23 @@ export function useNetworkStream() {
 
   // Background random stream generation (Low noise traffic loop)
   useEffect(() => {
+    if (!isDemoMode) return;
     const timer = setInterval(() => {
       if (!isRunningRef.current) return;
       
       // Introduce variable frequency
       const packetsCount = Math.floor(Math.random() * 3) + 1; // 1-3 packet ticks per generation
       for (let i = 0; i < packetsCount; i++) {
-        queueEvent(generateRandomLog());
+        queueEvent(enrichNetworkLog(generateRandomLog()));
       }
     }, 1500);
 
     return () => clearInterval(timer);
-  }, [queueEvent]);
+  }, [isDemoMode, queueEvent]);
 
   // Injector 1: Port Scan reconnaissance diagnostics
   const injectPortScan = useCallback(() => {
+    if (!isDemoMode) return;
     const now = new Date();
     const portsToScan = [21, 22, 23, 25, 80, 110, 139, 443, 445];
     const srcIp = "185.190.240.8"; // external suspicious tracer
@@ -119,17 +194,20 @@ export function useNetworkStream() {
         country: "RU",
         duration: 400,
         reason: "RECONNAISSANCE: Multi-port network scan probing. Signature pattern matched SOC criteria.",
-        hexDump: ""
+        hexDump: "",
+        source: "Demo sensor",
+        sensorId: "demo-zeek-01",
       };
       
       scanLog.hexDump = `0000  50 4F 52 54 20 53 43 41 4E 20 44 45 54 45 43 54  |PORT SCAN DETECT|\n0010  85 00 20 18 01 02 03 04 05 06 07 08 09 0A 0B 0C  |.. .............|\n0020  FE DE AD BE EF CA FE BA BE 00 00 00 00 00 00 01  |................|`;
       
-      queueEvent(scanLog);
+      queueEvent(enrichNetworkLog(scanLog));
     });
-  }, [queueEvent]);
+  }, [isDemoMode, queueEvent]);
 
   // Injector 2: Massive critical Exfiltration database dump
   const injectMassiveExfiltration = useCallback(() => {
+    if (!isDemoMode) return;
     const now = new Date();
     const timestamp = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}.${now.getMilliseconds().toString().padStart(3, "0")}`;
 
@@ -150,14 +228,17 @@ export function useNetworkStream() {
       country: "CN",
       duration: 320000,
       reason: "DATA_LEAK: Critical high-volume exfiltration of proprietary postgres DB dump detected.",
-      hexDump: `0000  1F 8B 08 00 00 00 00 00 00 03 73 71 6C 20 64 75  |..........sql du|\n0010  6D 70 20 61 6E 6F 6D 61 6C 79 20 64 65 74 65 63  |mp anomaly detec|\n0020  74 65 64 20 73 69 65 6D 20 74 72 61 63 65 20 31  |ted siem trace 1|`
+      hexDump: `0000  1F 8B 08 00 00 00 00 00 00 03 73 71 6C 20 64 75  |..........sql du|\n0010  6D 70 20 61 6E 6F 6D 61 6C 79 20 64 65 74 65 63  |mp anomaly detec|\n0020  74 65 64 20 73 69 65 6D 20 74 72 61 63 65 20 31  |ted siem trace 1|`,
+      source: "Demo sensor",
+      sensorId: "demo-zeek-01",
     };
 
-    queueEvent(exfilLog);
-  }, [queueEvent]);
+    queueEvent(enrichNetworkLog(exfilLog));
+  }, [isDemoMode, queueEvent]);
 
   // Injector 3: Onion Tor connection through DNS tunnelling protocols
   const injectTorDnsTunnel = useCallback(() => {
+    if (!isDemoMode) return;
     const now = new Date();
     const timestamp = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}.${now.getMilliseconds().toString().padStart(3, "0")}`;
 
@@ -178,19 +259,22 @@ export function useNetworkStream() {
       country: "NL",
       duration: 4420,
       reason: "TOR_PROXY: Internal workstation tunneling communications over Onion network proxy relay.",
-      hexDump: `0000  54 4F 52 20 50 52 4F 58 59 20 45 58 43 48 41 4E  |TOR PROXY EXCHAN|\n0010  47 45 20 31 38 35 2E 32 32 30 2E 31 30 31 2E 35  |GE 185.220.101.5|\n0020  09 01 FF AE 2F AC 11 C2 05 AB 64 EF 31 02 A8 FE  |..../.....d.1...|`
+      hexDump: `0000  54 4F 52 20 50 52 4F 58 59 20 45 58 43 48 41 4E  |TOR PROXY EXCHAN|\n0010  47 45 20 31 38 35 2E 32 32 30 2E 31 30 31 2E 35  |GE 185.220.101.5|\n0020  09 01 FF AE 2F AC 11 C2 05 AB 64 EF 31 02 A8 FE  |..../.....d.1...|`,
+      source: "Demo sensor",
+      sensorId: "demo-zeek-01",
     };
 
-    queueEvent(torLog);
-  }, [queueEvent]);
+    queueEvent(enrichNetworkLog(torLog));
+  }, [isDemoMode, queueEvent]);
 
   const clearLogs = useCallback(() => {
     setLogs([]);
   }, []);
 
   const injectCustomLog = useCallback((customLog: NetworkLog) => {
-    queueEvent(customLog);
-  }, [queueEvent]);
+    if (!isDemoMode) return;
+    queueEvent(enrichNetworkLog(customLog));
+  }, [isDemoMode, queueEvent]);
 
   return {
     isRunning,

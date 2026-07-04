@@ -488,7 +488,7 @@ export const AttackReplayCampaignPanel: React.FC<AttackReplayCampaignPanelProps>
               </h3>
             </div>
           </div>
-          <span className="text-[8.5px] text-muted-foreground/80 dark:text-slate-400 italic uppercase font-black">Zeek -> AI -> Suricata Fusion map</span>
+          <span className="text-[8.5px] text-muted-foreground/80 dark:text-slate-400 italic uppercase font-black">Zeek {'->'} AI {'->'} Suricata Fusion map</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

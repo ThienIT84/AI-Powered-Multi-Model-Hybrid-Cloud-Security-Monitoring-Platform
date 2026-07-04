@@ -35,7 +35,7 @@ export const FlowDetailPanel: React.FC<FlowDetailPanelProps> = ({
   };
 
   const origPackets = Math.max(1, Math.ceil(log.origBytes / 1460));
-  const respBytes = Math.round(log.origBytes * (log.verdict === "ANOMALY" ? 0.05 : 1.35) + (log.respPkts * 64));
+  const respBytes = Math.round(log.origBytes * (log.verdict === "ANOMALY" ? 0.05 : 1.35) + ((log.respPkts ?? 0) * 64));
   const connectionState = log.destPort === 22 && log.verdict === "ANOMALY" 
     ? "REJ" 
     : log.verdict === "ANOMALY" && log.origBytes > 50000000 
@@ -97,6 +97,31 @@ export const FlowDetailPanel: React.FC<FlowDetailPanelProps> = ({
             <span>1. NETWORK ENDPOINTS</span>
           </div>
           
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80">
+              <span className="text-[8px] text-muted-foreground font-bold block">FLOW SOURCE:</span>
+              <span className="font-bold text-foreground block truncate">{log.source ?? "Unknown"}</span>
+            </div>
+            <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80">
+              <span className="text-[8px] text-muted-foreground font-bold block">SENSOR ID:</span>
+              <span className="font-bold text-foreground block truncate">{log.sensorId ?? "Unknown"}</span>
+            </div>
+            <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80">
+              <span className="text-[8px] text-muted-foreground font-bold block">CORRELATION ID:</span>
+              <span className="font-bold text-emerald-500 block truncate">{log.correlationId ?? "None"}</span>
+            </div>
+          </div>
+
+          {(log.relatedAlertId || log.relatedCaseId) && (
+            <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80 text-[9px]">
+              <span className="text-[8px] text-muted-foreground font-bold block uppercase">Related Investigation</span>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {log.relatedAlertId && <span className="text-cyan-500 font-black">Alert {log.relatedAlertId}</span>}
+                {log.relatedCaseId && <span className="text-emerald-500 font-black">Case {log.relatedCaseId}</span>}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
             <div className="bg-secondary/25 dark:bg-slate-900/45 p-2 rounded border border-border/80">
               <span className="text-[8px] text-muted-foreground font-bold block">SOURCE HOST:</span>

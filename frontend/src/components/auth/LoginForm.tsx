@@ -71,9 +71,7 @@ export function LoginForm({ onNavigateToRegister, onSuccess }: LoginFormProps) {
       }
 
       setSuccessMsg("OPERATOR CREDENTIALS VERIFIED. DECRYPTING PIPELINES...");
-      setTimeout(() => {
-        onSuccess();
-      }, 500);
+      onSuccess();
     } catch (err: any) {
       // Error handled by AuthContext but shown here
     } finally {

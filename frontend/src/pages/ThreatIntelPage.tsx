@@ -9,6 +9,8 @@ import { IOCIntelligenceTable } from "../components/threatIntel/IOCIntelligenceT
 import { IOCEnrichmentWorkbench } from "../components/threatIntel/IOCEnrichmentWorkbench";
 import { IntelCorrelationPanel } from "../components/threatIntel/IntelCorrelationPanel";
 import { ThreatKnowledgeBase } from "../components/threatIntel/ThreatKnowledgeBase";
+import { DataMode } from "../config";
+import { DataModeBanner } from "../components/common/DataModeBanner";
 
 // Mock Data Imports
 import {
@@ -19,7 +21,7 @@ import {
   MOCK_CORRELATIONS,
 } from "../components/threatIntel/mockData";
 
-export function ThreatIntelPage() {
+export function ThreatIntelPage({ dataMode }: { dataMode: DataMode }) {
   // Aggregate stats dynamically for KPI bar
   const actorCount = MOCK_THREAT_ACTORS.length;
   const feedCount = MOCK_THREAT_FEEDS.length;
@@ -32,6 +34,7 @@ export function ThreatIntelPage() {
 
   return (
     <div className="space-y-6 pb-12 select-none text-foreground" id="threat-intel-portal">
+      <DataModeBanner dataMode={dataMode} label="Threat intelligence feeds and IOC enrichment are sample records" />
       {/* 1. Header Area conforming strictly to requirements */}
       <div className="bg-card border border-border rounded-xl p-4 md:p-5 shadow-xs">
         <div className="flex items-start gap-3">

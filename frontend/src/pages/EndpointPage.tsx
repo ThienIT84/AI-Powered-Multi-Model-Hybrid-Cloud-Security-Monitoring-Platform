@@ -7,8 +7,10 @@ import { EndpointDetailPanel } from "../components/endpoint/EndpointDetailPanel"
 import { EndpointAlertToast } from "../components/endpoint/EndpointAlertToast";
 import { Shield, Sparkles } from "lucide-react";
 import { cn } from "../lib/utils";
+import { DataMode } from "../config";
+import { DataModeBanner } from "../components/common/DataModeBanner";
 
-export function EndpointPage() {
+export function EndpointPage({ dataMode }: { dataMode: DataMode }) {
   const {
     endpoints,
     selectedId,
@@ -79,6 +81,7 @@ export function EndpointPage() {
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className="w-full min-h-screen bg-background p-4 md:p-6 space-y-5 flex flex-col font-mono text-slate-800 dark:text-slate-100 animate-in fade-in"
     >
+      <DataModeBanner dataMode={dataMode} label="Endpoint inventory, detections, and response actions are sample records" />
       {/* 1. Header (CrowdStrike / EDR-centric style) */}
       <div 
         id="endpoint-page-header"
