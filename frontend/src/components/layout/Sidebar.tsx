@@ -33,37 +33,37 @@ import { cn } from "../../lib/utils";
 
 const menuItems = [
   { group: "MONITORING", items: [
-    { icon: Bell, label: "Alerts", count: 12 },
-    { icon: Globe, label: "Network" },
-    { icon: Monitor, label: "Endpoints" },
-    { icon: Cloud, label: "Cloud" },
-    { icon: Shield, label: "Threat Intel" },
+    { icon: Bell, label: "Alerts", view: "alerts" },
+    { icon: Globe, label: "Network", view: "network" },
+    { icon: Monitor, label: "Endpoints", view: "endpoints" },
+    { icon: Cloud, label: "Cloud", view: "cloud" },
+    { icon: Shield, label: "Threat Intel", view: "threat-intel" },
   ]},
   { group: "DETECTION & ANALYSIS", items: [
-    { icon: Target, label: "AI Threat Detection" },
-    { icon: Radar, label: "Attack Surface" },
-    { icon: Grid3X3, label: "MITRE ATT&CK" },
-    { icon: Folder, label: "Case Management" },
+    { icon: Target, label: "AI Threat Detection", view: "ai-threat-detection" },
+    { icon: Radar, label: "Attack Surface", view: "attack-surface" },
+    { icon: Grid3X3, label: "MITRE ATT&CK", view: "mitre-attack" },
+    { icon: Folder, label: "Case Management", view: "case-management" },
   ]},
   { group: "DATA SOURCES", items: [
-    { icon: Zap, label: "Zeek Logs" },
-    { icon: ShieldCheck, label: "Suricata Alerts" },
-    { icon: Cloud, label: "AWS VPC Flow Logs" },
-    { icon: Activity, label: "CloudTrail" },
-    { icon: Server, label: "DNS Logs" },
+    { icon: Zap, label: "Zeek Logs", view: "network" },
+    { icon: ShieldCheck, label: "Suricata Alerts", view: "network" },
+    { icon: Cloud, label: "AWS VPC Flow Logs", view: "network" },
+    { icon: Activity, label: "CloudTrail", view: "cloud" },
+    { icon: Server, label: "DNS Logs", view: "network" },
   ]},
   { group: "AI & MODELS", items: [
-    { icon: Brain, label: "AI Models" },
-    { icon: Layers, label: "Fusion Layer" },
-    { icon: BarChart3, label: "SHAP Explainability" },
+    { icon: Brain, label: "AI Models", view: "ai-threat-detection" },
+    { icon: Layers, label: "Fusion Layer", view: "ai-threat-detection" },
+    { icon: BarChart3, label: "SHAP Explainability", view: "ai-threat-detection" },
   ]},
   { group: "CONFIGURATION", items: [
-    { icon: Puzzle, label: "Integrations" },
-    { icon: BookOpen, label: "Playbooks" },
-    { icon: FileText, label: "Reports" },
-    { icon: Settings, label: "Settings" },
+    { icon: Puzzle, label: "Integrations", view: "integrations" },
+    { icon: BookOpen, label: "Playbooks", view: "playbooks" },
+    { icon: FileText, label: "Reports", view: "reports" },
+    { icon: Settings, label: "Settings", view: "settings" },
   ]}
-];
+] satisfies Array<{ group: string; items: Array<{ icon: React.ComponentType<{ className?: string }>; label: string; view: AppView }> }>;
 
 export function Sidebar({ 
   currentView, 
@@ -129,51 +129,12 @@ export function Sidebar({
               {group.group}
             </h3>
             {group.items.map((item, idy) => {
-              const isAlerts = item.label === "Alerts";
-              const isNetwork = item.label === "Network";
-              const isEndpoints = item.label === "Endpoints";
-              const isCloud = item.label === "Cloud";
-              const isThreatIntel = item.label === "Threat Intel";
-              const isIntegrations = item.label === "Integrations";
-              const isPlaybooks = item.label === "Playbooks";
-              const isReports = item.label === "Reports";
-              const isSettings = item.label === "Settings";
-              const isAIThreatDetection = item.label === "AI Threat Detection";
-              const isAttackSurface = item.label === "Attack Surface";
-              const isMitreAttack = item.label === "MITRE ATT&CK";
-              const isCaseManagement = item.label === "Case Management";
-              const isActive = (isAlerts && currentView === 'alerts') ||
-                               (isNetwork && currentView === 'network') ||
-                               (isEndpoints && currentView === 'endpoints') ||
-                               (isCloud && currentView === 'cloud') ||
-                               (isThreatIntel && currentView === 'threat-intel') ||
-                               (isAIThreatDetection && currentView === 'ai-threat-detection') ||
-                               (isAttackSurface && currentView === 'attack-surface') ||
-                               (isMitreAttack && currentView === 'mitre-attack') ||
-                               (isCaseManagement && currentView === 'case-management') ||
-                               (isIntegrations && currentView === 'integrations') ||
-                               (isPlaybooks && currentView === 'playbooks') ||
-                               (isReports && currentView === 'reports') ||
-                               (isSettings && currentView === 'settings');
+              const isActive = currentView === item.view;
               
               return (
                 <button
                   key={idy}
-                  onClick={() => {
-                    if (isAlerts) onViewChange('alerts');
-                    else if (isNetwork) onViewChange('network');
-                    else if (isEndpoints) onViewChange('endpoints');
-                    else if (isCloud) onViewChange('cloud');
-                    else if (isThreatIntel) onViewChange('threat-intel');
-                    else if (isIntegrations) onViewChange('integrations');
-                    else if (isPlaybooks) onViewChange('playbooks');
-                    else if (isReports) onViewChange('reports');
-                    else if (isSettings) onViewChange('settings');
-                    else if (isAIThreatDetection) onViewChange('ai-threat-detection');
-                    else if (isAttackSurface) onViewChange('attack-surface');
-                    else if (isMitreAttack) onViewChange('mitre-attack');
-                    else if (isCaseManagement) onViewChange('case-management');
-                  }}
+                  onClick={() => onViewChange(item.view)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all duration-200 group",
                     isActive 

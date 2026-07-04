@@ -9,8 +9,10 @@ import { ThreatEvent } from "../components/aiThreatDetection/types";
 import { Shield, Sparkles, Terminal } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "../lib/utils";
+import { DataMode } from "../config";
+import { DataModeBanner } from "../components/common/DataModeBanner";
 
-export function AIThreatDetectionPage() {
+export function AIThreatDetectionPage({ dataMode }: { dataMode: DataMode }) {
   const [selectedEvent, setSelectedEvent] = useState<ThreatEvent | null>(null);
 
   // Consume our simulated SOC stream feed and metrics
@@ -26,6 +28,7 @@ export function AIThreatDetectionPage() {
 
   return (
     <div className="w-full min-h-screen bg-background p-4 md:p-6 space-y-6 flex flex-col font-mono text-slate-800 dark:text-slate-100 animate-in fade-in">
+      <DataModeBanner dataMode={dataMode} label="AI inference stream and model health are simulated" />
       {/* -- 1. Page Title Header Area -------------------------------- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 border-b border-border/80 gap-3">
         <div className="space-y-1">

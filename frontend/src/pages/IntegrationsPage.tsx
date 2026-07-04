@@ -15,8 +15,10 @@ import { CloudIntegrationsPanel } from "../components/integrations/CloudIntegrat
 import { ConnectivityMap } from "../components/integrations/ConnectivityMap";
 import { IntegrationEventFeed } from "../components/integrations/IntegrationEventFeed";
 import { IntegrationDetailDrawer } from "../components/integrations/IntegrationDetailDrawer";
+import { DataMode } from "../config";
+import { DataModeBanner } from "../components/common/DataModeBanner";
 
-export function IntegrationsPage() {
+export function IntegrationsPage({ dataMode }: { dataMode: DataMode }) {
   // --- States ---
   const [integrations, setIntegrations] = useState<Integration[]>(() => MOCK_INTEGRATIONS);
   const [events, setEvents] = useState<SyncEvent[]>(() => MOCK_SYNC_EVENTS);
@@ -181,6 +183,7 @@ export function IntegrationsPage() {
       transition={{ duration: 0.3 }}
       className="min-h-screen bg-background text-foreground p-3 sm:p-6 font-sans antialiased space-y-6 transition-colors duration-300 pb-16"
     >
+      <DataModeBanner dataMode={dataMode} label="Integration health, sync events, and telemetry source status are sample records" />
       {/* --- Header Section --- */}
       <IntegrationPageHeader
         searchQuery={searchQuery}

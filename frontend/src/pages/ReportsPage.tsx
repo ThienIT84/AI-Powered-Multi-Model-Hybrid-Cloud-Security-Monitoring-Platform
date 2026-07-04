@@ -10,6 +10,8 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   LineChart, Line, BarChart, Bar, Cell, PieChart, Pie, Legend
 } from "recharts";
+import { DataMode } from "../config";
+import { DataModeBanner } from "../components/common/DataModeBanner";
 
 // Mock Aggregated Datasets for Historical Reporting ONLY
 const MOCK_REPORT_LOGS = [
@@ -21,7 +23,7 @@ const MOCK_REPORT_LOGS = [
   { id: "REP-9322", name: "Strategic Vector Trend & Protocol Exposure Brief", author: "Automated Analytics Hub", status: "SIGNED", date: "2026-04-30 18:45" }
 ];
 
-export function ReportsPage() {
+export function ReportsPage({ dataMode }: { dataMode: DataMode }) {
   // Navigation & Page Layout Settings
   const [timeframe, setTimeframe] = useState<"24h" | "7d" | "30d" | "90d">("7d");
   const [activeSection, setActiveSection] = useState<string>("executive-summary");
@@ -233,6 +235,7 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6 pb-20 select-none text-slate-800 dark:text-slate-100 min-h-screen" id="hybrid-reporting-system">
+      <DataModeBanner dataMode={dataMode} label="Report KPIs and exports are generated from sample reporting data" />
       
       {/* ==========================================
           1. HEADER PANEL

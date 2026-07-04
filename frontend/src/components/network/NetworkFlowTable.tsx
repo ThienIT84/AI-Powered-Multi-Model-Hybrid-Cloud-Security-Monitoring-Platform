@@ -179,7 +179,10 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
           <thead className="bg-secondary/80 dark:bg-slate-900/80 sticky top-0 z-10 text-[9px] uppercase font-black text-muted-foreground">
             <tr className="border-b border-border">
               <th className="px-3 py-2">Timestamp</th>
+              <th className="px-3 py-2">Source</th>
+              <th className="px-3 py-2">Sensor</th>
               <th className="px-3 py-2">UID</th>
+              <th className="px-3 py-2">Correlation</th>
               <th className="px-3 py-2">Source (IP:Port)</th>
               <th className="px-3 py-2">Destination (IP:Port)</th>
               <th className="px-3 py-2">Protocol</th>
@@ -202,7 +205,7 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
           <tbody className="divide-y divide-border/30 text-[10px]">
             {paginatedLogs.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-12 text-center text-muted-foreground italic">
+                <td colSpan={14} className="px-4 py-12 text-center text-muted-foreground italic">
                   No active flows match selected network filters.
                 </td>
               </tr>
@@ -216,7 +219,7 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
                   : `${log.origBytes} B`;
 
                 // Derive Service dynamically
-                let svc = "Unknown";
+                let svc = log.service ?? "Unknown";
                 if (log.protocol === "ICMP") svc = "ICMP";
                 else if (log.destPort === 80) svc = "HTTP";
                 else if (log.destPort === 443) svc = "HTTPS";
@@ -246,7 +249,10 @@ export const NetworkFlowTable: React.FC<NetworkFlowTableProps> = ({
                     onClick={() => onSelectLog(log)}
                   >
                     <td className="px-3 py-1 text-muted-foreground/80 font-extrabold whitespace-nowrap">{log.timestamp}</td>
+                    <td className="px-3 py-1 text-muted-foreground/80 font-bold whitespace-nowrap">{log.source ?? "Unknown"}</td>
+                    <td className="px-3 py-1 text-muted-foreground/80 font-bold whitespace-nowrap">{log.sensorId ?? "Unknown"}</td>
                     <td className="px-3 py-1 text-slate-705 dark:text-slate-350 font-black whitespace-nowrap">{log.id}</td>
+                    <td className="px-3 py-1 text-muted-foreground/80 font-bold whitespace-nowrap">{log.correlationId ?? "None"}</td>
                     <td className="px-3 py-1 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{log.srcIp}:{log.srcPort}</td>
                     <td className="px-3 py-1 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{log.destIp}:{log.destPort}</td>
                     <td className="px-3 py-1 font-bold whitespace-nowrap">

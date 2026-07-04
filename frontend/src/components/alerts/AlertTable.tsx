@@ -13,6 +13,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { Alert, Severity, AlertStatus, getAlertFusionMeta } from "../../types";
+import { AlertActionState } from "../../services/alerts.service";
 import { cn } from "../../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -21,6 +22,7 @@ interface AlertTableProps {
   onSelectAlert: (alert: Alert | null) => void;
   selectedAlertId?: string | null;
   onUpdateAlert?: (alertId: string, updates: Partial<Alert>) => void;
+  actionStates?: Record<string, AlertActionState>;
 }
 
 function formatModelCell(value: string, status: string, source: string) {
@@ -70,7 +72,7 @@ function ModelBadge({ value, status, source, center = false }: { value: string; 
   );
 }
 
-export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert }: AlertTableProps) {
+export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAlert, actionStates = {} }: AlertTableProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 15; 
 
@@ -259,7 +261,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                 Severity
               </th>
               <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[11%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border">
-                Source -> Destination
+                Source {'->'} Destination
               </th>
               <th className="px-3 py-1.5 text-[8.5px] font-black text-muted-foreground uppercase tracking-widest w-[8%] sticky top-0 bg-secondary/95 dark:bg-card/95 backdrop-blur-sm z-10 border-b border-border text-center">
                 AI1_RESULT
@@ -313,6 +315,8 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                 currentEvents.map((alert) => {
                   const isSelected = selectedAlertId === alert.id;
                   const isCritical = alert.severity === Severity.CRITICAL;
+                  const actionState = actionStates[alert.id] ?? "idle";
+                  const isActionPending = actionState === "pending";
                   
                   // Compute the dynamic Fusion fields on-the-fly
                   const meta = getAlertFusionMeta(alert);
@@ -362,7 +366,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                        <td className="px-3 py-1 font-mono text-[7.8px] text-muted-foreground font-semibold">
                           <div className="flex items-center gap-1 leading-none">
                             <span className="text-foreground font-black">{alert.sourceIp}</span>
-                            <span className="text-cyan-500/60 font-black">-></span>
+                            <span className="text-cyan-500/60 font-black">{'->'}</span>
                             <span className="text-foreground/90">{alert.destinationIp}</span>
                           </div>
                        </td>
@@ -443,7 +447,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                             alert.status === AlertStatus.RESOLVED ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 font-bold" :
                             "bg-blue-500/10 border-blue-500/20 text-cyan-400"
                           )}>
-                            {alert.status}
+                            {isActionPending ? "syncing" : actionState === "failed" ? "failed" : alert.status}
                           </span>
                        </td>
 
@@ -464,6 +468,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                                    onUpdateAlert(alert.id, { status: AlertStatus.FALSE_POSITIVE });
                                  }
                                }}
+                               disabled={isActionPending}
                                className="px-1 py-0.5 rounded bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border border-orange-500/20 text-[7px] font-black uppercase transition-all"
                              >
                                FP
@@ -474,6 +479,7 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                                    onUpdateAlert(alert.id, { status: AlertStatus.RESOLVED });
                                  }
                                }}
+                               disabled={isActionPending}
                                className="px-1 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-[7px] font-black uppercase transition-all"
                              >
                                Resolve

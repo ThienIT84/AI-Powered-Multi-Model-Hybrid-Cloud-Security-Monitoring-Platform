@@ -23,8 +23,9 @@ import { NetworkFlowTable } from "../components/network/NetworkFlowTable";
 // Custom hooks & type references
 import { useNetworkStream } from "../hooks/useNetworkStream";
 import { NetworkLog } from "../components/network/NetworkConfig";
+import { DataMode } from "../config";
 
-export const NetworkMonitoringPage: React.FC = () => {
+export const NetworkMonitoringPage: React.FC<{ dataMode: DataMode }> = ({ dataMode }) => {
   // Load custom streaming logs and hook controllers
   const {
     isRunning,
@@ -32,7 +33,7 @@ export const NetworkMonitoringPage: React.FC = () => {
     logs,
     chartHistory,
     clearLogs,
-  } = useNetworkStream();
+  } = useNetworkStream(dataMode);
 
   // Selected Log for inspection inside modal/drawer
   const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
@@ -87,8 +88,8 @@ export const NetworkMonitoringPage: React.FC = () => {
   // Compute dynamic live packet throughput rates
   const livePacketRate = useMemo(() => {
     if (!isRunning) return 0;
-    return Math.round(Math.min(185, logs.length * 0.45 + Math.random() * 8 + 12));
-  }, [logs, isRunning]);
+    return dataMode === "demo" ? Math.round(Math.min(185, logs.length * 0.45 + 12)) : logs.length;
+  }, [dataMode, logs, isRunning]);
 
   const anomalousFlowsCount = useMemo(() => {
     return logs.filter(l => l.verdict === "ANOMALY").length;
@@ -114,6 +115,16 @@ export const NetworkMonitoringPage: React.FC = () => {
     >
       
       {/* 1. GLOBAL SOC HEADER TELEMETRY AND STATUS PANEL */}
+      {dataMode !== "live" && (
+        <div className="rounded-lg border border-purple-500/25 bg-purple-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-purple-400">
+          {dataMode === "demo" ? "Simulated network telemetry" : "Replay network telemetry"} - source is not live backend traffic
+        </div>
+      )}
+      {dataMode === "live" && logs.length === 0 && (
+        <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-amber-500">
+          No live network flows received from backend
+        </div>
+      )}
       <NetworkMonitoringHeader isRunning={isRunning} livePacketRate={livePacketRate} />
 
       {/* 2. OPERATIONAL KPI MATRIX CARDS */}

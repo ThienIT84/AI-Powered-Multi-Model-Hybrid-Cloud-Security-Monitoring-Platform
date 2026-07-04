@@ -31,7 +31,7 @@ export function DatasetMismatchPanel() {
             <span className="text-foreground text-xl font-black">{psiValue}</span>
           </div>
           <div className="text-[6.5px] text-emerald-600 dark:text-emerald-500 font-black uppercase mt-auto border-t border-border/5 pt-1.5">
-            <= 0.1 Ideal stability
+            {'<= 0.1'} Ideal stability
           </div>
         </div>
 

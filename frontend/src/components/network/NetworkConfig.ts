@@ -34,26 +34,55 @@ export enum SeverityLevel {
 export interface NetworkLog {
   id: string;
   timestamp: string;
-  srcIp?: string;
+  sensorId?: string;
+  source?: "Zeek conn.log" | "Zeek http.log" | "Suricata alert" | "VPC Flow Logs" | "Demo sensor";
+  correlationId?: string;
+  relatedAlertId?: string;
+  relatedCaseId?: string;
+  srcIp: string;
   sourceIp?: string;
   srcPort?: number;
   sourcePort?: number;
   destIp: string;
   destPort: number;
   protocol: ProtocolType | "TCP" | "UDP" | "ICMP";
+  service?: string;
+  bytes?: number;
+  packets?: number;
   origBytes: number;
   respBytes?: number;
   respPkts?: number;
   status?: NetworkStatus;
   verdict?: "NORMAL" | "ANOMALY";
   severity?: Severity;
-  threatScore?: number; // 0 - 100
-  confidence?: number; // AI Confidence 0 - 100
-  reason?: string;
+  threatScore: number; // 0 - 100
+  confidence: number; // AI Confidence 0 - 100
+  reason: string;
   country?: string;
   attackType?: string;
   duration: number; // milliseconds
   hexDump?: string;
+}
+
+export interface NetworkFlowDTO {
+  id: string;
+  sensorId: string;
+  source: "zeek.conn" | "zeek.http" | "suricata.alert" | "vpc.flow";
+  timestamp: string;
+  srcIp: string;
+  srcPort?: number;
+  dstIp: string;
+  dstPort: number;
+  protocol: "TCP" | "UDP" | "ICMP";
+  service?: string;
+  bytes: number;
+  packets: number;
+  verdict?: "NORMAL" | "ANOMALY";
+  severity?: Severity;
+  anomalyScore?: number;
+  correlationId?: string;
+  relatedAlertId?: string;
+  relatedCaseId?: string;
 }
 
 export interface SyslogEvent {

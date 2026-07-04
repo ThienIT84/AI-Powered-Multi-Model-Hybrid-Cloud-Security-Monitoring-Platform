@@ -14,8 +14,10 @@ import { PlaybookEffectivenessCards } from "../components/playbooks/PlaybookEffe
 import { PlaybookAdvisorPanel } from "../components/playbooks/PlaybookAdvisorPanel";
 import { EvidencePackageSummary } from "../components/playbooks/EvidencePackageSummary";
 import { PlaybookDetailDrawer } from "../components/playbooks/PlaybookDetailDrawer";
+import { DataMode } from "../config";
+import { DataModeBanner } from "../components/common/DataModeBanner";
 
-export function PlaybooksPage() {
+export function PlaybooksPage({ dataMode }: { dataMode: DataMode }) {
   // Master procedure database list state
   const [playbooks, setPlaybooks] = useState<Playbook[]>(MOCK_PLAYBOOKS);
 
@@ -198,6 +200,7 @@ export function PlaybooksPage() {
       className="space-y-6 pb-20 select-none relative"
       id="playbooks-workspace"
     >
+      <DataModeBanner dataMode={dataMode} label="Playbooks, usage metrics, and advisor results are sample records" />
       {/* 1. Page Header with actions & clock */}
       <PlaybooksHeader
         onOpenCreateModal={() => setIsCreateModalOpen(true)}

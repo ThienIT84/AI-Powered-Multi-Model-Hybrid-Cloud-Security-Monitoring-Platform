@@ -7,7 +7,8 @@ import {
   Search,
   Shield,
   Moon,
-  Sun
+  Sun,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
@@ -38,7 +39,8 @@ function StatusIndicator({ label, status, active, warning }: StatusIndicatorProp
   );
 }
 
-import { Alert } from "../../types";
+import { Alert, PlatformStatus, SocketStatus } from "../../types";
+import { DataMode } from "../../config";
 import { AlertDropdownPanel } from "../alerts/AlertDropdownPanel";
 import { SettingsQuickPanel } from "../panels/SettingsQuickPanel";
 
@@ -58,7 +60,11 @@ interface HeaderProps {
   onToggleSettings: () => void;
   onClosePanels: () => void;
   socketError?: string | null;
-  dataMode?: "mock" | "api";
+  dataMode: DataMode;
+  socketStatus: SocketStatus;
+  platformStatus: PlatformStatus;
+  onReconnect: () => void;
+  onSearchSubmit?: (query: string) => void;
 }
 
 export function Header({
@@ -77,7 +83,11 @@ export function Header({
   onToggleSettings,
   onClosePanels,
   socketError,
-  dataMode = "mock",
+  dataMode,
+  socketStatus,
+  platformStatus,
+  onReconnect,
+  onSearchSubmit,
 }: HeaderProps) {
   const { user, logout } = useAuth();
   const [time, setTime] = React.useState(new Date());
@@ -101,6 +111,31 @@ export function Header({
     });
   };
 
+  const formatCount = (healthy: number | null, total: number | null, noun: string) => {
+    if (healthy === null || total === null) return "Unknown";
+    return `${healthy}/${total} ${noun}`;
+  };
+
+  const formatEventRate = (rate: number | null) => {
+    if (rate === null) return "Unknown";
+    if (rate >= 1000) return `${(rate / 1000).toFixed(2)}K/s`;
+    return `${rate.toFixed(0)}/s`;
+  };
+
+  const modeClass =
+    dataMode === "live"
+      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+      : dataMode === "replay"
+        ? "border-amber-500/30 bg-amber-500/10 text-amber-500"
+        : "border-purple-500/30 bg-purple-500/10 text-purple-400";
+
+  const socketLabel =
+    socketStatus === "connected" ? "LIVE CONNECTED" :
+    socketStatus === "reconnecting" ? "RECONNECTING" :
+    socketStatus === "connecting" ? "CONNECTING" :
+    socketStatus === "error" ? "ERROR" :
+    "DISCONNECTED";
+
   return (
     <header className="h-14 border-b border-border flex items-center justify-between px-6 sticky top-0 z-50 transition-all duration-300 bg-card/80 backdrop-blur-md shadow-sm">
       <div className="flex items-center">
@@ -114,38 +149,46 @@ export function Header({
               )} />
               <span className={cn(
                 "text-[9px] font-black uppercase tracking-[0.15em]",
-                isConnected ? "text-green-500" : "text-red-500"
-              )}>{isConnected ? "OPERATIONAL" : "DISCONNECTED"}</span>
+                isConnected ? "text-green-500" : socketStatus === "reconnecting" || socketStatus === "connecting" ? "text-yellow-500" : "text-red-500"
+              )}>{socketLabel}</span>
             </div>
           </div>
 
           <div className="flex flex-col px-6 border-r border-border">
             <span className="text-[7px] font-black text-muted-foreground uppercase tracking-[0.22em] leading-none mb-1">DATA SOURCES</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black leading-none text-green-400">12</span>
-              <span className="text-[9px] font-black uppercase tracking-[0.15em] leading-none text-muted-foreground">Online</span>
+              <span className="text-[10px] font-black leading-none text-green-400">
+                {formatCount(platformStatus.dataSourcesOnline, platformStatus.dataSourcesTotal, "Online")}
+              </span>
             </div>
           </div>
 
           <div className="flex flex-col px-6 border-r border-border">
             <span className="text-[7px] font-black text-muted-foreground uppercase tracking-[0.22em] leading-none mb-1">AI MODELS</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black leading-none text-purple-400">3</span>
-              <span className="text-[9px] font-black uppercase tracking-[0.15em] leading-none text-muted-foreground">Active</span>
+              <span className="text-[10px] font-black leading-none text-purple-400">
+                {formatCount(platformStatus.modelHealthy, platformStatus.modelTotal, "Healthy")}
+              </span>
             </div>
           </div>
 
           <div className="md:flex flex-col px-6 border-r hidden border-border">
             <span className="text-[7px] font-black text-muted-foreground uppercase tracking-[0.22em] leading-none mb-1">EVENT RATE</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black leading-none text-cyan-400">2.48K</span>
-              <span className="text-[9px] font-black uppercase tracking-[0.15em] leading-none text-muted-foreground">/s</span>
+              <span className="text-[10px] font-black leading-none text-cyan-400">
+                {formatEventRate(platformStatus.eventRatePerSecond)}
+              </span>
             </div>
           </div>
 
           <div className="hidden lg:flex flex-col px-6 border-r border-border">
-            <span className="text-[7px] font-black text-muted-foreground uppercase tracking-[0.22em] leading-none mb-1">LAST UPDATED</span>
-            <span className="text-[9px] font-black uppercase tracking-widest font-mono leading-none text-foreground">{formatTime(time)} / {dataMode}</span>
+            <span className="text-[7px] font-black text-muted-foreground uppercase tracking-[0.22em] leading-none mb-1">LAST INGEST</span>
+            <span className="text-[9px] font-black uppercase tracking-widest font-mono leading-none text-foreground">
+              {platformStatus.lastIngestAt ? new Date(platformStatus.lastIngestAt).toLocaleTimeString("en-US", { hour12: false }) : "Unknown"}
+            </span>
+            <span className="text-[7px] font-black uppercase tracking-widest font-mono leading-none text-muted-foreground mt-1">
+              UI {formatTime(time)}
+            </span>
           </div>
         </div>
       </div>
@@ -159,6 +202,9 @@ export function Header({
               placeholder="SEARCH EVENTS, IPS, PAYLOADS, INCIDENTS..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") onSearchSubmit?.(searchQuery);
+              }}
               className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-[0.15em] w-full placeholder:text-muted-foreground text-foreground mb-0"
             />
             {!searchQuery && (
@@ -172,6 +218,21 @@ export function Header({
             <span className="hidden xl:inline text-[8px] font-black text-red-500 uppercase tracking-widest max-w-55 truncate">
               {socketError}
             </span>
+          )}
+
+          <span className={cn("px-2 py-1 rounded border text-[8px] font-black uppercase tracking-widest", modeClass)}>
+            {dataMode}
+          </span>
+
+          {!isConnected && (
+            <button
+              type="button"
+              onClick={onReconnect}
+              className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+              title="Reconnect WebSocket"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", socketStatus === "reconnecting" && "animate-spin")} />
+            </button>
           )}
 
           <div className="relative cursor-pointer" onClick={onToggleAlerts}>
