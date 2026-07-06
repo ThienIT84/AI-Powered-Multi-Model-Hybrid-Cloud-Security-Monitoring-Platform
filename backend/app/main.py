@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.contracts import normalize_event
-from app.dependencies import orchestrator, store, websockets
+from app.dependencies import orchestrator, store, websockets, sqs_service, processing_mode
 
 app = FastAPI(title="Hybrid SOC Multi-Model Fusion MVP", version="0.1.0")
 
@@ -64,7 +64,7 @@ def _encode_demo_token(email: str, role: str, organization: str | None) -> str:
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "processing_mode": processing_mode}
 
 
 @app.get("/api/status")
@@ -79,6 +79,7 @@ def platform_status() -> dict[str, Any]:
         "lastIngestAt": None,
         "lastError": None,
         "summary": summary,
+        "processing_mode": processing_mode,
     }
 
 
@@ -132,8 +133,29 @@ def verify_mfa(payload: dict[str, Any]) -> dict[str, bool]:
     return {"verified": len(code) == 6}
 
 
+def process_event_sync(event: dict[str, Any]) -> dict[str, Any]:
+    """Process event synchronously (existing flow)."""
+    alert, created = store.upsert(orchestrator.process(event))
+    return alert
+
+
+def send_event_to_sqs(event: dict[str, Any]) -> dict[str, Any]:
+    """Send event to SQS queue for async processing."""
+    normalized_event = normalize_event(event)
+    event_id = normalized_event["event_id"]
+    sqs_service.send_event(normalized_event)
+    return {
+        "status": "queued",
+        "event_id": event_id,
+        "processing_mode": "async",
+        "message": "Event has been queued for processing",
+    }
+
+
 @app.post("/api/events")
 async def ingest_event(payload: dict[str, Any]) -> dict[str, Any]:
+    if processing_mode == "async":
+        return send_event_to_sqs(payload)
     alert, created = store.upsert(orchestrator.process(payload))
     await websockets.broadcast_alert(alert, created=created)
     return alert
@@ -156,6 +178,8 @@ async def ingest_http_event(payload: dict[str, Any]) -> dict[str, Any]:
             },
         }
     )
+    if processing_mode == "async":
+        return send_event_to_sqs(event)
     alert, created = store.upsert(orchestrator.process(event))
     await websockets.broadcast_alert(alert, created=created)
     return alert
@@ -176,10 +200,18 @@ async def replay_demo() -> dict[str, Any]:
     events = demo_events()
     alerts = []
     for event in events:
-        alert, created = store.upsert(orchestrator.process(event))
-        alerts.append(alert)
-        await websockets.broadcast_alert(alert, created=created)
-    return {"created": len(alerts), "alerts": alerts}
+        if processing_mode == "async":
+            send_event_to_sqs(event)
+        else:
+            alert, created = store.upsert(orchestrator.process(event))
+            alerts.append(alert)
+            await websockets.broadcast_alert(alert, created=created)
+    return {
+        "created": len(alerts),
+        "alerts": alerts,
+        "processing_mode": processing_mode,
+        "queued": len(events) if processing_mode == "async" else 0,
+    }
 
 
 @app.websocket("/ws/alerts")

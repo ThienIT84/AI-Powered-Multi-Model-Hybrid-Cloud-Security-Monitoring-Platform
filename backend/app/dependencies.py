@@ -9,6 +9,8 @@ from app.adapters.mock import MockAI1Adapter, MockAI2AAdapter, MockAI2BAdapter
 from app.adapters.unavailable import UnavailableAdapter
 from app.services.fusion import FusionService
 from app.services.orchestrator import EventOrchestrator
+from app.services.s3_service import S3Service
+from app.services.sqs_service import SQSService
 from app.services.store import AlertStore
 from app.services.websocket_manager import WebSocketManager
 
@@ -94,3 +96,6 @@ def _build_ai2b_adapter() -> object:
 orchestrator = build_orchestrator()
 store = AlertStore()
 websockets = WebSocketManager()
+s3_service = S3Service()
+sqs_service = SQSService()
+processing_mode = os.getenv("PROCESSING_MODE", "sync").strip().lower()

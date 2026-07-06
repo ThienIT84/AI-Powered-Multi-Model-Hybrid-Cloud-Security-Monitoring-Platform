@@ -1,0 +1,20 @@
+[Unit]
+Description=SOC AI SQS Worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/socai/backend
+EnvironmentFile=-/opt/socai/backend/.env
+Environment="PYTHONPATH=/opt/socai/backend"
+ExecStart=/usr/bin/python3 -u /opt/socai/backend/scripts/sqs_worker.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=socai-sqs-worker
+
+[Install]
+WantedBy=multi-user.target
