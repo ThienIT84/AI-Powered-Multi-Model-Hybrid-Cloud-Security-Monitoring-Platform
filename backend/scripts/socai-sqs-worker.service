@@ -6,10 +6,10 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=ec2-user
-WorkingDirectory=/opt/socai/backend
-EnvironmentFile=-/opt/socai/backend/.env
-Environment="PYTHONPATH=/opt/socai/backend"
-ExecStart=/usr/bin/python3 -u /opt/socai/backend/scripts/sqs_worker.py
+WorkingDirectory=/home/ec2-user/soc-mvp/current
+EnvironmentFile=-/home/ec2-user/soc-mvp/current/.env
+Environment="PYTHONPATH=/home/ec2-user/soc-mvp/current"
+ExecStart=/home/ec2-user/miniconda3/envs/interior_ai/bin/python -u /home/ec2-user/soc-mvp/current/scripts/sqs_worker.py
 Restart=always
 RestartSec=10
 StandardOutput=journal

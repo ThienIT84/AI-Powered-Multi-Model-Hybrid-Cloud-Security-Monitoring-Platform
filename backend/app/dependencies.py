@@ -2,6 +2,12 @@ from __future__ import annotations
 
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+import os
+
 from app.adapters.ai1_real import RealAI1Adapter
 from app.adapters.ai2a_real import RealAI2AAdapter
 from app.adapters.ai2b_real import RealAI2BAdapter

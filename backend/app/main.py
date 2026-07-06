@@ -143,12 +143,14 @@ def send_event_to_sqs(event: dict[str, Any]) -> dict[str, Any]:
     """Send event to SQS queue for async processing."""
     normalized_event = normalize_event(event)
     event_id = normalized_event["event_id"]
-    sqs_service.send_event(normalized_event)
+    sqs_message_id = sqs_service.send_event(normalized_event)
+
     return {
         "status": "queued",
         "event_id": event_id,
+        "sqs_message_id": sqs_message_id,
         "processing_mode": "async",
-        "message": "Event has been queued for processing",
+        "message": "Event has been queued for asynchronous processing.",
     }
 
 
