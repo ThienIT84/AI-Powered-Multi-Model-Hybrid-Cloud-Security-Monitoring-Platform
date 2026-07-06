@@ -4,12 +4,12 @@
 Integrate Amazon S3 (for evidence storage) and Amazon SQS (for async event processing) into the Hybrid SOC Multi-Model Fusion MVP.
 
 ## Goals
-- [x] Add S3 service for storing evidence
-- [x] Add SQS service for async event processing
-- [x] Backward compatible with existing sync processing
-- [x] Support hierarchical S3 key structure
-- [x] Systemd service for worker process
-- [x] Use IAM roles instead of access keys
+- Add S3 service for storing evidence
+- Add SQS service for async event processing
+- Backward compatible with existing sync processing
+- Support hierarchical S3 key structure
+- Systemd service for worker process
+- Use IAM roles instead of access keys
 
 ## Architecture
 ### Before (Current)
@@ -27,15 +27,15 @@ Frontend → Backend → SQS → Worker → Orchestrator → Fusion → Alert �
 ## Files Modified/Created
 | File | Status | Description |
 |------|--------|-------------|
-| `docs/s3_sqs_implementation_plan.md` | ✅ Updated | This plan |
-| `backend/requirements.txt` | ✅ Updated | Added `boto3` and `python-dotenv` |
-| `backend/.env.example` | ✅ Updated | Added AWS config |
-| `backend/app/dependencies.py` | ✅ Updated | Initialized S3/SQS services |
-| `backend/app/main.py` | ✅ Updated | Added async mode support |
-| `backend/app/services/s3_service.py` | ✅ Created | S3 evidence storage service |
-| `backend/app/services/sqs_service.py` | ✅ Created | SQS messaging service |
-| `backend/scripts/sqs_worker.py` | ✅ Created | Async worker for processing events |
-| `backend/scripts/socai-sqs-worker.service` | ✅ Created | Systemd service template |
+| `docs/s3_sqs_implementation_plan.md` | Updated | This plan |
+| `backend/requirements.txt` | Updated | Added `boto3` and `python-dotenv` |
+| `backend/.env.example` | Updated | Added AWS config |
+| `backend/app/dependencies.py` | Updated | Initialized S3/SQS services |
+| `backend/app/main.py` | Updated | Added async mode support |
+| `backend/app/services/s3_service.py` | Created | S3 evidence storage service |
+| `backend/app/services/sqs_service.py` | Created | SQS messaging service |
+| `backend/scripts/sqs_worker.py` | Created | Async worker for processing events |
+| `backend/scripts/socai-sqs-worker.service` | Created | Systemd service template |
 
 ## IAM Permissions
 Attach this policy to your EC2 instance role:
