@@ -5,11 +5,13 @@ import json
 import time
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.contracts import normalize_event
 from app.dependencies import orchestrator, store, websockets
+from app.services.rds_alert_store import get_latest_alert_payload
+from app.services.sqs_producer import send_event_to_sqs
 
 app = FastAPI(title="Hybrid SOC Multi-Model Fusion MVP", version="0.1.0")
 
@@ -141,29 +143,49 @@ async def ingest_event(payload: dict[str, Any]) -> dict[str, Any]:
 
 @app.post("/api/events/http")
 async def ingest_http_event(payload: dict[str, Any]) -> dict[str, Any]:
-    event = normalize_event(
-        {
-            **payload,
-            "event_type": "http",
-            "evidence": {
-                "http": {
-                    "method": payload.get("method", "GET"),
-                    "uri": payload.get("uri", "/"),
-                    "user_agent": payload.get("user_agent"),
-                },
-                "flow": payload.get("flow"),
-                "suricata": payload.get("suricata"),
-            },
-        }
-    )
+    event = build_http_event(payload)
     alert, created = store.upsert(orchestrator.process(event))
     await websockets.broadcast_alert(alert, created=created)
     return alert
 
 
+@app.post("/api/events/http/async", status_code=status.HTTP_202_ACCEPTED)
+def enqueue_http_event(payload: dict[str, Any]) -> dict[str, Any]:
+    if not payload.get("method"):
+        raise HTTPException(status_code=400, detail="method is required")
+    if not payload.get("uri"):
+        raise HTTPException(status_code=400, detail="uri is required")
+
+    event = build_http_event(payload)
+
+    try:
+        result = send_event_to_sqs(event)
+    except Exception as exc:  # noqa: BLE001 - surface AWS/config failure as API unavailability.
+        raise HTTPException(status_code=503, detail=f"Failed to queue event: {exc}") from exc
+
+    return {
+        "status": "queued",
+        "event_id": event["event_id"],
+        "message_id": result["message_id"],
+    }
+
+
 @app.get("/api/alerts")
 def list_alerts(limit: int = 50) -> list[dict[str, Any]]:
     return store.list(limit=limit)
+
+
+@app.get("/api/alerts/latest")
+def latest_alert() -> dict[str, Any]:
+    try:
+        alert = get_latest_alert_payload()
+    except Exception as exc:  # noqa: BLE001 - RDS/config failure should not crash the API process.
+        raise HTTPException(status_code=503, detail=f"Failed to read latest alert: {exc}") from exc
+
+    if alert is None:
+        raise HTTPException(status_code=404, detail="No alerts found")
+
+    return alert
 
 
 @app.get("/api/summary")
@@ -191,6 +213,24 @@ async def alerts_socket(websocket: WebSocket) -> None:
             await websocket.receive_text()
     except WebSocketDisconnect:
         websockets.disconnect(websocket)
+
+
+def build_http_event(payload: dict[str, Any]) -> dict[str, Any]:
+    return normalize_event(
+        {
+            **payload,
+            "event_type": "http",
+            "evidence": {
+                "http": {
+                    "method": payload.get("method", "GET"),
+                    "uri": payload.get("uri", "/"),
+                    "user_agent": payload.get("user_agent"),
+                },
+                "flow": payload.get("flow"),
+                "suricata": payload.get("suricata"),
+            },
+        }
+    )
 
 
 def demo_events() -> list[dict[str, Any]]:
