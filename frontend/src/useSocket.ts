@@ -13,13 +13,14 @@ const legacyAlertSchema = z.record(z.string(), z.unknown()).and(
 );
 
 const backendAlertSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
+  event_id: z.string().optional(),
   timestamp: z.string(),
   severity: z.string(),
   attack_type: z.string(),
   source_ip: z.string(),
   destination_ip: z.string(),
-  source_port: z.number().optional(),
+  source_port: z.number().nullable().optional(),
   destination_port: z.number(),
   protocol: z.string(),
   direction: z.string().optional(),
@@ -33,12 +34,19 @@ const backendAlertSchema = z.object({
     url: z.string().optional(),
   }),
   raw_payload: z.string().optional(),
-  zeek_evidence: z.record(z.string(), z.unknown()).optional(),
-  suricata_evidence: z.record(z.string(), z.unknown()).optional(),
+  zeek_evidence: z.record(z.string(), z.unknown()).nullable().optional(),
+  suricata_evidence: z.record(z.string(), z.unknown()).nullable().optional(),
   ai_analysis: z.record(z.string(), z.unknown()).optional(),
   decision_flow: z.array(z.record(z.string(), z.unknown())).optional(),
   status: z.string().optional(),
-}).passthrough();
+}).passthrough().superRefine((alert, context) => {
+  if (!alert.id && !alert.event_id) {
+    context.addIssue({
+      code: "custom",
+      message: "Alert payload must contain id or event_id",
+    });
+  }
+});
 
 const trafficSchema = z.object({
   timestamp: z.string(),
@@ -71,7 +79,11 @@ const platformStatusSchema = z.object({
 
 function coerceIncomingAlert(raw: z.infer<typeof backendAlertSchema> | z.infer<typeof legacyAlertSchema>): Alert {
   if ("source_ip" in raw || "attack_type" in raw || "ai_analysis" in raw) {
-    return mapBackendAlertToAlert(raw as unknown as BackendAlertDTO);
+    const backendAlert = raw as z.infer<typeof backendAlertSchema>;
+    return mapBackendAlertToAlert({
+      ...backendAlert,
+      id: backendAlert.id ?? backendAlert.event_id!,
+    } as unknown as BackendAlertDTO);
   }
 
   const legacy = raw as Record<string, unknown>;
@@ -146,12 +158,19 @@ function coerceIncomingAlert(raw: z.infer<typeof backendAlertSchema> | z.infer<t
   };
 }
 
-function upsertAlert(alerts: Alert[], alert: Alert): Alert[] {
-  const existingIndex = alerts.findIndex((item) => item.id === alert.id);
-  if (existingIndex === -1) {
-    return [alert, ...alerts].slice(0, 50);
+function mergeAlerts(existing: Alert[], incoming: Alert[]): Alert[] {
+  const alertsById = new Map(existing.map((alert) => [alert.id, alert]));
+  for (const alert of incoming) {
+    alertsById.set(alert.id, alert);
   }
-  return alerts.map((item, index) => (index === existingIndex ? alert : item));
+
+  return [...alertsById.values()]
+    .sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp))
+    .slice(0, 50);
+}
+
+function upsertAlert(alerts: Alert[], alert: Alert): Alert[] {
+  return mergeAlerts(alerts, [alert]);
 }
 
 function buildEmptyPlatformStatus(socketStatus: SocketStatus, lastError: string | null): PlatformStatus {
@@ -212,6 +231,25 @@ export function useSocket() {
     }
   }, [error, socketStatus]);
 
+  const refreshPersistedAlerts = useCallback(async () => {
+    if (appConfig.dataMode !== "live") {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${appConfig.apiBaseUrl}/api/alerts?limit=50`);
+      if (!response.ok) {
+        throw new Error(`Alerts endpoint returned ${response.status}`);
+      }
+
+      const persistedAlerts = z.array(backendAlertSchema).parse(await response.json());
+      setAlerts((previous) => mergeAlerts(previous, persistedAlerts.map(coerceIncomingAlert)));
+    } catch (alertsError) {
+      const message = alertsError instanceof Error ? alertsError.message : "Alerts endpoint unavailable";
+      setError(`Unable to refresh persisted alerts: ${message}`);
+    }
+  }, []);
+
   const connect = useCallback(() => {
     if (appConfig.configErrors.length > 0) {
       setSocketStatus("error");
@@ -253,7 +291,7 @@ export function useSocket() {
 
         switch (message.type) {
           case "INITIAL_DATA":
-            setAlerts(message.data.map(coerceIncomingAlert));
+            setAlerts((previous) => mergeAlerts(previous, message.data.map(coerceIncomingAlert)));
             break;
           case "NEW_ALERT":
           case "alert.created":
@@ -299,6 +337,12 @@ export function useSocket() {
     const timer = window.setInterval(refreshPlatformStatus, 15000);
     return () => window.clearInterval(timer);
   }, [refreshPlatformStatus]);
+
+  useEffect(() => {
+    refreshPersistedAlerts();
+    const timer = window.setInterval(refreshPersistedAlerts, 15000);
+    return () => window.clearInterval(timer);
+  }, [refreshPersistedAlerts]);
 
   const mergedPlatformStatus = useMemo<PlatformStatus>(() => ({
     ...platformStatus,

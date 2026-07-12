@@ -45,7 +45,7 @@ export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
     timestamp: dto.timestamp,
     sourceIp: dto.source_ip,
     destinationIp: dto.destination_ip,
-    sourcePort: dto.source_port,
+    sourcePort: dto.source_port ?? undefined,
     destinationPort: dto.destination_port,
     attackType: dto.attack_type,
     protocol: dto.protocol,

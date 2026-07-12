@@ -3,14 +3,14 @@ from __future__ import annotations
 import base64
 import json
 import time
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.contracts import normalize_event
 from app.dependencies import orchestrator, store, websockets
-from app.services.rds_alert_store import get_latest_alert_payload
+from app.services.rds_alert_store import get_latest_alert_payload, list_final_alerts
 from app.services.sqs_producer import send_event_to_sqs
 
 app = FastAPI(title="Hybrid SOC Multi-Model Fusion MVP", version="0.1.0")
@@ -171,8 +171,11 @@ def enqueue_http_event(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 @app.get("/api/alerts")
-def list_alerts(limit: int = 50) -> list[dict[str, Any]]:
-    return store.list(limit=limit)
+def list_alerts(limit: Annotated[int, Query(ge=1, le=50)] = 50) -> list[dict[str, Any]]:
+    try:
+        return list_final_alerts(limit=limit)
+    except Exception as exc:  # noqa: BLE001 - RDS/config failure should not crash the API process.
+        raise HTTPException(status_code=503, detail=f"Failed to read alerts: {exc}") from exc
 
 
 @app.get("/api/alerts/latest")

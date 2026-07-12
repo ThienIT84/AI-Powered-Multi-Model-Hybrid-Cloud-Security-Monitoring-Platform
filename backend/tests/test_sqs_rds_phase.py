@@ -79,6 +79,39 @@ def test_latest_alert_returns_rds_payload(monkeypatch: pytest.MonkeyPatch) -> No
     assert main.latest_alert() == alert
 
 
+def test_list_alerts_returns_persisted_rds_payloads(monkeypatch: pytest.MonkeyPatch) -> None:
+    alerts = [
+        {"id": "evt-newer", "attack_type": "SQL Injection"},
+        {"id": "evt-older", "attack_type": "Cross-Site Scripting"},
+    ]
+    captured: dict[str, int] = {}
+
+    def fake_list_final_alerts(limit: int) -> list[dict]:
+        captured["limit"] = limit
+        return alerts
+
+    monkeypatch.setattr(main, "list_final_alerts", fake_list_final_alerts)
+
+    assert main.list_alerts(limit=25) == alerts
+    assert captured["limit"] == 25
+
+    assert main.list_alerts() == alerts
+    assert captured["limit"] == 50
+
+
+def test_list_alerts_rds_failure_returns_503(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_list_final_alerts(limit: int) -> list[dict]:  # noqa: ARG001
+        raise RuntimeError("RDS_SECRET_ID is not configured")
+
+    monkeypatch.setattr(main, "list_final_alerts", fail_list_final_alerts)
+
+    with pytest.raises(HTTPException) as excinfo:
+        main.list_alerts(limit=50)
+
+    assert excinfo.value.status_code == 503
+    assert "Failed to read alerts" in str(excinfo.value.detail)
+
+
 def test_latest_alert_returns_404_when_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(main, "get_latest_alert_payload", lambda: None)
 
@@ -161,3 +194,43 @@ def test_upsert_final_alert_uses_attack_type_as_final_label(monkeypatch: pytest.
     assert params["alert_id"] == "evt-rds-1"
     assert params["final_label"] == "Controlled Exfiltration"
     assert captured["committed"] is True
+
+
+def test_list_final_alerts_returns_payloads_in_database_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeCursor:
+        def __enter__(self) -> FakeCursor:
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+        def execute(self, sql: str, params: dict) -> None:
+            captured["sql"] = sql
+            captured["params"] = params
+
+        def fetchall(self) -> list[dict[str, dict[str, str]]]:
+            return [
+                {"payload": {"id": "evt-newer"}},
+                {"payload": {"id": "evt-older"}},
+            ]
+
+    class FakeConn:
+        def __enter__(self) -> FakeConn:
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+        def cursor(self) -> FakeCursor:
+            return FakeCursor()
+
+    monkeypatch.setattr(rds_alert_store, "get_conn", lambda: FakeConn())
+
+    assert rds_alert_store.list_final_alerts(limit=80) == [
+        {"id": "evt-newer"},
+        {"id": "evt-older"},
+    ]
+    assert "ORDER BY created_at DESC" in str(captured["sql"])
+    assert captured["params"] == {"limit": 50}

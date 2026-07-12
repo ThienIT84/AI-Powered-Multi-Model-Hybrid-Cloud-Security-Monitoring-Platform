@@ -96,12 +96,13 @@ export interface BackendDecisionFlowStepDTO {
 
 export interface BackendAlertDTO {
   id: string;
+  event_id?: string;
   timestamp: string;
   severity: string;
   attack_type: string;
   source_ip: string;
   destination_ip: string;
-  source_port?: number;
+  source_port?: number | null;
   destination_port: number;
   protocol: string;
   direction?: string;
@@ -110,8 +111,8 @@ export interface BackendAlertDTO {
   detected_by: string[];
   mitre: BackendMitreDTO;
   raw_payload?: string;
-  zeek_evidence?: BackendZeekEvidenceDTO;
-  suricata_evidence?: BackendSuricataEvidenceDTO;
+  zeek_evidence?: BackendZeekEvidenceDTO | null;
+  suricata_evidence?: BackendSuricataEvidenceDTO | null;
   ai_analysis?: BackendAiAnalysisDTO;
   decision_flow?: BackendDecisionFlowStepDTO[];
   status?: string;

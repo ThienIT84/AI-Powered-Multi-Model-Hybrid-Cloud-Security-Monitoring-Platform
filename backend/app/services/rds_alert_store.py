@@ -101,3 +101,33 @@ def get_latest_alert_payload() -> dict[str, Any] | None:
         raise RuntimeError("latest alert payload must be a JSON object")
 
     return payload
+
+
+def list_final_alerts(limit: int = 50) -> list[dict[str, Any]]:
+    """Return the most recently persisted alert payloads from RDS.
+
+    The worker persists the complete alert contract in ``payload``. Reading that
+    JSON back keeps the API response consistent with live WebSocket alerts.
+    """
+
+    bounded_limit = max(1, min(int(limit), 50))
+    sql = """
+    SELECT payload
+    FROM final_alerts
+    ORDER BY created_at DESC
+    LIMIT %(limit)s;
+    """
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, {"limit": bounded_limit})
+            rows = cur.fetchall()
+
+    alerts: list[dict[str, Any]] = []
+    for row in rows:
+        payload = row["payload"]
+        if not isinstance(payload, dict):
+            raise RuntimeError("persisted alert payload must be a JSON object")
+        alerts.append(payload)
+
+    return alerts
