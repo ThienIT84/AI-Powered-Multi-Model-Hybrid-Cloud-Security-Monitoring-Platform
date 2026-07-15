@@ -4,10 +4,10 @@ export interface DashboardMetrics {
   totalNetworkFlows: number;
   totalFusionAlerts: number;
   criticalAlerts: number;
-  openCases: number;
-  activeEndpoints: number;
-  cloudAssets: number;
-  threatIntelMatches: number;
+  openCases: number | null;
+  observedDestinations: number;
+  cloudAssets: number | null;
+  threatIntelMatches: number | null;
 }
 
 export type PlatformStatusValue = "Healthy" | "Warning" | "Offline";
@@ -23,28 +23,28 @@ export interface PlatformHealthStatus {
 
 export interface FusionOverviewMetrics {
   fusionAlerts24h: number;
-  aiAgreementRate: number; // percentage
-  falsePositiveReduction: number; // percentage
-  averageConfidence: number; // percentage
+  aiAgreementRate: number | null;
+  falsePositiveReduction: number | null;
+  averageConfidence: number | null;
 }
 
 export interface SecurityPostureMetrics {
-  overallRisk: number; // 0-100
-  networkRisk: number; // 0-100
-  endpointRisk: number; // 0-100
-  cloudRisk: number; // 0-100
+  overallRisk: number | null;
+  networkRisk: number | null;
+  endpointRisk: number | null;
+  cloudRisk: number | null;
 }
 
 export interface OpenCasesMetrics {
-  open: number;
-  inProgress: number;
-  resolvedToday: number;
-  slaCompliance: number; // percentage
+  open: number | null;
+  inProgress: number | null;
+  resolvedToday: number | null;
+  slaCompliance: number | null;
 }
 
 export interface SeverityDistributionItem {
   name: "Critical" | "High" | "Medium" | "Low";
   value: number; // count
   percentage: number;
-  trend: string; // e.g., "+3%", "-2%"
+  trend: string | null;
 }

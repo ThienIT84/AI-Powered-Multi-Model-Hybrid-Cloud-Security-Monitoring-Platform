@@ -142,7 +142,7 @@ Evidence to capture:
 [ ] Correlated tailer prints correlated_tail_started.
 [ ] No SSH error.
 [ ] No backend POST error.
-[ ] Posted events include event_id like zeek:zeek-vm-01:<uid>:<trans_depth>.
+[ ] Posted events include immutable `event_id` like `zeek:zeek-vm-01:<uid>:<trans_depth>:<status>:<payload-hash>` and stable `correlation_id` like `zeek:zeek-vm-01:<uid>:<trans_depth>`.
 ```
 
 ## 5. Send Demo Traffic From Kali

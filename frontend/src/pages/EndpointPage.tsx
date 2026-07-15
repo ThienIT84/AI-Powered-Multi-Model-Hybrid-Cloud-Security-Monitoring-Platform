@@ -1,201 +1,263 @@
-import React, { useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { useEndpointState } from "../hooks/useEndpointState";
-import { EndpointInventoryTable } from "../components/endpoint/EndpointInventoryTable";
-import { EndpointOverviewTab } from "../components/endpoint/EndpointOverviewTab";
-import { EndpointDetailPanel } from "../components/endpoint/EndpointDetailPanel";
-import { EndpointAlertToast } from "../components/endpoint/EndpointAlertToast";
-import { Shield, Sparkles } from "lucide-react";
-import { cn } from "../lib/utils";
-import { DataMode } from "../config";
-import { DataModeBanner } from "../components/common/DataModeBanner";
+import { useMemo, useState } from "react";
+import { Cloud, Laptop, Search, Server, ShieldAlert, X } from "lucide-react";
+import { Alert, Severity } from "../types";
+import {
+  deriveObservedAssets,
+  displayValue,
+  EMPTY_VALUE,
+  formatTimestamp,
+  ObservedAsset,
+  severityClass,
+  sortAlertsNewest,
+} from "../data/derive";
 
-export function EndpointPage({ dataMode }: { dataMode: DataMode }) {
-  const {
-    endpoints,
-    selectedId,
-    setSelectedId,
-    isDrawerOpen,
-    setIsDrawerOpen,
-    searchQuery,
-    setSearchQuery,
-    typeFilter,
-    setTypeFilter,
-    roleFilter,
-    setRoleFilter,
-    statusFilter,
-    setStatusFilter,
-    sortField,
-    setSortField,
-    sortOrder,
-    setSortOrder,
-    visibleCols,
-    setVisibleCols,
-    handleIsolate,
-    handleBlockIp,
-    filteredEndpoints,
-    currentPage,
-    setCurrentPage,
-    alertPopup,
-    setAlertPopup,
-  } = useEndpointState();
+interface EndpointPageProps {
+  alerts: Alert[];
+}
 
-  // Selected Endpoint object computed from the endpoints state array
-  const selectedEndpointObj = useMemo(() => {
-    return endpoints.find(e => e.id === selectedId) || null;
-  }, [endpoints, selectedId]);
+function Metric({ label, value, description }: { label: string; value: string; description: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-black text-foreground">{value}</p>
+      <p className="mt-1 text-[8px] uppercase text-muted-foreground">{description}</p>
+    </div>
+  );
+}
 
-  // Export CSV format for local asset inventory
-  const handleExportCSV = useCallback(() => {
-    const headers = ["ID", "Hostname", "IP Address", "Device Type", "OS", "Role", "Risk Score", "Health Score", "Status"];
-    const rows = filteredEndpoints.map(e => [
-      e.id,
-      e.hostname,
-      e.ip,
-      e.deviceType,
-      e.os,
-      e.role,
-      e.riskScore,
-      e.healthScore,
-      e.status
-    ]);
-    
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-      
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `edr_asset_index_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }, [filteredEndpoints]);
+function formatRisk(value: number | null): string {
+  return value === null ? EMPTY_VALUE : value.toFixed(0);
+}
+
+function alertTouchesAsset(alert: Alert, asset: ObservedAsset): boolean {
+  if (asset.id.startsWith("ip:")) {
+    return alert.sourceIp === asset.address || alert.destinationIp === asset.address || alert.destIp === asset.address;
+  }
+  return alert.resourceId === asset.address;
+}
+
+export function EndpointPage({ alerts }: EndpointPageProps) {
+  const [query, setQuery] = useState("");
+  const [severity, setSeverity] = useState<"ALL" | Severity>("ALL");
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+
+  const assets = useMemo(() => deriveObservedAssets(alerts), [alerts]);
+  const filteredAssets = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return assets.filter((asset) => {
+      if (severity !== "ALL" && asset.severity !== severity) return false;
+      if (!normalized) return true;
+      return [
+        asset.label,
+        asset.kind,
+        ...asset.observedAs,
+        ...asset.attackTypes,
+        ...asset.protocols,
+        ...asset.providers,
+        ...asset.regions,
+      ].some((value) => value.toLowerCase().includes(normalized));
+    });
+  }, [assets, query, severity]);
+  const selectedAsset = assets.find((asset) => asset.id === selectedAssetId) ?? null;
+  const selectedAlerts = useMemo(
+    () => selectedAsset ? sortAlertsNewest(alerts.filter((alert) => alertTouchesAsset(alert, selectedAsset))) : [],
+    [alerts, selectedAsset],
+  );
+
+  const sourceAssets = assets.filter((asset) => asset.observedAs.includes("Source")).length;
+  const destinationAssets = assets.filter((asset) => asset.observedAs.includes("Destination")).length;
+  const publicAddresses = assets.filter((asset) => asset.internetFacing === true).length;
+  const cloudResources = assets.filter((asset) => asset.observedAs.includes("Resource")).length;
+  const criticalAssets = assets.filter((asset) => asset.severity === Severity.CRITICAL).length;
 
   return (
-    <motion.div
-      key="endpoint-edr-console"
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 10 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="w-full min-h-screen bg-background p-4 md:p-6 space-y-5 flex flex-col font-mono text-slate-800 dark:text-slate-100 animate-in fade-in"
-    >
-      <DataModeBanner dataMode={dataMode} label="Endpoint inventory, detections, and response actions are sample records" />
-      {/* 1. Header (CrowdStrike / EDR-centric style) */}
-      <div 
-        id="endpoint-page-header"
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card/60 backdrop-blur-md p-4 rounded-xl border border-border"
-      >
+    <div className="space-y-6 pb-16 font-mono text-foreground" id="endpoint-page">
+      <header className="flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="w-5 h-5 text-indigo-650 dark:text-cyan-400 animate-pulse" />
-            <h1 className="text-sm font-black text-foreground uppercase tracking-widest leading-none">
-              Endpoint Security Console
-            </h1>
+          <div className="flex items-center gap-2 text-cyan-500">
+            <Laptop size={18} />
+            <span className="text-[9px] font-black uppercase tracking-[0.24em]">Observed asset inventory</span>
           </div>
-          <p className="text-[9px] text-muted-foreground uppercase tracking-[0.2em] font-mono">
-            Autonomous EDR Agent Investigation & Forensic Surveillance Panel
+          <h1 className="mt-2 text-xl font-black uppercase tracking-tight">Endpoint & Asset Evidence</h1>
+          <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+            Hosts and resources derived from backend alert endpoints only
           </p>
         </div>
-
-        {/* Sync status element */}
-        <div className="flex items-center gap-2 bg-indigo-500/10 dark:bg-cyan-500/10 border border-indigo-500/20 dark:border-cyan-500/20 px-3 py-1.5 rounded-lg select-none">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-550 dark:bg-cyan-400 animate-ping" />
-          <span className="text-[9px] font-black text-indigo-600 dark:text-cyan-400 tracking-wider uppercase font-mono">
-            EDR Pipeline: Active
-          </span>
+        <div className="rounded-lg border border-border bg-card px-3 py-2 text-[9px] uppercase text-muted-foreground">
+          {assets.length > 0 ? `${assets.length} observed assets` : "No observed assets"}
         </div>
-      </div>
+      </header>
 
-      {/* 2. Structured Two-Column EDR Panel Layout (Stacked Table + Overview & Forensic Slide-in/Toggle panel) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:items-start items-start">
-        
-        {/* Left area: asset list and overview stack */}
-        <div className={cn(
-          "space-y-5 transition-all duration-300 flex flex-col justify-between min-w-0",
-          selectedId ? "lg:col-span-8" : "lg:col-span-12"
-        )}>
-          {/* Asset Catalog Index Table */}
-          <EndpointInventoryTable
-            filteredEndpoints={filteredEndpoints}
-            selectedId={selectedId}
-            setSelectedId={setSelectedId}
-            isDrawerOpen={isDrawerOpen}
-            setIsDrawerOpen={setIsDrawerOpen}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            typeFilter={typeFilter}
-            setTypeFilter={setTypeFilter}
-            roleFilter={roleFilter}
-            setRoleFilter={setRoleFilter}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            sortField={sortField}
-            setSortField={setSortField}
-            sortOrder={sortOrder}
-            setSortOrder={setSortOrder}
-            visibleCols={visibleCols}
-            setVisibleCols={setVisibleCols}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            onIsolate={handleIsolate}
-            onBlockIp={handleBlockIp}
-            onExportCSV={handleExportCSV}
-          />
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Metric label="Observed assets" value={assets.length.toLocaleString()} description="Unique backend identifiers" />
+        <Metric label="Seen as source" value={sourceAssets.toLocaleString()} description="Alert source addresses" />
+        <Metric label="Seen as target" value={destinationAssets.toLocaleString()} description="Alert destination addresses" />
+        <Metric label="Public IPv4" value={publicAddresses.toLocaleString()} description="Derived from observed IP ranges" />
+        <Metric label="Critical assets" value={criticalAssets.toLocaleString()} description={`${cloudResources} linked cloud resources`} />
+      </section>
 
-          {/* Host overview and AI detection panel */}
-          <div className="border border-border bg-card rounded-xl p-4.5 shadow-xs">
-            <div className="border-b border-border pb-3 mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-555 dark:text-cyan-455 animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-foreground">
-                  Host Overview & AI Detection
-                </span>
-              </div>
-              {selectedEndpointObj && (
-                <span className="text-[9px] font-mono font-black text-indigo-650 dark:text-cyan-400 bg-indigo-500/10 dark:bg-cyan-500/10 border border-indigo-500/20 dark:border-cyan-500/20 px-2 py-0.5 rounded tracking-wide">
-                  SYS: {selectedEndpointObj.hostname}
-                </span>
-              )}
-            </div>
-            <EndpointOverviewTab endpoint={selectedEndpointObj} />
+      <section className="rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-2">
+            <Server size={14} className="text-cyan-500" />
+            <h2 className="text-[11px] font-black uppercase tracking-widest">Asset catalog</h2>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2">
+              <Search size={12} className="text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search address, type, attack, region..."
+                className="w-full bg-transparent text-[10px] outline-none placeholder:text-muted-foreground sm:w-72"
+              />
+            </label>
+            <select
+              value={severity}
+              onChange={(event) => setSeverity(event.target.value as "ALL" | Severity)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-[9px] font-black uppercase outline-none"
+            >
+              <option value="ALL">All severities</option>
+              {Object.values(Severity).map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
           </div>
         </div>
 
-        {/* Right area: detailed forensic panel */}
-        <AnimatePresence>
-          {selectedId && (
-            <motion.div
-              layout
-              initial={{ opacity: 0, x: 50, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 50, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 380, damping: 28 }}
-              className="lg:col-span-4 h-fit flex flex-col"
-            >
-              <EndpointDetailPanel
-                endpoint={selectedEndpointObj}
-                onBlockIp={handleBlockIp}
-                onIsolate={handleIsolate}
-                onClose={() => {
-                  setSelectedId(null);
-                  setIsDrawerOpen(false);
-                }}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {assets.length === 0 ? (
+          <div className="mt-4 flex min-h-60 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/5 px-6 text-center">
+            <Server size={24} className="text-muted-foreground" />
+            <p className="mt-3 text-[11px] font-black uppercase">No endpoint data available</p>
+            <p className="mt-1 max-w-lg text-[9px] text-muted-foreground">
+              Source IPs, destination IPs, and cloud resource IDs will appear here when the backend returns alerts containing them.
+            </p>
+          </div>
+        ) : filteredAssets.length === 0 ? (
+          <div className="mt-4 rounded-xl border border-dashed border-border p-10 text-center text-[10px] uppercase text-muted-foreground">
+            No assets match the active filters.
+          </div>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-lg border border-border/70">
+            <table className="w-full min-w-250 text-left text-[9px]">
+              <thead className="bg-muted/30 text-[8px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-3">Asset</th>
+                  <th className="px-3 py-3">Observed role</th>
+                  <th className="px-3 py-3">Alerts</th>
+                  <th className="px-3 py-3">Highest severity</th>
+                  <th className="px-3 py-3">Risk</th>
+                  <th className="px-3 py-3">Protocols</th>
+                  <th className="px-3 py-3">Last seen</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {filteredAssets.map((asset) => (
+                  <tr
+                    key={asset.id}
+                    onClick={() => setSelectedAssetId(asset.id)}
+                    className="cursor-pointer transition-colors hover:bg-muted/20"
+                  >
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        {asset.observedAs.includes("Resource") ? <Cloud size={12} className="text-blue-500" /> : <Server size={12} className="text-cyan-500" />}
+                        <div>
+                          <span className="block font-black">{asset.label}</span>
+                          <span className="text-muted-foreground">{asset.kind}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">{asset.observedAs.join(" · ") || "Unknown"}</td>
+                    <td className="px-3 py-3 font-black">{asset.alertCount}</td>
+                    <td className="px-3 py-3">
+                      <span className={`inline-flex rounded border px-2 py-0.5 text-[7px] font-black uppercase ${severityClass(asset.severity)}`}>
+                        {asset.severity ?? "Unknown"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="block font-black">Max: {formatRisk(asset.maxRiskScore)}</span>
+                      <span className="text-muted-foreground">Avg: {formatRisk(asset.averageRiskScore)}</span>
+                    </td>
+                    <td className="px-3 py-3">{asset.protocols.join(", ") || "Unknown"}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{formatTimestamp(asset.lastSeen ?? undefined)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
+      {selectedAsset && (
+        <AssetDrawer asset={selectedAsset} alerts={selectedAlerts} onClose={() => setSelectedAssetId(null)} />
+      )}
+    </div>
+  );
+}
+
+function AssetDrawer({ asset, alerts, onClose }: { asset: ObservedAsset; alerts: Alert[]; onClose: () => void }) {
+  return (
+    <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-xl overflow-y-auto border-l border-border bg-background p-5 shadow-2xl">
+      <div className="flex items-start justify-between border-b border-border pb-4">
+        <div>
+          <div className="flex items-center gap-2 text-cyan-500">
+            <ShieldAlert size={14} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Observed asset</span>
+          </div>
+          <h2 className="mt-2 break-all text-base font-black">{asset.label}</h2>
+          <p className="mt-1 text-[9px] text-muted-foreground">{asset.kind}</p>
+        </div>
+        <button onClick={onClose} className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground" aria-label="Close asset details">
+          <X size={14} />
+        </button>
       </div>
 
-      {/* 3. Global Toast System for real-time simulation updates */}
-      <EndpointAlertToast 
-        alertPopup={alertPopup} 
-        onClose={() => setAlertPopup(null)} 
-      />
+      <div className="mt-5 grid grid-cols-2 gap-3 text-[9px]">
+        {[
+          ["Observed as", asset.observedAs.join(" · ") || "Unknown"],
+          ["Highest severity", asset.severity ?? "Unknown"],
+          ["Maximum risk", formatRisk(asset.maxRiskScore)],
+          ["Average risk", formatRisk(asset.averageRiskScore)],
+          ["Internet-facing", asset.internetFacing === null ? "Unknown" : asset.internetFacing ? "Yes (public IPv4)" : "No (private IPv4)"],
+          ["Last seen", formatTimestamp(asset.lastSeen ?? undefined)],
+          ["Protocols", asset.protocols.join(", ") || "Unknown"],
+          ["Providers / regions", [...asset.providers, ...asset.regions].join(" · ") || "Unknown"],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-lg border border-border/60 bg-muted/10 p-3">
+            <p className="text-[7px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+            <p className="mt-1 break-words font-bold">{displayValue(value, "Unknown")}</p>
+          </div>
+        ))}
+      </div>
 
-    </motion.div>
+      <div className="mt-5 rounded-xl border border-border p-4">
+        <h3 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Observed attack types</h3>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {asset.attackTypes.length > 0 ? asset.attackTypes.map((attack) => (
+            <span key={attack} className="rounded border border-red-500/20 bg-red-500/10 px-2 py-1 text-[8px] font-black text-red-500">{attack}</span>
+          )) : <span className="text-[9px] text-muted-foreground">Unknown</span>}
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-xl border border-border p-4">
+        <h3 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Related backend alerts</h3>
+        {alerts.length === 0 ? (
+          <p className="mt-3 text-[9px] text-muted-foreground">No related alert records.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {alerts.map((alert) => (
+              <div key={alert.id} className="rounded-lg border border-border/60 bg-muted/10 p-3 text-[9px]">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black">{displayValue(alert.attackType, "Unknown")}</p>
+                    <p className="mt-1 text-muted-foreground">{alert.id} · {formatTimestamp(alert.timestamp)}</p>
+                  </div>
+                  <span className={`rounded border px-1.5 py-0.5 text-[7px] font-black uppercase ${severityClass(alert.severity)}`}>{alert.severity}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </aside>
   );
 }
 

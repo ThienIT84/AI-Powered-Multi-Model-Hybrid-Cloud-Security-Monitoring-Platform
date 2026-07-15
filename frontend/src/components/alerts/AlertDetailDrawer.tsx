@@ -49,7 +49,7 @@ function ModelStatusRow({ name, label, status, source, scope }: { name: string; 
               ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
               : "border-purple-500/20 bg-purple-500/10 text-purple-400"
         )}>
-          {source === "real" ? "REAL" : source?.toUpperCase() || "LEGACY"}
+          {source === "real" ? "REAL" : source?.toUpperCase() || "UNKNOWN"}
         </span>
         <span className="text-[7px] font-mono font-black text-cyan-500 uppercase max-w-30 truncate">{isUnavailable ? status : label}</span>
       </div>
@@ -60,28 +60,12 @@ function ModelStatusRow({ name, label, status, source, scope }: { name: string; 
 export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, actionState = "idle", onCreateCase }: AlertDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "decision_flow" | "mitre" | "raw_logs">("overview");
   const meta = getAlertFusionMeta(alert);
+  const rateFeatures = alert.zeekData.rateFeatures;
   const isActionPending = actionState === "pending";
 
   const handleResolve = () => {
     if (onUpdateAlert) {
       onUpdateAlert(alert.id, { status: AlertStatus.RESOLVED });
-    }
-  };
-
-  const handleIsolate = () => {
-    if (onUpdateAlert) {
-      onUpdateAlert(alert.id, { 
-        status: AlertStatus.MITIGATED, 
-        description: alert.description + " [EMERGENCY ASSET ISOLATED BY ANALYST]" 
-      });
-    }
-  };
-
-  const handleBlockDomain = () => {
-    if (onUpdateAlert) {
-      onUpdateAlert(alert.id, { 
-        description: alert.description + " [DESTINATION DOMAIN BLOCKED ON GATEWAY]" 
-      });
     }
   };
 
@@ -207,7 +191,7 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, actionState =
                 </div>
                 <div>
                   <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">MITRE ATT&CK ID</span>
-                  <span className="text-foreground font-bold">{alert.mitre?.techniqueId || "T1046"}</span>
+                  <span className="text-foreground font-bold">{alert.mitre?.techniqueId || "Not available"}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Timestamp</span>
@@ -223,14 +207,16 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, actionState =
                 </div>
                 <div>
                   <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Destination Host</span>
-                  <span className="text-foreground">{alert.destinationIp || "10.0.12.15"}</span>
+                  <span className="text-foreground">{alert.destinationIp || "Not available"}</span>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-border/30">
                 <span className="text-muted-foreground/60 block text-[7px] uppercase font-black mb-1">Affected Infrastructure</span>
                 <span className="text-[8.5px] text-muted-foreground/90 font-medium">
-                  {alert.cloudProvider} Asset in region {alert.region}
+                  {alert.cloudProvider || alert.region
+                    ? `${alert.cloudProvider ?? "Unknown provider"} asset in ${alert.region ?? "unknown region"}`
+                    : "Cloud metadata not supplied by backend"}
                 </span>
               </div>
             </div>
@@ -288,15 +274,15 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, actionState =
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">HTTP Method</span>
-                    <span className="text-foreground">{alert.zeekData?.method || "POST"}</span>
+                    <span className="text-foreground">{alert.zeekData?.method || "Not available"}</span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">HTTP URI Trigger</span>
-                    <span className="text-foreground truncate block max-w-70 font-bold">{alert.zeekData?.uri || "/api/v1/auth/gateway"}</span>
+                    <span className="text-foreground truncate block max-w-70 font-bold">{alert.zeekData?.uri || "Not available"}</span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">User Agent Header</span>
-                    <span className="text-foreground text-[8px] break-all leading-normal block">{alert.zeekData?.userAgent || "Mozilla/5.0 (PentestBot/1.0; CLI)"}</span>
+                    <span className="text-foreground text-[8px] break-all leading-normal block">{alert.zeekData?.userAgent || "Not available"}</span>
                   </div>
                 </div>
               ) : (
@@ -308,27 +294,88 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, actionState =
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Connection State</span>
-                    <span className="text-foreground">{alert.zeekData?.connState || "SF (Successful Connection)"}</span>
+                    <span className="text-foreground">{alert.zeekData?.connState || "Not available"}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Duration</span>
-                    <span className="text-foreground">{alert.zeekData?.duration || "1.24s"}</span>
+                    <span className="text-foreground">{alert.zeekData?.duration ?? "Not available"}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Originator Bytes</span>
-                    <span className="text-foreground">{alert.zeekData?.origBytes || 3824} bytes</span>
+                    <span className="text-foreground">{alert.zeekData?.origBytes ?? "Not available"}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Originator Packets</span>
-                    <span className="text-foreground">{alert.zeekData?.origPkts || 14} pkts</span>
+                    <span className="text-foreground">{alert.zeekData?.origPkts ?? "Not available"}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Responder Packets</span>
-                    <span className="text-foreground">{alert.zeekData?.respPkts || 12} pkts</span>
+                    <span className="text-foreground">{alert.zeekData?.respPkts ?? "Not available"}</span>
                   </div>
                 </div>
               )}
             </div>
+
+            {rateFeatures && (
+              <div className={cn(
+                "bg-background/60 rounded-xl border p-3.5 space-y-3",
+                rateFeatures.dosSuspected || rateFeatures.ddosSuspected
+                  ? "border-red-500/35"
+                  : "border-border/80"
+              )}>
+                <div className="flex items-center justify-between gap-2 border-b border-border/30 pb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Activity size={12} className={rateFeatures.dosSuspected || rateFeatures.ddosSuspected ? "text-red-500" : "text-cyan-500"} />
+                    <span className="text-[7.5px] font-black text-muted-foreground uppercase tracking-widest leading-none">
+                      Traffic-rate window evidence
+                    </span>
+                  </div>
+                  {(rateFeatures.dosSuspected !== undefined || rateFeatures.ddosSuspected !== undefined) && (
+                    <span className={cn(
+                      "rounded border px-1.5 py-0.5 font-mono text-[7px] font-black uppercase",
+                      rateFeatures.ddosSuspected
+                        ? "border-red-500/30 bg-red-500/10 text-red-500"
+                        : rateFeatures.dosSuspected
+                          ? "border-orange-500/30 bg-orange-500/10 text-orange-400"
+                          : "border-emerald-500/25 bg-emerald-500/10 text-emerald-500"
+                    )}>
+                      {rateFeatures.ddosSuspected
+                        ? "DDoS suspected"
+                        : rateFeatures.dosSuspected
+                          ? "DoS suspected"
+                          : "Below threshold"}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 font-mono text-[8.5px] leading-none">
+                  {rateFeatures.windowSeconds !== undefined && (
+                    <div>
+                      <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Observation Window</span>
+                      <span className="text-foreground font-bold">{rateFeatures.windowSeconds}s</span>
+                    </div>
+                  )}
+                  {rateFeatures.sameSrcDstConnectionCount !== undefined && (
+                    <div>
+                      <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Same Source - Destination</span>
+                      <span className="text-foreground font-bold">{rateFeatures.sameSrcDstConnectionCount} connections</span>
+                    </div>
+                  )}
+                  {rateFeatures.destinationConnectionCount !== undefined && (
+                    <div>
+                      <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Destination Total</span>
+                      <span className="text-foreground font-bold">{rateFeatures.destinationConnectionCount} connections</span>
+                    </div>
+                  )}
+                  {rateFeatures.uniqueSourceCount !== undefined && (
+                    <div>
+                      <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Unique Sources</span>
+                      <span className="text-foreground font-bold">{rateFeatures.uniqueSourceCount}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* SURICATA EVIDENCE BLOCK */}
             <div className="bg-background/60 border border-border/80 rounded-xl p-3.5 space-y-3.5">
@@ -344,15 +391,15 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, actionState =
               <div className="grid grid-cols-2 gap-3 text-[8.5px] font-mono leading-none">
                 <div>
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Signature ID</span>
-                  <span className="text-blue-400 font-bold">{alert.suricataData?.signatureId || "SID: 2010915"}</span>
+                  <span className="text-blue-400 font-bold">{alert.suricataData?.signatureId || "Not available"}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Category Category</span>
-                  <span className="text-foreground truncate block max-w-37.5">{alert.suricataData?.category || "Detection Mechanism Bypass"}</span>
+                  <span className="text-foreground truncate block max-w-37.5">{alert.suricataData?.category || "Not available"}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-muted-foreground/60 text-[6.5px] block uppercase font-bold mb-1">Intrusion signature Rule matched</span>
-                  <span className="text-foreground leading-normal block">{alert.suricataData?.signature || alert.attackType + " Attempt Detected (FCAJ Fusion Rule)"}</span>
+                  <span className="text-foreground leading-normal block">{alert.suricataData?.signature || "Not available"}</span>
                 </div>
               </div>
             </div>
@@ -397,24 +444,6 @@ export function AlertDetailDrawer({ alert, onClose, onUpdateAlert, actionState =
             Action {actionState}
           </div>
         )}
-        <div className="grid grid-cols-2 gap-2">
-          <button 
-            onClick={handleIsolate}
-            disabled={isActionPending}
-            className="flex items-center justify-center gap-1.5 py-2 hover:bg-red-605 border border-red-500/30 text-red-500 hover:text-white text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none hover:bg-red-500/10"
-          >
-            Isolate Host
-          </button>
-          
-          <button 
-            onClick={handleBlockDomain}
-            disabled={isActionPending}
-            className="flex items-center justify-center gap-1.5 py-2 hover:bg-border border border-border text-foreground text-[9px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer leading-none"
-          >
-            Block Gateway
-          </button>
-        </div>
-
         <button
           onClick={() => onCreateCase?.(alert)}
           disabled={isActionPending}

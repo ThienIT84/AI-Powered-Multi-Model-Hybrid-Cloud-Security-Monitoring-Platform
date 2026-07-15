@@ -1,4 +1,5 @@
-import { appConfig, DataMode } from "../config";
+import { DataMode } from "../config";
+import { apiRequest } from "../api/client";
 import { Alert, AlertStatus } from "../types";
 
 export type AlertActionState = "idle" | "pending" | "success" | "failed";
@@ -19,49 +20,18 @@ export interface FalsePositivePayload {
 
 export type AlertRulePayload = Record<string, unknown>;
 
-const DEMO_ACTION_STORAGE_KEY = "soc_demo_alert_action_overrides";
-
-function readDemoOverrides(): Record<string, Partial<Alert>> {
-  try {
-    return JSON.parse(window.localStorage.getItem(DEMO_ACTION_STORAGE_KEY) ?? "{}") as Record<string, Partial<Alert>>;
-  } catch {
-    return {};
-  }
-}
-
-function writeDemoOverride(alertId: string, updates: Partial<Alert>) {
-  const current = readDemoOverrides();
-  window.localStorage.setItem(
-    DEMO_ACTION_STORAGE_KEY,
-    JSON.stringify({
-      ...current,
-      [alertId]: {
-        ...(current[alertId] ?? {}),
-        ...updates,
-      },
-    })
-  );
-}
-
 async function requestLiveAction(
   alertId: string,
   action: string,
   payload: Record<string, unknown>
 ): Promise<AnalystActionResult> {
-  const response = await fetch(`${appConfig.apiBaseUrl}/api/alerts/${encodeURIComponent(alertId)}/actions`, {
+  const result = await apiRequest<Partial<AnalystActionResult>>(`/api/alerts/${encodeURIComponent(alertId)}/actions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    body: {
       action,
       ...payload,
-    }),
+    },
   });
-
-  if (!response.ok) {
-    throw new Error(`Alert action failed with HTTP ${response.status}`);
-  }
-
-  const result = (await response.json()) as Partial<AnalystActionResult>;
   return {
     alertId,
     updates: result.updates ?? ((payload.updates as Partial<Alert> | undefined) ?? {}),
@@ -69,28 +39,11 @@ async function requestLiveAction(
   };
 }
 
-function requestDemoAction(alertId: string, updates: Partial<Alert>): Promise<AnalystActionResult> {
-  writeDemoOverride(alertId, updates);
-  return Promise.resolve({
-    alertId,
-    updates,
-    auditEventId: `demo-audit-${Date.now()}`,
-  });
-}
-
-function actionAdapter(dataMode: DataMode, alertId: string, action: string, updates: Partial<Alert>, payload: Record<string, unknown> = {}) {
-  if (dataMode === "live") {
-    return requestLiveAction(alertId, action, {
-      ...payload,
-      updates,
-    });
-  }
-  return requestDemoAction(alertId, updates);
+function actionAdapter(_dataMode: DataMode, alertId: string, action: string, updates: Partial<Alert>, payload: Record<string, unknown> = {}) {
+  return requestLiveAction(alertId, action, { ...payload, updates });
 }
 
 export const alertActionService = {
-  getStoredDemoOverrides: readDemoOverrides,
-
   acknowledgeAlert(alertId: string, dataMode: DataMode) {
     return actionAdapter(dataMode, alertId, "acknowledgeAlert", { status: AlertStatus.INVESTIGATING });
   },
@@ -115,47 +68,17 @@ export const alertActionService = {
     return actionAdapter(dataMode, alertId, "addAnalystNote", {}, { note });
   },
 
-  async createRule(ruleData: AlertRulePayload, dataMode: DataMode) {
-    if (dataMode === "live") {
-      const response = await fetch(`${appConfig.apiBaseUrl}/api/alert-rules`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...ruleData,
-          audit: {
-            action: "createAlertRule",
-            timestamp: new Date().toISOString(),
-          },
-        }),
-      });
-      if (!response.ok) throw new Error(`Rule creation failed with HTTP ${response.status}`);
-      return response.json() as Promise<{ id?: string; status?: string }>;
-    }
-    return {
-      id: `demo-rule-${Date.now()}`,
-      status: "simulated",
-    };
+  async createRule(ruleData: AlertRulePayload, _dataMode: DataMode) {
+    return apiRequest<{ id?: string; status?: string }>("/api/alert-rules", {
+      method: "POST",
+      body: ruleData,
+    });
   },
 
-  async testRule(ruleData: AlertRulePayload, dataMode: DataMode) {
-    if (dataMode === "live") {
-      const response = await fetch(`${appConfig.apiBaseUrl}/api/alert-rules/test`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...ruleData,
-          audit: {
-            action: "testAlertRule",
-            timestamp: new Date().toISOString(),
-          },
-        }),
-      });
-      if (!response.ok) throw new Error(`Rule test failed with HTTP ${response.status}`);
-      return response.json() as Promise<{ matchedEvents?: number; status?: string }>;
-    }
-    return {
-      matchedEvents: 0,
-      status: "simulated",
-    };
+  async testRule(ruleData: AlertRulePayload, _dataMode: DataMode) {
+    return apiRequest<{ matchedEvents?: number; status?: string }>("/api/alert-rules/test", {
+      method: "POST",
+      body: ruleData,
+    });
   },
 };

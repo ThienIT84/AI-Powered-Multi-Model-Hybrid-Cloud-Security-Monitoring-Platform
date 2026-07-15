@@ -1,22 +1,7 @@
-import { appConfig, DataMode } from "../config";
+import { DataMode } from "../config";
+import { apiRequest } from "../api/client";
 import { Alert } from "../types";
 import { Case, CaseSeverity, CaseStatus } from "../components/caseManagement/caseTypes";
-import { INITIAL_CASES } from "../components/caseManagement/caseDataMock";
-
-const DEMO_CASES_STORAGE_KEY = "soc_demo_cases";
-
-function readDemoCases(): Case[] {
-  try {
-    const stored = window.localStorage.getItem(DEMO_CASES_STORAGE_KEY);
-    return stored ? JSON.parse(stored) as Case[] : INITIAL_CASES;
-  } catch {
-    return INITIAL_CASES;
-  }
-}
-
-function writeDemoCases(cases: Case[]) {
-  window.localStorage.setItem(DEMO_CASES_STORAGE_KEY, JSON.stringify(cases));
-}
 
 function normalizeCaseSeverity(value?: string): CaseSeverity {
   if (value === "Critical" || value === "High" || value === "Medium" || value === "Low") return value;
@@ -83,66 +68,26 @@ export function mapAlertToCase(alert: Alert): Case {
   };
 }
 
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${appConfig.apiBaseUrl}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
-  if (!response.ok) throw new Error(`Case API returned HTTP ${response.status}`);
-  return response.json() as Promise<T>;
-}
-
 export const casesService = {
-  async listCases(dataMode: DataMode): Promise<Case[]> {
-    if (dataMode === "live") return requestJson<Case[]>("/api/cases");
-    return readDemoCases();
+  async listCases(_dataMode: DataMode): Promise<Case[]> {
+    return apiRequest<Case[]>("/api/cases");
   },
 
-  async getCase(caseId: string, dataMode: DataMode): Promise<Case | null> {
-    if (dataMode === "live") return requestJson<Case>(`/api/cases/${encodeURIComponent(caseId)}`);
-    return readDemoCases().find((item) => item.id === caseId) ?? null;
+  async getCase(caseId: string, _dataMode: DataMode): Promise<Case | null> {
+    return apiRequest<Case>(`/api/cases/${encodeURIComponent(caseId)}`);
   },
 
-  async createCaseFromAlert(alert: Alert, dataMode: DataMode): Promise<Case> {
-    if (dataMode === "live") {
-      return requestJson<Case>("/api/cases", {
-        method: "POST",
-        body: JSON.stringify({
-          source: "alert",
-          alertId: alert.id,
-          evidence: mapAlertToCase(alert),
-        }),
-      });
-    }
-    const newCase = mapAlertToCase(alert);
-    const cases = readDemoCases();
-    if (!cases.some((item) => item.id === newCase.id)) {
-      writeDemoCases([newCase, ...cases]);
-    }
-    return newCase;
+  async createCaseFromAlert(alert: Alert, _dataMode: DataMode): Promise<Case> {
+    return apiRequest<Case>("/api/cases", {
+      method: "POST",
+      body: { source: "alert", alertId: alert.id, evidence: mapAlertToCase(alert) },
+    });
   },
 
-  async updateCase(caseId: string, updates: Partial<Case>, dataMode: DataMode): Promise<Case> {
-    if (dataMode === "live") {
-      return requestJson<Case>(`/api/cases/${encodeURIComponent(caseId)}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          updates,
-          audit: {
-            action: "updateCase",
-            timestamp: new Date().toISOString(),
-          },
-        }),
-      });
-    }
-    const cases = readDemoCases();
-    const updated = cases.map((item) => item.id === caseId ? { ...item, ...updates } : item);
-    writeDemoCases(updated);
-    const match = updated.find((item) => item.id === caseId);
-    if (!match) throw new Error(`Case ${caseId} not found`);
-    return match;
+  async updateCase(caseId: string, updates: Partial<Case>, _dataMode: DataMode): Promise<Case> {
+    return apiRequest<Case>(`/api/cases/${encodeURIComponent(caseId)}`, {
+      method: "PATCH",
+      body: { updates },
+    });
   },
 };

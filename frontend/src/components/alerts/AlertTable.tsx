@@ -25,24 +25,55 @@ interface AlertTableProps {
   actionStates?: Record<string, AlertActionState>;
 }
 
-function formatModelCell(value: string, status: string, source: string) {
-  const normalizedStatus = (status || "completed").toLowerCase();
-  const normalizedSource = (source || "legacy").toLowerCase();
+function stripModelProvenancePrefix(value: string) {
+  const normalizedValue = (value || "N/A").trim();
+  const result = normalizedValue.replace(/^(?:(?:mock|replay|simulated|real)[\s:_-]+)+/i, "").trim();
+  return result || "N/A";
+}
+
+function formatModelCell(value: string, status: string) {
+  const normalizedStatus = (status || "not_run").toLowerCase();
   if (normalizedStatus === "not_applicable") return "- N/A";
   if (normalizedStatus === "not_available") return "Unavailable";
   if (normalizedStatus === "not_run") return "Not Run";
   if (normalizedStatus === "failed") return "! FAILED";
   if (normalizedStatus === "timeout") return "! TIMEOUT";
-  if (normalizedStatus === "simulated" || normalizedSource === "mock" || normalizedSource === "simulated") {
-    return `Mock ${value}`;
-  }
-  if (normalizedSource === "real") return `Real ${value}`;
-  return value;
+  return stripModelProvenancePrefix(value);
+}
+
+function compactIpAddress(address?: string) {
+  const value = (address || "N/A").trim();
+  if (!value.includes(":") || value.length <= 22) return value;
+
+  const [addressPart, zone] = value.split("%", 2);
+  const groups = addressPart.split(":").filter(Boolean);
+  if (groups.length <= 4) return value;
+
+  const compact = `${groups.slice(0, 2).join(":")}:\u2026:${groups.slice(-2).join(":")}`;
+
+  return zone ? `${compact}%${zone}` : compact;
+}
+
+function EndpointAddress({ label, address, primary = false }: { label: "SRC" | "DST"; address?: string; primary?: boolean }) {
+  const fullAddress = (address || "N/A").trim();
+
+  return (
+    <div
+      className="flex min-w-0 items-center gap-1 leading-none"
+      title={`${label === "SRC" ? "Source" : "Destination"}: ${fullAddress}`}
+      aria-label={`${label === "SRC" ? "Source" : "Destination"} IP address: ${fullAddress}`}
+    >
+      <span className="w-4.5 shrink-0 text-[6.5px] font-black tracking-wider text-cyan-500/65">{label}</span>
+      <span className={cn("min-w-0 truncate", primary ? "font-black text-foreground" : "font-semibold text-foreground/90")}>
+        {compactIpAddress(fullAddress)}
+      </span>
+    </div>
+  );
 }
 
 function modelBadgeClass(value: string, status: string, source: string) {
-  const normalizedStatus = (status || "completed").toLowerCase();
-  const normalizedSource = (source || "legacy").toLowerCase();
+  const normalizedStatus = (status || "not_run").toLowerCase();
+  const normalizedSource = (source || "unknown").toLowerCase();
   const normalizedValue = (value || "").toLowerCase();
   if (normalizedStatus === "failed" || normalizedStatus === "timeout") {
     return "border-red-500/25 bg-red-500/10 text-red-500";
@@ -50,23 +81,26 @@ function modelBadgeClass(value: string, status: string, source: string) {
   if (normalizedStatus === "not_applicable" || normalizedStatus === "not_available" || normalizedStatus === "not_run") {
     return "border-slate-500/15 bg-slate-500/5 text-muted-foreground";
   }
-  if (normalizedSource === "mock" || normalizedSource === "simulated" || normalizedStatus === "simulated") {
-    return "border-purple-500/20 bg-purple-500/10 text-purple-400";
-  }
   if (normalizedValue.includes("normal") || normalizedValue.includes("none")) {
     return "border-emerald-500/20 bg-emerald-500/10 text-emerald-500";
+  }
+  if (normalizedSource === "unknown" && normalizedStatus !== "completed" && normalizedStatus !== "simulated") {
+    return "border-purple-500/20 bg-purple-500/10 text-purple-400";
   }
   return "border-red-500/25 bg-red-500/10 text-red-400";
 }
 
 function ModelBadge({ value, status, source, center = false }: { value: string; status: string; source: string; center?: boolean }) {
+  const displayValue = formatModelCell(value, status);
+  const provenanceTitle = `Result: ${displayValue} | Status: ${(status || "unknown").toUpperCase()} | Source: ${(source || "unknown").toUpperCase()}`;
+
   return (
     <div className={cn("flex", center ? "justify-center" : "items-center")}>
       <span className={cn(
         "px-1.5 py-[0.5px] rounded border font-mono text-[7px] font-black tracking-widest uppercase truncate max-w-28",
         modelBadgeClass(value, status, source)
-      )}>
-        {formatModelCell(value, status, source)}
+      )} title={provenanceTitle}>
+        {displayValue}
       </span>
     </div>
   );
@@ -321,8 +355,8 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                   // Compute the dynamic Fusion fields on-the-fly
                   const meta = getAlertFusionMeta(alert);
 
-                  // Map to mock Incident group
-                  const incidentGroup = alert.attackType.includes("Scan") || alert.attackType.includes("Force") ? "INC-2051" : "INC-2049";
+                  // No backend incident group is currently supplied for this alert.
+                  const incidentGroup = "—";
 
                   return (
                      <tr 
@@ -363,11 +397,10 @@ export function AlertTable({ alerts, onSelectAlert, selectedAlertId, onUpdateAle
                        </td>
 
                        {/* Column 3: Source -> Destination */}
-                       <td className="px-3 py-1 font-mono text-[7.8px] text-muted-foreground font-semibold">
-                          <div className="flex items-center gap-1 leading-none">
-                            <span className="text-foreground font-black">{alert.sourceIp}</span>
-                            <span className="text-cyan-500/60 font-black">{'->'}</span>
-                            <span className="text-foreground/90">{alert.destinationIp}</span>
+                       <td className="px-3 py-1 font-mono text-[7.8px] text-muted-foreground">
+                          <div className="grid min-w-0 gap-1">
+                            <EndpointAddress label="SRC" address={alert.sourceIp} primary />
+                            <EndpointAddress label="DST" address={alert.destinationIp || alert.destIp} />
                           </div>
                        </td>
                        

@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from app import main
 from app.services import rds_alert_store
 from app.services.sqs_producer import send_event_to_sqs
+from app.services.store import AlertStore
 
 
 def test_enqueue_http_event_returns_queued_response(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -28,8 +29,10 @@ def test_enqueue_http_event_returns_queued_response(monkeypatch: pytest.MonkeyPa
         }
     )
 
-    event = captured["event"]
+    envelope = captured["event"]
+    event = envelope["event"]
     assert response == {"status": "queued", "event_id": "evt-http-1", "message_id": "msg-123"}
+    assert envelope["envelope_type"] == "hybrid-soc.normalized-zeek-event"
     assert event["event_type"] == "http"
     assert event["source_ip"] == "10.10.10.10"
     assert event["destination_ip"] == "192.168.1.10"
@@ -74,7 +77,9 @@ def test_latest_alert_returns_rds_payload(monkeypatch: pytest.MonkeyPatch) -> No
         "attack_type": "SQL Injection",
         "risk_score": 94,
     }
-    monkeypatch.setattr(main, "get_latest_alert_payload", lambda: alert)
+    monkeypatch.setenv("RDS_SECRET_ID", "test/rds")
+    monkeypatch.setattr(main, "list_final_alerts", lambda limit: [alert])
+    monkeypatch.setattr(main, "store", AlertStore())
 
     assert main.latest_alert() == alert
 
@@ -90,7 +95,9 @@ def test_list_alerts_returns_persisted_rds_payloads(monkeypatch: pytest.MonkeyPa
         captured["limit"] = limit
         return alerts
 
+    monkeypatch.setenv("RDS_SECRET_ID", "test/rds")
     monkeypatch.setattr(main, "list_final_alerts", fake_list_final_alerts)
+    monkeypatch.setattr(main, "store", AlertStore())
 
     assert main.list_alerts(limit=25) == alerts
     assert captured["limit"] == 25
@@ -99,21 +106,22 @@ def test_list_alerts_returns_persisted_rds_payloads(monkeypatch: pytest.MonkeyPa
     assert captured["limit"] == 50
 
 
-def test_list_alerts_rds_failure_returns_503(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_list_alerts_rds_failure_falls_back_to_memory(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_list_final_alerts(limit: int) -> list[dict]:  # noqa: ARG001
         raise RuntimeError("RDS_SECRET_ID is not configured")
 
+    memory = AlertStore()
+    memory.add({"id": "evt-memory", "timestamp": "2026-01-01T00:00:00Z"})
+    monkeypatch.setenv("RDS_SECRET_ID", "test/rds")
     monkeypatch.setattr(main, "list_final_alerts", fail_list_final_alerts)
+    monkeypatch.setattr(main, "store", memory)
 
-    with pytest.raises(HTTPException) as excinfo:
-        main.list_alerts(limit=50)
-
-    assert excinfo.value.status_code == 503
-    assert "Failed to read alerts" in str(excinfo.value.detail)
+    assert main.list_alerts(limit=50) == [{"id": "evt-memory", "timestamp": "2026-01-01T00:00:00Z"}]
 
 
 def test_latest_alert_returns_404_when_empty(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(main, "get_latest_alert_payload", lambda: None)
+    monkeypatch.delenv("RDS_SECRET_ID", raising=False)
+    monkeypatch.setattr(main, "store", AlertStore())
 
     with pytest.raises(HTTPException) as excinfo:
         main.latest_alert()
@@ -122,17 +130,18 @@ def test_latest_alert_returns_404_when_empty(monkeypatch: pytest.MonkeyPatch) ->
     assert excinfo.value.detail == "No alerts found"
 
 
-def test_latest_alert_rds_failure_returns_503(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fail_get_latest_alert_payload() -> dict | None:
+def test_latest_alert_rds_failure_falls_back_to_memory(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_list_final_alerts(limit: int) -> list[dict]:  # noqa: ARG001
         raise RuntimeError("RDS_SECRET_ID is not configured")
 
-    monkeypatch.setattr(main, "get_latest_alert_payload", fail_get_latest_alert_payload)
+    memory = AlertStore()
+    alert = {"id": "evt-memory-latest", "timestamp": "2026-01-02T00:00:00Z"}
+    memory.add(alert)
+    monkeypatch.setenv("RDS_SECRET_ID", "test/rds")
+    monkeypatch.setattr(main, "list_final_alerts", fail_list_final_alerts)
+    monkeypatch.setattr(main, "store", memory)
 
-    with pytest.raises(HTTPException) as excinfo:
-        main.latest_alert()
-
-    assert excinfo.value.status_code == 503
-    assert "Failed to read latest alert" in str(excinfo.value.detail)
+    assert main.latest_alert() == alert
 
 
 def test_send_event_to_sqs_requires_queue_url(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -140,6 +149,15 @@ def test_send_event_to_sqs_requires_queue_url(monkeypatch: pytest.MonkeyPatch) -
 
     with pytest.raises(RuntimeError, match="SQS_QUEUE_URL is not configured"):
         send_event_to_sqs({"event_id": "evt-1"})
+
+
+def test_send_event_to_sqs_rejects_non_finite_json_before_client_creation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SQS_QUEUE_URL", "https://sqs.example/queue")
+
+    with pytest.raises(ValueError, match="Out of range float values are not JSON compliant"):
+        send_event_to_sqs({"event_id": "evt-nan", "score": float("nan")})
 
 
 def test_upsert_final_alert_rejects_missing_event_id() -> None:
@@ -233,4 +251,41 @@ def test_list_final_alerts_returns_payloads_in_database_order(monkeypatch: pytes
         {"id": "evt-older"},
     ]
     assert "ORDER BY created_at DESC" in str(captured["sql"])
-    assert captured["params"] == {"limit": 50}
+    assert captured["params"] == {"limit": 80}
+
+
+def test_get_final_alert_queries_alert_or_event_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeCursor:
+        def __enter__(self) -> FakeCursor:
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+        def execute(self, sql: str, params: dict) -> None:
+            captured["sql"] = sql
+            captured["params"] = params
+
+        def fetchone(self) -> dict[str, dict[str, str]]:
+            return {"payload": {"id": "alert-1", "event_id": "event-1"}}
+
+    class FakeConn:
+        def __enter__(self) -> FakeConn:
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+        def cursor(self) -> FakeCursor:
+            return FakeCursor()
+
+    monkeypatch.setattr(rds_alert_store, "get_conn", lambda: FakeConn())
+
+    assert rds_alert_store.get_final_alert("event-1") == {
+        "id": "alert-1",
+        "event_id": "event-1",
+    }
+    assert "alert_id = %(alert_id)s OR event_id = %(alert_id)s" in str(captured["sql"])
+    assert captured["params"] == {"alert_id": "event-1"}

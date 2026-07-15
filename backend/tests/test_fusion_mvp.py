@@ -65,6 +65,171 @@ def test_combined_event_uses_all_supported_mock_adapters() -> None:
     assert alert["ai_analysis"]["fusion"]["mode"] == "SIMULATED_FULL_MULTI_MODEL"
 
 
+def test_ai2a_treats_ordinary_http_flow_as_normal_without_attack_hint() -> None:
+    adapter = MockAI2AAdapter()
+
+    output = adapter.predict({"service": "http", "dst_port": 80, "orig_pkts": 10})
+
+    assert output.label == "NORMAL"
+
+
+def test_ai2a_treats_ordinary_https_flow_as_normal_without_attack_hint() -> None:
+    adapter = MockAI2AAdapter()
+
+    output = adapter.predict({"service": "ssl", "dst_port": 443, "orig_pkts": 10})
+
+    assert output.label == "NORMAL"
+
+
+def test_ai2a_preserves_explicit_web_attack_hint() -> None:
+    adapter = MockAI2AAdapter()
+
+    output = adapter.predict({"attack_hint": "web", "service": "http", "dst_port": 80})
+
+    assert output.label == "WEB_ATTACK"
+
+
+def test_ai1_marks_small_flow_anomalous_when_rate_detector_flags_dos() -> None:
+    output = MockAI1Adapter().predict(
+        {
+            "service": "http",
+            "orig_pkts": 2,
+            "orig_bytes": 200,
+            "network_rate_features": {
+                "same_src_dst_connection_count": 20,
+                "dos_suspected": True,
+                "ddos_suspected": False,
+            },
+        }
+    )
+
+    assert output.label == "ANOMALY"
+    assert output.confidence == 0.93
+    assert "rate burst" in output.reason
+
+
+def test_ai2a_uses_rate_flags_for_dos_and_ddos_classes() -> None:
+    adapter = MockAI2AAdapter()
+
+    dos = adapter.predict(
+        {"network_rate_features": {"dos_suspected": True, "ddos_suspected": False}}
+    )
+    ddos = adapter.predict(
+        {"network_rate_features": {"dos_suspected": True, "ddos_suspected": True}}
+    )
+
+    assert dos.label == "DOS_INDICATOR"
+    assert ddos.label == "DDOS_INDICATOR"
+    assert ddos.confidence > dos.confidence
+
+
+def test_ai2a_prioritizes_ssh_temporal_burst_over_generic_dos_flag() -> None:
+    output = MockAI2AAdapter().predict(
+        {
+            "service": "ssh",
+            "dst_port": 22,
+            "ai2a_features": {
+                "is_ssh": 1,
+                "ssh_count_60s_same_src_dst": 8,
+                "ssh_non_success_conn_count_60s_same_src_dst": 5,
+            },
+            "network_rate_features": {
+                "same_src_dst_connection_count": 20,
+                "dos_suspected": True,
+                "ddos_suspected": False,
+            },
+        }
+    )
+
+    assert output.label == "SSH_BRUTEFORCE_INDICATOR"
+    assert "non_success_60s=5" in output.reason
+
+
+def test_corroborated_rate_burst_fuses_to_simulated_dos_and_keeps_evidence() -> None:
+    rate_features = {
+        "window_seconds": 10.0,
+        "same_src_dst_connection_count": 20,
+        "destination_connection_count": 20,
+        "unique_source_count": 1,
+        "dos_suspected": True,
+        "ddos_suspected": False,
+    }
+
+    alert = build_orchestrator().process(
+        {
+            "event_type": "network_flow",
+            "source_ip": "192.168.137.145",
+            "destination_ip": "192.168.137.141",
+            "evidence": {
+                "flow": {
+                    "service": "http",
+                    "dst_port": 80,
+                    "orig_pkts": 2,
+                    "network_rate_features": rate_features,
+                }
+            },
+        }
+    )
+
+    assert alert["ai_analysis"]["ai1"]["verdict"] == "ANOMALY"
+    assert alert["ai_analysis"]["ai2a"]["attack_type"] == "DOS_INDICATOR"
+    assert alert["attack_type"] == "Denial of Service"
+    assert alert["severity"] == "High"
+    assert alert["risk_score"] >= 85
+    assert alert["ai_analysis"]["fusion"]["mode"] == "SIMULATED_PARTIAL"
+    assert alert["zeek_evidence"]["rate_features"] == rate_features
+    assert alert["mitre"]["technique_id"] == "T1498"
+
+
+def test_corroborated_distributed_burst_fuses_to_critical_ddos() -> None:
+    alert = build_orchestrator().process(
+        {
+            "event_type": "network_flow",
+            "source_ip": "192.0.2.10",
+            "destination_ip": "10.10.10.50",
+            "evidence": {
+                "flow": {
+                    "service": "http",
+                    "dst_port": 80,
+                    "orig_pkts": 2,
+                    "network_rate_features": {
+                        "window_seconds": 10.0,
+                        "same_src_dst_connection_count": 12,
+                        "destination_connection_count": 50,
+                        "unique_source_count": 5,
+                        "dos_suspected": False,
+                        "ddos_suspected": True,
+                    },
+                }
+            },
+        }
+    )
+
+    assert alert["ai_analysis"]["ai1"]["verdict"] == "ANOMALY"
+    assert alert["ai_analysis"]["ai2a"]["attack_type"] == "DDOS_INDICATOR"
+    assert alert["attack_type"] == "Distributed Denial of Service"
+    assert alert["severity"] == "Critical"
+    assert alert["risk_score"] >= 94
+
+
+def test_combined_sqli_keeps_ai2a_network_class_normal_and_uses_ai2b() -> None:
+    alert = build_orchestrator().process(
+        {
+            "event_type": "combined",
+            "source_ip": "1.1.1.1",
+            "destination_ip": "2.2.2.2",
+            "evidence": {
+                "flow": {"service": "http", "dst_port": 80, "orig_pkts": 10},
+                "http": {"method": "GET", "uri": "/?q=%27%20OR%201%3D1--"},
+            },
+        }
+    )
+
+    assert alert["ai_analysis"]["ai2a"]["attack_type"] == "NORMAL"
+    assert alert["ai_analysis"]["ai2b"]["web_attack_type"] == "SQLI"
+    assert alert["attack_type"] == "SQL Injection"
+
+
 class FixedFlowAdapter:
     name = "AI2A"
 

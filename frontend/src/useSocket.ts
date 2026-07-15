@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { apiRequest } from "./api/client";
+import { getAccessToken } from "./api/session";
 import { appConfig } from "./config";
-import { Alert, AlertStatus, BackendAlertDTO, PlatformStatus, SocketStatus, TrafficData } from "./types";
 import { mapBackendAlertToAlert } from "./lib/alertMapper";
+import { Alert, BackendAlertDTO, NetworkFlow, PlatformStatus, SocketStatus, TrafficData } from "./types";
 
-const MAX_RECONNECT_DELAY_MS = 30000;
-
-const legacyAlertSchema = z.record(z.string(), z.unknown()).and(
-  z.object({
-    id: z.string(),
-  }).passthrough()
-);
+const MAX_ALERTS = 200;
+const MAX_NETWORK_FLOWS = 200;
+const MAX_RECONNECT_DELAY_MS = 30_000;
+const RECONCILIATION_INTERVAL_MS = 15_000;
 
 const backendAlertSchema = z.object({
   id: z.string().optional(),
@@ -48,24 +47,31 @@ const backendAlertSchema = z.object({
   }
 });
 
-const trafficSchema = z.object({
-  timestamp: z.string(),
-  formattedTime: z.string().optional(),
-  flows: z.number(),
-  anomalies: z.number(),
-  inbound: z.number(),
-  outbound: z.number(),
-  isAnomaly: z.boolean().optional(),
-  isPeak: z.boolean().optional(),
-});
+const alertsSchema = z.array(backendAlertSchema);
 
 const socketEnvelopeSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("INITIAL_DATA"), data: z.array(z.union([backendAlertSchema, legacyAlertSchema])) }),
-  z.object({ type: z.literal("NEW_ALERT"), data: z.union([backendAlertSchema, legacyAlertSchema]) }),
-  z.object({ type: z.literal("alert.created"), data: z.union([backendAlertSchema, legacyAlertSchema]) }),
-  z.object({ type: z.literal("alert.updated"), data: z.union([backendAlertSchema, legacyAlertSchema]) }),
-  z.object({ type: z.literal("TRAFFIC_UPDATE"), data: trafficSchema }),
+  z.object({ type: z.literal("INITIAL_DATA"), data: alertsSchema }),
+  z.object({ type: z.literal("alert.created"), data: backendAlertSchema }),
+  z.object({ type: z.literal("alert.updated"), data: backendAlertSchema }),
 ]);
+
+const dataSourceRuntimeStatusSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.enum(["healthy", "warning", "offline", "unknown"]),
+  eventCount: z.number().nullable().optional(),
+  lastSeenAt: z.string().nullable().optional(),
+  message: z.string().nullable().optional(),
+}).passthrough();
+
+const modelRuntimeStatusSchema = z.object({
+  name: z.string(),
+  status: z.string(),
+  source: z.string(),
+  modelVersion: z.string().nullable().optional(),
+  lastSeenAt: z.string().nullable().optional(),
+  message: z.string().nullable().optional(),
+}).passthrough();
 
 const platformStatusSchema = z.object({
   dataSourcesOnline: z.number().nullable().optional(),
@@ -75,102 +81,62 @@ const platformStatusSchema = z.object({
   eventRatePerSecond: z.number().nullable().optional(),
   lastIngestAt: z.string().nullable().optional(),
   lastError: z.string().nullable().optional(),
+  dataSources: z.array(dataSourceRuntimeStatusSchema).optional(),
+  models: z.array(modelRuntimeStatusSchema).optional(),
+  databaseStatus: z.enum(["healthy", "warning", "offline", "unknown"]).optional(),
 }).passthrough();
 
-function coerceIncomingAlert(raw: z.infer<typeof backendAlertSchema> | z.infer<typeof legacyAlertSchema>): Alert {
-  if ("source_ip" in raw || "attack_type" in raw || "ai_analysis" in raw) {
-    const backendAlert = raw as z.infer<typeof backendAlertSchema>;
-    return mapBackendAlertToAlert({
-      ...backendAlert,
-      id: backendAlert.id ?? backendAlert.event_id!,
-    } as unknown as BackendAlertDTO);
-  }
+const trafficPointSchema = z.object({
+  timestamp: z.string(),
+  flows: z.number(),
+  anomalies: z.number(),
+  inbound: z.number(),
+  outbound: z.number(),
+});
 
-  const legacy = raw as Record<string, unknown>;
-  const aiDecision = legacy.aiDecision as Record<string, unknown> | undefined;
-  const mitre = legacy.mitre as Record<string, unknown> | undefined;
-  const mitreAttack = legacy.mitreAttack as Record<string, unknown> | undefined;
-  const attackType = String(legacy.attackType ?? "Normal");
-  const confidence = Number(legacy.confidence ?? legacy.confidenceScore ?? 0);
-  const riskScore = Number(legacy.riskScore ?? 0);
+const networkFlowSchema = z.object({
+  id: z.string(),
+  sensorId: z.string().nullable().optional(),
+  source: z.string(),
+  timestamp: z.string(),
+  srcIp: z.string(),
+  srcPort: z.number().nullable().optional(),
+  dstIp: z.string(),
+  dstPort: z.number(),
+  protocol: z.string(),
+  service: z.string().nullable().optional(),
+  bytes: z.number(),
+  packets: z.number(),
+  verdict: z.enum(["NORMAL", "ANOMALY"]),
+  severity: z.string(),
+  anomalyScore: z.number(),
+  correlationId: z.string().nullable().optional(),
+  relatedAlertId: z.string(),
+}).passthrough();
 
-  return {
-    ...(legacy as unknown as Alert),
-    id: String(legacy.id),
-    destinationIp: String(legacy.destIp ?? legacy.destinationIp ?? ""),
-    destIp: String(legacy.destIp ?? legacy.destinationIp ?? ""),
-    destinationPort: Number(legacy.destPort ?? legacy.destinationPort ?? 0),
-    destPort: Number(legacy.destPort ?? legacy.destinationPort ?? 0),
-    confidenceScore: confidence,
-    confidence,
-    rawPayload: String(legacy.payload ?? legacy.rawPayload ?? ""),
-    payload: String(legacy.payload ?? legacy.rawPayload ?? ""),
-    direction: String(legacy.direction ?? "INGRESS"),
-    detectedBy: Array.isArray(legacy.detectedBy) ? legacy.detectedBy.map(String) : ["AI Engine"],
-    mitre: {
-      techniqueId: String(mitre?.techniqueId ?? mitreAttack?.id ?? "T1000"),
-      techniqueName: String(mitre?.techniqueName ?? mitreAttack?.technique ?? "Unknown Technique"),
-      tactic: String(mitre?.tactic ?? mitreAttack?.tactic ?? "Unknown Tactic"),
-      url: String(mitre?.url ?? ""),
-    },
-    zeekData: (legacy.zeekData as Alert["zeekData"]) ?? {},
-    suricataData: (legacy.suricataData as Alert["suricataData"]) ?? {},
-    aiDecision:
-      !aiDecision || typeof aiDecision.ai1 === "object"
-        ? ((aiDecision as Alert["aiDecision"]) ?? {})
-        : {
-            ai1: {
-              verdict: String(aiDecision.ai1 ?? (riskScore > 35 ? "ANOMALY" : "NORMAL")),
-              anomalyScore: confidence,
-              status: "simulated",
-              source: "simulated",
-              modelVersion: "AI1_LEGACY_SIM",
-              inputScope: "ZEEK_CONN_FLOW",
-            },
-            ai2a: {
-              attackType: String(aiDecision.ai2a ?? attackType),
-              confidenceScore: confidence,
-              status: "simulated",
-              source: "simulated",
-              modelVersion: "AI2A_LEGACY_SIM",
-              inputScope: "ZEEK_CONN_FLOW",
-            },
-            ai2b: {
-              webAttackType: String(aiDecision.ai2b ?? attackType),
-              confidenceScore: confidence,
-              status: "simulated",
-              source: "simulated",
-              modelVersion: "AI2B_LEGACY_SIM",
-              inputScope: "HTTP_URI_QUERY",
-            },
-            fusion: {
-              confidenceScore: confidence,
-              riskScore,
-              reason: "Legacy frontend simulated alert normalized into the multi-model contract.",
-              mode: "SIMULATED_FULL_MULTI_MODEL",
-              contributors: ["AI1", "AI2A", "AI2B"],
-              excludedModels: {},
-              decisionVersion: "FUSION_V1_RULE_BASED",
-            },
-          },
-    decisionFlow: (legacy.decisionFlow as Alert["decisionFlow"]) ?? [],
-    status: (legacy.status as Alert["status"]) ?? AlertStatus.NEW,
-  };
+const networkActivitySchema = z.object({
+  totalFlows: z.number(),
+  totalAnomalies: z.number(),
+  points: z.array(trafficPointSchema),
+  flows: z.array(networkFlowSchema).default([]),
+}).passthrough();
+
+type ParsedBackendAlert = z.infer<typeof backendAlertSchema>;
+
+function mapIncomingAlert(raw: ParsedBackendAlert): Alert {
+  return mapBackendAlertToAlert({
+    ...raw,
+    id: raw.id ?? raw.event_id!,
+  } as unknown as BackendAlertDTO);
 }
 
 function mergeAlerts(existing: Alert[], incoming: Alert[]): Alert[] {
   const alertsById = new Map(existing.map((alert) => [alert.id, alert]));
-  for (const alert of incoming) {
-    alertsById.set(alert.id, alert);
-  }
+  for (const alert of incoming) alertsById.set(alert.id, alert);
 
   return [...alertsById.values()]
     .sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp))
-    .slice(0, 50);
-}
-
-function upsertAlert(alerts: Alert[], alert: Alert): Alert[] {
-  return mergeAlerts(alerts, [alert]);
+    .slice(0, MAX_ALERTS);
 }
 
 function buildEmptyPlatformStatus(socketStatus: SocketStatus, lastError: string | null): PlatformStatus {
@@ -184,38 +150,71 @@ function buildEmptyPlatformStatus(socketStatus: SocketStatus, lastError: string 
     eventRatePerSecond: null,
     lastIngestAt: null,
     lastError,
+    dataSources: [],
+    models: [],
+    databaseStatus: "unknown",
   };
 }
 
-export function useSocket() {
-  const [socketStatus, setSocketStatus] = useState<SocketStatus>("connecting");
+function authenticatedSocketUrl(_token: string): string {
+  const url = new URL(appConfig.wsUrl, window.location.href);
+  if (url.protocol === "http:") url.protocol = "ws:";
+  if (url.protocol === "https:") url.protocol = "wss:";
+  // Do not place the operator token in a URL: CloudFront/WAF/ALB access logs
+  // commonly retain query strings. Authentication should move to a secure
+  // same-origin cookie or a short-lived WebSocket ticket at the edge.
+  return url.toString();
+}
+
+function disposeSocket(socket: WebSocket | null): void {
+  if (!socket) return;
+  socket.onopen = null;
+  socket.onerror = null;
+  socket.onclose = null;
+  socket.onmessage = null;
+  if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+    socket.close();
+  }
+}
+
+export function useSocket(enabled: boolean = getAccessToken() !== null) {
+  const canConnect = enabled && getAccessToken() !== null && appConfig.configErrors.length === 0;
+  const [socketStatus, setSocketStatus] = useState<SocketStatus>(canConnect ? "connecting" : "disconnected");
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [socketError, setSocketError] = useState<string | null>(null);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [trafficError, setTrafficError] = useState<string | null>(null);
   const [traffic, setTraffic] = useState<TrafficData[]>([]);
-  const [error, setError] = useState<string | null>(appConfig.configErrors[0] ?? null);
+  const [networkFlows, setNetworkFlows] = useState<NetworkFlow[]>([]);
   const [platformStatus, setPlatformStatus] = useState<PlatformStatus>(() =>
-    buildEmptyPlatformStatus("connecting", appConfig.configErrors[0] ?? null)
+    buildEmptyPlatformStatus(canConnect ? "connecting" : "disconnected", null),
   );
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
-  const manualCloseRef = useRef(false);
 
-  const socketUrl = appConfig.dataMode === "live" ? appConfig.wsUrl : appConfig.mockWsUrl;
+  const clearReconnectTimer = useCallback(() => {
+    if (reconnectTimerRef.current !== null) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  }, []);
+
+  const closeCurrentSocket = useCallback(() => {
+    clearReconnectTimer();
+    const socket = socketRef.current;
+    socketRef.current = null;
+    disposeSocket(socket);
+  }, [clearReconnectTimer]);
 
   const refreshPlatformStatus = useCallback(async () => {
-    if (appConfig.dataMode !== "live") {
-      setPlatformStatus(buildEmptyPlatformStatus(socketStatus, error));
-      return;
-    }
+    if (!canConnect) return;
 
     try {
-      const response = await fetch(`${appConfig.apiBaseUrl}/api/status`);
-      if (!response.ok) {
-        throw new Error(`Status endpoint returned ${response.status}`);
-      }
-      const parsed = platformStatusSchema.parse(await response.json());
+      const parsed = await apiRequest("/api/status", { schema: platformStatusSchema });
       setPlatformStatus({
-        socketStatus,
+        socketStatus: "disconnected",
         dataMode: appConfig.dataMode,
         dataSourcesOnline: parsed.dataSourcesOnline ?? null,
         dataSourcesTotal: parsed.dataSourcesTotal ?? null,
@@ -223,62 +222,89 @@ export function useSocket() {
         modelTotal: parsed.modelTotal ?? null,
         eventRatePerSecond: parsed.eventRatePerSecond ?? null,
         lastIngestAt: parsed.lastIngestAt ?? null,
-        lastError: parsed.lastError ?? error,
+        lastError: parsed.lastError ?? null,
+        dataSources: parsed.dataSources ?? [],
+        models: parsed.models ?? [],
+        databaseStatus: parsed.databaseStatus ?? "unknown",
       });
-    } catch (statusError) {
-      const message = statusError instanceof Error ? statusError.message : "Status endpoint unavailable";
-      setPlatformStatus(buildEmptyPlatformStatus(socketStatus, message));
+      setStatusError(null);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Status endpoint unavailable";
+      setStatusError(`Unable to refresh platform status: ${message}`);
+      setPlatformStatus(buildEmptyPlatformStatus("disconnected", message));
     }
-  }, [error, socketStatus]);
+  }, [canConnect]);
 
   const refreshPersistedAlerts = useCallback(async () => {
-    if (appConfig.dataMode !== "live") {
-      return;
-    }
+    if (!canConnect) return;
 
     try {
-      const response = await fetch(`${appConfig.apiBaseUrl}/api/alerts?limit=50`);
-      if (!response.ok) {
-        throw new Error(`Alerts endpoint returned ${response.status}`);
-      }
-
-      const persistedAlerts = z.array(backendAlertSchema).parse(await response.json());
-      setAlerts((previous) => mergeAlerts(previous, persistedAlerts.map(coerceIncomingAlert)));
-    } catch (alertsError) {
-      const message = alertsError instanceof Error ? alertsError.message : "Alerts endpoint unavailable";
-      setError(`Unable to refresh persisted alerts: ${message}`);
+      const persistedAlerts = await apiRequest("/api/alerts?limit=200", { schema: alertsSchema });
+      setAlerts((previous) => mergeAlerts(previous, persistedAlerts.map(mapIncomingAlert)));
+      setAlertsError(null);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Alerts endpoint unavailable";
+      setAlertsError(`Unable to refresh persisted alerts: ${message}`);
     }
-  }, []);
+  }, [canConnect]);
+
+  const refreshNetworkActivity = useCallback(async () => {
+    if (!canConnect) return;
+
+    try {
+      const activity = await apiRequest("/api/network/activity", { schema: networkActivitySchema });
+      setTraffic(activity.points);
+      setNetworkFlows(activity.flows.slice(0, MAX_NETWORK_FLOWS));
+      setTrafficError(null);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Network activity endpoint unavailable";
+      setTrafficError(`Unable to refresh network activity: ${message}`);
+    }
+  }, [canConnect]);
 
   const connect = useCallback(() => {
-    if (appConfig.configErrors.length > 0) {
-      setSocketStatus("error");
-      setError(appConfig.configErrors.join(" "));
+    closeCurrentSocket();
+
+    if (!canConnect) {
+      setSocketStatus(enabled && appConfig.configErrors.length > 0 ? "error" : "disconnected");
       return;
     }
 
-    manualCloseRef.current = false;
+    const token = getAccessToken();
+    if (!token) {
+      setSocketStatus("disconnected");
+      return;
+    }
+
     setSocketStatus(reconnectAttemptRef.current > 0 ? "reconnecting" : "connecting");
-    const socket = new WebSocket(socketUrl);
+
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(authenticatedSocketUrl(token));
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Invalid WebSocket URL";
+      setSocketStatus("error");
+      setSocketError(`Unable to connect to the backend WebSocket: ${message}`);
+      return;
+    }
     socketRef.current = socket;
 
     socket.onopen = () => {
+      if (socketRef.current !== socket) return;
       reconnectAttemptRef.current = 0;
       setSocketStatus("connected");
-      setError(null);
+      setSocketError(null);
     };
 
     socket.onerror = () => {
+      if (socketRef.current !== socket) return;
       setSocketStatus("error");
-      setError(`Unable to connect to ${socketUrl}`);
+      setSocketError("Unable to connect to the backend WebSocket.");
     };
 
     socket.onclose = () => {
+      if (socketRef.current !== socket) return;
       socketRef.current = null;
-      if (manualCloseRef.current) {
-        setSocketStatus("disconnected");
-        return;
-      }
       reconnectAttemptRef.current += 1;
       const delay = Math.min(1000 * 2 ** (reconnectAttemptRef.current - 1), MAX_RECONNECT_DELAY_MS);
       setSocketStatus("reconnecting");
@@ -286,64 +312,69 @@ export function useSocket() {
     };
 
     socket.onmessage = (event) => {
+      if (socketRef.current !== socket) return;
       try {
-        const message = socketEnvelopeSchema.parse(JSON.parse(event.data));
-
-        switch (message.type) {
-          case "INITIAL_DATA":
-            setAlerts((previous) => mergeAlerts(previous, message.data.map(coerceIncomingAlert)));
-            break;
-          case "NEW_ALERT":
-          case "alert.created":
-          case "alert.updated":
-            setAlerts((prev) => upsertAlert(prev, coerceIncomingAlert(message.data)));
-            break;
-          case "TRAFFIC_UPDATE":
-            setTraffic((prev) => [...prev, message.data].slice(-100));
-            break;
+        const message = socketEnvelopeSchema.parse(JSON.parse(String(event.data)));
+        if (message.type === "INITIAL_DATA") {
+          setAlerts((previous) => mergeAlerts(previous, message.data.map(mapIncomingAlert)));
+        } else {
+          setAlerts((previous) => mergeAlerts(previous, [mapIncomingAlert(message.data)]));
         }
-      } catch (parseError) {
-        const message = parseError instanceof Error ? parseError.message : "Invalid WebSocket message";
-        setError(`Ignored invalid WebSocket message: ${message}`);
+        void refreshNetworkActivity();
+        setSocketError(null);
+      } catch (caught) {
+        const message = caught instanceof Error ? caught.message : "Invalid WebSocket message";
+        setSocketError(`Ignored invalid backend WebSocket message: ${message}`);
       }
     };
-  }, [socketUrl]);
+  }, [canConnect, closeCurrentSocket, enabled, refreshNetworkActivity]);
 
   const reconnect = useCallback(() => {
-    if (reconnectTimerRef.current !== null) {
-      window.clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
     reconnectAttemptRef.current = 0;
-    manualCloseRef.current = true;
-    socketRef.current?.close();
     connect();
-  }, [connect]);
+    void refreshPersistedAlerts();
+    void refreshPlatformStatus();
+    void refreshNetworkActivity();
+  }, [connect, refreshNetworkActivity, refreshPersistedAlerts, refreshPlatformStatus]);
 
   useEffect(() => {
+    if (!canConnect) {
+      closeCurrentSocket();
+      reconnectAttemptRef.current = 0;
+      setSocketStatus(enabled && appConfig.configErrors.length > 0 ? "error" : "disconnected");
+      setAlerts([]);
+      setTraffic([]);
+      setNetworkFlows([]);
+      setPlatformStatus(buildEmptyPlatformStatus("disconnected", null));
+      return;
+    }
+
     connect();
-
-    return () => {
-      manualCloseRef.current = true;
-      if (reconnectTimerRef.current !== null) {
-        window.clearTimeout(reconnectTimerRef.current);
-      }
-      socketRef.current?.close();
-    };
-  }, [connect]);
+    return closeCurrentSocket;
+  }, [canConnect, closeCurrentSocket, connect, enabled]);
 
   useEffect(() => {
-    refreshPlatformStatus();
-    const timer = window.setInterval(refreshPlatformStatus, 15000);
+    if (!canConnect) return;
+    void refreshPlatformStatus();
+    const timer = window.setInterval(() => void refreshPlatformStatus(), RECONCILIATION_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [refreshPlatformStatus]);
+  }, [canConnect, refreshPlatformStatus]);
 
   useEffect(() => {
-    refreshPersistedAlerts();
-    const timer = window.setInterval(refreshPersistedAlerts, 15000);
+    if (!canConnect) return;
+    void refreshPersistedAlerts();
+    const timer = window.setInterval(() => void refreshPersistedAlerts(), RECONCILIATION_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [refreshPersistedAlerts]);
+  }, [canConnect, refreshPersistedAlerts]);
 
+  useEffect(() => {
+    if (!canConnect) return;
+    void refreshNetworkActivity();
+    const timer = window.setInterval(() => void refreshNetworkActivity(), RECONCILIATION_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [canConnect, refreshNetworkActivity]);
+
+  const error = appConfig.configErrors[0] ?? alertsError ?? trafficError ?? statusError ?? socketError;
   const mergedPlatformStatus = useMemo<PlatformStatus>(() => ({
     ...platformStatus,
     socketStatus,
@@ -355,6 +386,7 @@ export function useSocket() {
     socketStatus,
     alerts,
     traffic,
+    networkFlows,
     error,
     dataMode: appConfig.dataMode,
     platformStatus: mergedPlatformStatus,

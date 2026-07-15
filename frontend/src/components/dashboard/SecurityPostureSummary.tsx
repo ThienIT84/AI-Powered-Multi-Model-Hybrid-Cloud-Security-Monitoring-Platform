@@ -7,13 +7,15 @@ interface SecurityPostureSummaryProps {
 }
 
 export const SecurityPostureSummary: React.FC<SecurityPostureSummaryProps> = React.memo(({ metrics }) => {
-  const getProgressColor = (val: number) => {
+  const getProgressColor = (val: number | null) => {
+    if (val === null) return "bg-zinc-600";
     if (val >= 75) return "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.3)]";
     if (val >= 45) return "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.3)]";
     return "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]";
   };
 
-  const getTextColor = (val: number) => {
+  const getTextColor = (val: number | null) => {
+    if (val === null) return "text-muted-foreground";
     if (val >= 75) return "text-red-500 font-extrabold";
     if (val >= 45) return "text-amber-500 font-bold";
     return "text-emerald-500 font-bold";
@@ -68,14 +70,14 @@ export const SecurityPostureSummary: React.FC<SecurityPostureSummaryProps> = Rea
                   {factor.icon}
                   {factor.name}
                 </span>
-                <span className={getTextColor(factor.value)}>{factor.value}% Risk</span>
+                <span className={getTextColor(factor.value)}>{factor.value === null ? "—" : `${factor.value}% Risk`}</span>
               </div>
 
               {/* Progress Bar Container */}
               <div className="h-2 w-full bg-secondary/80 rounded-full overflow-hidden border border-border/20">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${getProgressColor(factor.value)}`}
-                  style={{ width: `${factor.value}%` }}
+                  style={{ width: `${factor.value ?? 0}%` }}
                 ></div>
               </div>
               <span className="text-[7.5px] text-zinc-500 block leading-tight mt-0.5">

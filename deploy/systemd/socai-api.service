@@ -1,0 +1,42 @@
+[Unit]
+Description=Hybrid SOC FastAPI service
+Wants=network-online.target
+Requires=socai-model-sync.service
+After=network-online.target socai-model-sync.service
+AssertPathExists=/opt/socai/current/backend/app/main.py
+
+[Service]
+Type=simple
+User=socai
+Group=socai
+WorkingDirectory=/opt/socai/current
+EnvironmentFile=/etc/socai/socai.env
+Environment=PYTHONPATH=/opt/socai/current/backend
+Environment=RDS_APPLICATION_NAME=socai-api
+ExecStart=/opt/socai/venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=*
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=180s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+UMask=0027
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=socai-api
+
+# This template assumes the EC2 target Security Group accepts port 8000 only
+# from the ALB Security Group. Review hardening if release/model paths change.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

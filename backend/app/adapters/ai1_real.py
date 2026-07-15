@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from app.contracts import ModelOutput, ModelSource, ModelStatus
+from app.services.model_artifacts import model_artifact_root
 
 
 AI1_RELEASE_CANDIDATE = "AI1_RELEASE_CANDIDATE_V1"
@@ -89,7 +90,7 @@ class RealAI1Adapter:
 
     def _load(self) -> None:
         try:
-            root = Path(__file__).resolve().parents[3]
+            root = model_artifact_root()
             scripts = root / "Dataset/tools/ai1_modeling/scripts"
             if scripts.exists() and str(scripts) not in sys.path:
                 sys.path.insert(0, str(scripts))

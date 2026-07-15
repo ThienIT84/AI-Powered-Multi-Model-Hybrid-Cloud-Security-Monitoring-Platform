@@ -70,8 +70,8 @@ export const FusionOverviewPanel: React.FC<FusionOverviewPanelProps> = React.mem
 
               <div className="text-right">
                 <span className="text-base md:text-lg font-black text-foreground tracking-tight leading-none">
-                  {card.value}
-                  <span className="text-[10px] text-zinc-500 font-bold">{card.suffix}</span>
+                  {card.value === null ? "—" : card.value}
+                  {card.value !== null && <span className="text-[10px] text-zinc-500 font-bold">{card.suffix}</span>}
                 </span>
               </div>
             </div>

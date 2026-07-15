@@ -23,6 +23,21 @@
 /Dataset/tools/ai2b_modeling/artifacts/
 __pycache__/
 *.pyc
+
+# Persistent collector/runtime databases must never be committed.
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Runtime environment files may contain queue/database identifiers or secrets.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!.env.*.example
+!**/.env.example
+!**/.env.*.example
 *:Zone.Identifier
 
 # Top-level copied/generated run artifacts
@@ -39,6 +54,7 @@ __pycache__/
 /archive_p10_calibration/
 /downloads/
 /tmp/
+/.run/
 
 # Packaged capture/modeling archives
 /a12_*.tar.gz

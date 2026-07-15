@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Activity, Wifi, WifiOff, Database, Cloud, Clock, RefreshCw } from "lucide-react";
+import { Activity, Wifi, WifiOff, Database, Clock, RefreshCw } from "lucide-react";
+import { PlatformStatus } from "../../types";
 
 interface DashboardHeaderProps {
   isConnected: boolean;
   onRefresh: () => void;
   isSyncing?: boolean;
+  platformStatus: PlatformStatus;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = React.memo(({
   isConnected,
   onRefresh,
-  isSyncing = false
+  isSyncing = false,
+  platformStatus,
 }) => {
   const [utcTime, setUtcTime] = useState<string>("");
 
@@ -67,21 +70,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = React.memo(({
           )}
         </span>
 
-        {/* Database Status */}
         <span className="bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 px-2.5 py-1 rounded-md text-[9px] font-black uppercase flex items-center gap-1.5">
           <Database size={11} />
-          DB: Connected
+          DB: {platformStatus.databaseStatus ?? "unknown"}
         </span>
 
-        {/* AWS Status */}
-        <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2.5 py-1 rounded-md text-[9px] font-black uppercase flex items-center gap-1.5">
-          <Cloud size={11} />
-          AWS: Healthy
-        </span>
-
-        {/* Env Tag */}
         <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-1 rounded-md text-[9px] font-black uppercase">
-          PROD-1
+          Sources: {platformStatus.dataSourcesOnline ?? "—"}/{platformStatus.dataSourcesTotal ?? "—"}
         </span>
 
         {/* Clock */}

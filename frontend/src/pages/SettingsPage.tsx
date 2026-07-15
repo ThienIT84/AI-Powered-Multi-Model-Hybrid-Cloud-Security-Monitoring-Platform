@@ -1,11 +1,18 @@
-import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense, lazy } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { useSettingsStore } from "../store/useSettingsStore";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { useSettingsNavigationStore } from "../store/useSettingsNavigationStore";
 import { SettingsSidebar } from "../components/settings/SettingsSidebar";
 
-// Types and Mocks
+// Types and backend persistence
 import { SettingsStateData, Toast } from "../types/settings";
-import { DEFAULT_COMPLETE_SETTINGS } from "../components/settings/settingsMocks";
+import {
+  createDefaultSettings,
+  EMPTY_RUNTIME_SETTINGS,
+  extractPersistedPreferences,
+  RuntimeSettingsStatus,
+  settingsService,
+} from "../services/settings.service";
 
 // Layout components
 import { SettingsHeader } from "../components/settings/SettingsHeader";
@@ -26,8 +33,8 @@ const DetectionPolicies = lazy(() =>
 const AlertManagement = lazy(() =>
   import("../components/settings/AlertManagement").then((m) => ({ default: m.AlertManagement }))
 );
-const Integrations = lazy(() =>
-  import("../components/settings/Integrations").then((m) => ({ default: m.Integrations }))
+const RuntimeIntegrations = lazy(() =>
+  import("../components/settings/RuntimeIntegrations").then((m) => ({ default: m.RuntimeIntegrations }))
 );
 const AccessControl = lazy(() =>
   import("../components/settings/AccessControl").then((m) => ({ default: m.AccessControl }))
@@ -54,10 +61,15 @@ export function SettingsPage({
   onThemeToggle,
   onThemeChange,
 }: SettingsPageProps) {
-  const { activeCategory } = useSettingsStore();
-
-  const [liveSettings, setLiveSettings] = useState<SettingsStateData>(DEFAULT_COMPLETE_SETTINGS);
-  const [draftSettings, setDraftSettings] = useState<SettingsStateData>(DEFAULT_COMPLETE_SETTINGS);
+  const { activeCategory } = useSettingsNavigationStore();
+  const initialThemeRef = useRef<SettingsStateData["theme"]>(isDarkMode ? "Dark" : "Light");
+  const [liveSettings, setLiveSettings] = useState<SettingsStateData>(() => createDefaultSettings(initialThemeRef.current));
+  const [draftSettings, setDraftSettings] = useState<SettingsStateData>(() => createDefaultSettings(initialThemeRef.current));
+  const [runtimeSettings, setRuntimeSettings] = useState<RuntimeSettingsStatus>(EMPTY_RUNTIME_SETTINGS);
+  const [settingsUpdatedAt, setSettingsUpdatedAt] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   // Custom confirmation modal trigger
   const [showConfirmReset, setShowConfirmReset] = useState(false);
@@ -65,6 +77,35 @@ export function SettingsPage({
   // Custom Toast state
   const [toasts, setToasts] = useState<Array<Toast>>([]);
   const toastIdRef = useRef(0);
+
+  const triggerToast = useCallback((message: string, type: "success" | "warning" | "info" = "success") => {
+    const id = toastIdRef.current++;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 4000);
+  }, []);
+
+  const loadSettings = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const snapshot = await settingsService.load(initialThemeRef.current);
+      setLiveSettings(snapshot.settings);
+      setDraftSettings(snapshot.settings);
+      setRuntimeSettings(snapshot.runtime);
+      setSettingsUpdatedAt(snapshot.updatedAt);
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Settings endpoint unavailable";
+      setLoadError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadSettings();
+  }, [loadSettings]);
 
   // Sync state settings with isDarkMode coming from App context
   useEffect(() => {
@@ -75,14 +116,6 @@ export function SettingsPage({
 
   // Filter query keyword for search settings bar
   const [searchQuery, setSearchQuery] = useState("");
-
-  const triggerToast = (message: string, type: "success" | "warning" | "info" = "success") => {
-    const id = toastIdRef.current++;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
-  };
 
   const updateDraft = (path: string, value: any) => {
     setDraftSettings((prev) => {
@@ -124,9 +157,22 @@ export function SettingsPage({
     return JSON.stringify(liveSettings) !== JSON.stringify(draftSettings);
   }, [liveSettings, draftSettings]);
 
-  const saveLiveSettings = () => {
-    setLiveSettings(draftSettings);
-    triggerToast("PLATFORM ADMINISTRATOR PREFERENCES PERSISTED SUCCESSFULLY!", "success");
+  const saveLiveSettings = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const snapshot = await settingsService.save(draftSettings);
+      setLiveSettings(snapshot.settings);
+      setDraftSettings(snapshot.settings);
+      setRuntimeSettings(snapshot.runtime);
+      setSettingsUpdatedAt(snapshot.updatedAt);
+      triggerToast("SETTINGS APPLIED TO THE CURRENT BACKEND PROCESS.", "success");
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Settings update failed";
+      triggerToast(`BACKEND DID NOT SAVE SETTINGS: ${message}`, "warning");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const discardDraftSettings = () => {
@@ -136,11 +182,12 @@ export function SettingsPage({
   };
 
   const handleDownloadSettings = () => {
-    triggerToast("SERIALIZING CORE v3 CONFIG STATE...", "info");
+    triggerToast("EXPORTING BACKEND-SYNCED PREFERENCES...", "info");
     try {
+      const preferences = extractPersistedPreferences(draftSettings);
       const dataStr =
         "data:text/json;charset=utf-8," +
-        encodeURIComponent(JSON.stringify(draftSettings, null, 2));
+        encodeURIComponent(JSON.stringify(preferences, null, 2));
       const downloadAnchor = document.createElement("a");
       downloadAnchor.setAttribute("href", dataStr);
       downloadAnchor.setAttribute("download", `hybrid_cloud_soc_config_${Date.now()}.json`);
@@ -164,7 +211,7 @@ export function SettingsPage({
       case "alerts":
         return "ALERT MANAGEMENT";
       case "integrations":
-        return "INTEGRATIONS CONFIG";
+        return "RUNTIME INTEGRATIONS";
       case "access":
         return "USERS & ACCESS CONTROL";
       case "reporting":
@@ -203,13 +250,32 @@ export function SettingsPage({
             }
           }}
           onDownload={handleDownloadSettings}
-          onShare={() => triggerToast("CONFIGURATION LINK CO-SHARED SUCCESSFULLY!", "success")}
+          onShare={() => triggerToast("SETTINGS SHARING IS NOT CONFIGURED.", "warning")}
         />
 
         {/* Dynamic Content Surface */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-24">
           <div className="w-full space-y-6">
-            <Suspense
+            {!isLoading && !loadError && runtimeSettings.workspacePersistence === "process_local" && (
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-[9px] font-mono font-bold uppercase tracking-wider text-amber-500">
+                Settings and case workspace state are process-local: they are not shared across EC2 instances and disappear when this backend process restarts. Final Alerts are persisted separately in RDS.
+              </div>
+            )}
+            {isLoading ? (
+              <div className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card text-muted-foreground">
+                <Loader2 size={24} className="animate-spin text-cyan-500" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Loading settings from backend</p>
+              </div>
+            ) : loadError ? (
+              <div className="flex min-h-80 flex-col items-center justify-center gap-4 rounded-xl border border-red-500/25 bg-red-500/5 p-6 text-center">
+                <AlertCircle size={24} className="text-red-500" />
+                <div><p className="text-sm font-black uppercase text-foreground">Settings unavailable</p><p className="mt-2 max-w-xl text-xs text-muted-foreground">{loadError}</p></div>
+                <button type="button" onClick={() => void loadSettings()} className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-[9px] font-black uppercase tracking-widest text-foreground hover:border-cyan-500/40">
+                  <RefreshCw size={12} /> Retry backend
+                </button>
+              </div>
+            ) : (
+              <Suspense
               fallback={
                 /* LOADING MODULE SKELETON */
                 <div className="space-y-6 animate-pulse p-4">
@@ -222,7 +288,7 @@ export function SettingsPage({
                   </div>
                 </div>
               }
-            >
+              >
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeCategory}
@@ -300,25 +366,7 @@ export function SettingsPage({
                   )}
 
                   {activeCategory === "integrations" && (
-                    <Integrations
-                      data={{
-                        zeekStatus: draftSettings.zeekStatus,
-                        zeekEndpointUrl: draftSettings.zeekEndpointUrl,
-                        suricataStatus: draftSettings.suricataStatus,
-                        suricataRulesUrl: draftSettings.suricataRulesUrl,
-                        suricataRulesSyncInterval: draftSettings.suricataRulesSyncInterval,
-                        awsSqsUrl: draftSettings.awsSqsUrl,
-                        awsSqsStatus: draftSettings.awsSqsStatus,
-                        postgresHost: draftSettings.postgresHost,
-                        postgresPort: draftSettings.postgresPort,
-                        postgresDb: draftSettings.postgresDb,
-                        postgresStatus: draftSettings.postgresStatus,
-                        websocketUrl: draftSettings.websocketUrl,
-                        websocketMaxRetry: draftSettings.websocketMaxRetry,
-                      }}
-                      onChange={updateDraft}
-                      onToast={triggerToast}
-                    />
+                    <RuntimeIntegrations runtime={runtimeSettings} updatedAt={settingsUpdatedAt} />
                   )}
 
                   {activeCategory === "access" && (
@@ -371,15 +419,17 @@ export function SettingsPage({
                   )}
                 </motion.div>
               </AnimatePresence>
-            </Suspense>
+              </Suspense>
+            )}
           </div>
         </div>
 
         {/* Global Save Bar (Unsaved Changes Detection) */}
         <SettingsSaveBar
-          isDirty={isDirty}
+          isDirty={!isLoading && !loadError && isDirty}
+          isSaving={isSaving}
           onDiscard={() => setShowConfirmReset(true)}
-          onSave={saveLiveSettings}
+          onSave={() => void saveLiveSettings()}
         />
 
         {/* TOAST PANEL WRAPPER */}

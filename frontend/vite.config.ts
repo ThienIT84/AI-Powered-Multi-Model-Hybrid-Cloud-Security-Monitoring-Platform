@@ -1,9 +1,12 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import {defineConfig, loadEnv} from 'vite';
 
-export default defineConfig(() => {
+export default defineConfig(({mode}) => {
+  const env = loadEnv(mode, process.cwd(), 'DEV_');
+  const backendOrigin = process.env.DEV_BACKEND_ORIGIN ?? env.DEV_BACKEND_ORIGIN ?? 'http://127.0.0.1:8000';
+
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
@@ -21,6 +24,21 @@ export default defineConfig(() => {
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
       // Bind to all interfaces but show localhost in console
       middlewareMode: true,
+      proxy: {
+        '/api': {
+          target: backendOrigin,
+          changeOrigin: true,
+        },
+        '/ws': {
+          target: backendOrigin,
+          changeOrigin: true,
+          ws: true,
+        },
+        '/ingest': {
+          target: backendOrigin,
+          changeOrigin: true,
+        },
+      },
     },
   };
 });

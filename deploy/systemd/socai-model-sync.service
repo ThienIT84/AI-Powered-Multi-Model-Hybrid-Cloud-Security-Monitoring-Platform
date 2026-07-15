@@ -1,0 +1,33 @@
+[Unit]
+Description=Hybrid SOC model artifact sync from Amazon S3
+Wants=network-online.target
+After=network-online.target
+AssertPathExists=/opt/socai/current/backend/scripts/sync_model_artifacts_from_s3.py
+AssertPathExists=/opt/socai/current/backend/scripts/model_bundle_canary.py
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=socai
+Group=socai
+WorkingDirectory=/opt/socai/current
+EnvironmentFile=/etc/socai/socai.env
+Environment=PYTHONPATH=/opt/socai/current/backend
+ExecStart=/opt/socai/venv/bin/python /opt/socai/current/backend/scripts/sync_model_artifacts_from_s3.py
+ExecStartPost=/opt/socai/venv/bin/python /opt/socai/current/backend/scripts/model_bundle_canary.py
+TimeoutStartSec=600s
+UMask=0027
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=socai-model-sync
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+StateDirectory=socai
+StateDirectoryMode=0750
+ReadWritePaths=/var/lib/socai
+
+[Install]
+WantedBy=multi-user.target

@@ -3,7 +3,6 @@ import { Case, CaseStatus, CaseSeverity } from "./caseTypes";
 import { 
   ShieldCheck, 
   Lock, 
-  Unlock, 
   Send, 
   AlertTriangle, 
   MessageSquare,
@@ -53,21 +52,6 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
     onUpdateCase(activeCase.id, {
       assignedTo: analystName,
       status: "In Progress",
-      timeline: {
-        events: [...activeCase.timeline.events, `${nowStr} - ${eventText}`]
-      }
-    });
-  };
-
-  const handleToggleBlockIp = () => {
-    const nowStr = new Date().toISOString();
-    const nextBlockState = !activeCase.isIpBlocked;
-    const eventText = nextBlockState
-      ? `Simulated firewall block rule issued globally for attacker source IP ${activeCase.source_ip}.`
-      : `Simulated firewall block rule lifted for attacker source IP ${activeCase.source_ip}.`;
-
-    onUpdateCase(activeCase.id, {
-      isIpBlocked: nextBlockState,
       timeline: {
         events: [...activeCase.timeline.events, `${nowStr} - ${eventText}`]
       }
@@ -153,29 +137,19 @@ export function CaseActionPanel({ activeCase, onUpdateCase }: CaseActionPanelPro
         </h4>
 
         <div className="space-y-3">
-          {/* Firewall simulation */}
+          {/* Firewall automation remains unavailable until a real connector is configured. */}
           <button
             type="button"
-            onClick={handleToggleBlockIp}
-            className={cn(
-              "w-full py-2.5 text-[8.5px] font-black uppercase tracking-widest rounded-lg border flex items-center justify-center gap-2 transition-all cursor-pointer leading-none",
-              activeCase.isIpBlocked
-                ? "bg-red-500/10 hover:bg-red-500/15 border-red-500/25 text-red-500"
-                : "bg-cyan-600 hover:bg-cyan-500 border-transparent text-white shadow-sm"
-            )}
+            disabled
+            title="No pfSense or firewall playbook connector is configured"
+            className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-border bg-muted/40 py-2.5 text-[8.5px] font-black uppercase leading-none tracking-widest text-muted-foreground opacity-75"
           >
-            {activeCase.isIpBlocked ? (
-              <>
-                <Unlock size={11} />
-                LIFT IP FIREWALL BLOCK
-              </>
-            ) : (
-              <>
-                <Lock size={11} />
-                BLOCK SOURCE HOST IP ({activeCase.source_ip})
-              </>
-            )}
+            <Lock size={11} />
+            Firewall action not configured
           </button>
+          <p className="text-[7.5px] leading-relaxed text-muted-foreground">
+            No packet-filter change is sent from this dashboard. Configure an authorized firewall playbook before enabling response actions.
+          </p>
 
           {/* Analyst assignment list */}
           <div className="space-y-1 pt-1 border-t border-border/20">

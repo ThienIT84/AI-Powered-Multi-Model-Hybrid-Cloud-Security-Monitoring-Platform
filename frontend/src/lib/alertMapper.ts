@@ -76,6 +76,16 @@ export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
       respPkts: dto.zeek_evidence?.resp_pkts,
       connState: dto.zeek_evidence?.conn_state,
       service: dto.zeek_evidence?.service,
+      rateFeatures: dto.zeek_evidence?.rate_features
+        ? {
+            windowSeconds: dto.zeek_evidence.rate_features.window_seconds,
+            sameSrcDstConnectionCount: dto.zeek_evidence.rate_features.same_src_dst_connection_count,
+            destinationConnectionCount: dto.zeek_evidence.rate_features.destination_connection_count,
+            uniqueSourceCount: dto.zeek_evidence.rate_features.unique_source_count,
+            dosSuspected: dto.zeek_evidence.rate_features.dos_suspected,
+            ddosSuspected: dto.zeek_evidence.rate_features.ddos_suspected,
+          }
+        : undefined,
     },
     suricataData: {
       signatureId: dto.suricata_evidence?.signature_id,
@@ -133,12 +143,16 @@ export function mapBackendAlertToAlert(dto: BackendAlertDTO): Alert {
     },
     decisionFlow,
     status: normalizeStatus(dto.status),
-    cloudProvider: "AWS",
-    region: "ap-southeast-1",
+    eventType: dto.event_type,
+    cloudProvider: dto.cloud_provider,
+    region: dto.region,
+    resourceId: dto.resource_id,
+    resourceType: dto.resource_type,
     description:
       fusionReason ??
       `${dto.attack_type} detected from ${dto.source_ip} targeting ${dto.destination_ip}:${dto.destination_port}.`,
-    assignedAnalyst: "Admin_Phu",
+    assignedAnalyst: dto.assigned_analyst,
+    analystNotes: dto.analyst_notes,
     mitreAttack: {
       id: dto.mitre.technique_id,
       tactic: dto.mitre.tactic ?? "Mapped",
@@ -202,6 +216,16 @@ export function mapAlertToBackendPayload(alert: Alert): BackendAlertDTO {
       resp_pkts: alert.zeekData.respPkts,
       conn_state: alert.zeekData.connState,
       service: alert.zeekData.service,
+      rate_features: alert.zeekData.rateFeatures
+        ? {
+            window_seconds: alert.zeekData.rateFeatures.windowSeconds,
+            same_src_dst_connection_count: alert.zeekData.rateFeatures.sameSrcDstConnectionCount,
+            destination_connection_count: alert.zeekData.rateFeatures.destinationConnectionCount,
+            unique_source_count: alert.zeekData.rateFeatures.uniqueSourceCount,
+            dos_suspected: alert.zeekData.rateFeatures.dosSuspected,
+            ddos_suspected: alert.zeekData.rateFeatures.ddosSuspected,
+          }
+        : undefined,
     },
     suricata_evidence: {
       signature_id: alert.suricataData.signatureId,
@@ -263,5 +287,12 @@ export function mapAlertToBackendPayload(alert: Alert): BackendAlertDTO {
       confidence: step.confidence,
     })),
     status: alert.status,
+    event_type: alert.eventType,
+    cloud_provider: alert.cloudProvider,
+    region: alert.region,
+    resource_id: alert.resourceId,
+    resource_type: alert.resourceType,
+    assigned_analyst: alert.assignedAnalyst,
+    analyst_notes: alert.analystNotes,
   };
 }

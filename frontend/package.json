@@ -1,13 +1,14 @@
 {
-  "name": "react-example",
+  "name": "hybrid-cloud-soc-frontend",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@9.15.4",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
+    "build": "vite build",
+    "build:local-server": "npm run build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=build/server.cjs",
+    "start": "node build/server.cjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },

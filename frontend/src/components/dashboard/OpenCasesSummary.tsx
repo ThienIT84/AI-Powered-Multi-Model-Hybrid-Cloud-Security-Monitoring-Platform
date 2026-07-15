@@ -24,7 +24,7 @@ export const OpenCasesSummary: React.FC<OpenCasesSummaryProps> = React.memo(({ m
               Open Cases
             </span>
             <span className="text-lg font-black text-foreground mt-1 block">
-              {metrics.open}
+              {metrics.open ?? "—"}
             </span>
           </div>
 
@@ -34,7 +34,7 @@ export const OpenCasesSummary: React.FC<OpenCasesSummaryProps> = React.memo(({ m
               In Progress
             </span>
             <span className="text-lg font-black text-foreground mt-1 block">
-              {metrics.inProgress}
+              {metrics.inProgress ?? "—"}
             </span>
           </div>
 
@@ -44,7 +44,7 @@ export const OpenCasesSummary: React.FC<OpenCasesSummaryProps> = React.memo(({ m
               Resolved Today
             </span>
             <span className="text-lg font-black text-foreground mt-1 block">
-              {metrics.resolvedToday}
+              {metrics.resolvedToday ?? "—"}
             </span>
           </div>
 
@@ -54,7 +54,7 @@ export const OpenCasesSummary: React.FC<OpenCasesSummaryProps> = React.memo(({ m
               SLA Compliance
             </span>
             <span className="text-lg font-black text-cyan-400 mt-1 block">
-              {metrics.slaCompliance}%
+              {metrics.slaCompliance === null ? "—" : `${metrics.slaCompliance}%`}
             </span>
           </div>
         </div>
@@ -63,20 +63,20 @@ export const OpenCasesSummary: React.FC<OpenCasesSummaryProps> = React.memo(({ m
         <div className="space-y-1 font-mono text-[8px] select-none">
           <div className="flex items-center justify-between text-[7.5px] text-zinc-500 font-bold uppercase">
             <span>SLA Agreement Threshold</span>
-            <span>90% Target</span>
+            <span>{metrics.slaCompliance === null ? "No backend SLA data" : "Backend reported"}</span>
           </div>
           <div className="h-1.5 w-full bg-secondary/80 rounded-full overflow-hidden border border-border/20">
             <div
               className="h-full bg-teal-500 rounded-full shadow-[0_0_8px_rgba(20,184,166,0.3)] transition-all duration-300"
-              style={{ width: `${metrics.slaCompliance}%` }}
+              style={{ width: `${metrics.slaCompliance ?? 0}%` }}
             ></div>
           </div>
         </div>
       </div>
 
       <div className="text-[7.5px] text-zinc-500 font-mono mt-4 uppercase select-none border-t border-border/10 pt-2 flex items-center justify-between leading-none font-bold">
-        <span>SLA Tracking: Operational</span>
-        <span className="text-emerald-550 dark:text-emerald-400">Compliant</span>
+        <span>Case metrics source: backend</span>
+        <span className="text-muted-foreground">{metrics.open === null ? "Unavailable" : "Available"}</span>
       </div>
     </div>
   );
