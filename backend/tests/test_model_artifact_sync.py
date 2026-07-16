@@ -199,22 +199,26 @@ def test_runtime_canary_checks_every_required_real_model(monkeypatch, tmp_path: 
     for name in ("AI1", "AI2A", "AI2B"):
         monkeypatch.setenv(f"{name}_PREDICTOR_MODE", "real")
 
-    healthy = lambda: [
-        {"name": name, "status": "healthy", "source": "real"}
-        for name in ("AI1", "AI2A", "AI2B")
-    ]
+    def healthy() -> list[dict[str, str]]:
+        return [
+            {"name": name, "status": "healthy", "source": "real"}
+            for name in ("AI1", "AI2A", "AI2B")
+        ]
+
     result = run_model_bundle_canary(status_provider=healthy)
     assert result["status"] == "model_bundle_canary_passed"
     assert result["real_models"] == ["AI1", "AI2A", "AI2B"]
 
-    unhealthy = lambda: [
-        {
-            "name": name,
-            "status": "unavailable" if name == "AI2B" else "healthy",
-            "source": "unavailable" if name == "AI2B" else "real",
-            "reason": "load failed" if name == "AI2B" else None,
-        }
-        for name in ("AI1", "AI2A", "AI2B")
-    ]
+    def unhealthy() -> list[dict[str, str | None]]:
+        return [
+            {
+                "name": name,
+                "status": "unavailable" if name == "AI2B" else "healthy",
+                "source": "unavailable" if name == "AI2B" else "real",
+                "reason": "load failed" if name == "AI2B" else None,
+            }
+            for name in ("AI1", "AI2A", "AI2B")
+        ]
+
     with pytest.raises(RuntimeError, match="AI2B: load failed"):
         run_model_bundle_canary(status_provider=unhealthy)

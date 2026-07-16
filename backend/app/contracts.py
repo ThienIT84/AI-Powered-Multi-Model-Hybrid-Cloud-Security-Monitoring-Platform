@@ -176,20 +176,20 @@ def validate_zeek_ingest_event(raw: dict[str, Any]) -> dict[str, Any]:
     missing = [field for field in required_text_fields if not str(raw.get(field) or "").strip()]
     if missing:
         raise EventContractError(f"missing required field(s): {', '.join(missing)}")
-    for field in ("event_id", "sensor_id"):
-        if len(str(raw[field]).encode("utf-8")) > 200:
-            raise EventContractError(f"{field} must not exceed 200 UTF-8 bytes")
+    for field_name in ("event_id", "sensor_id"):
+        if len(str(raw[field_name]).encode("utf-8")) > 200:
+            raise EventContractError(f"{field_name} must not exceed 200 UTF-8 bytes")
 
     event = normalize_event(raw)
     if event["event_type"] not in SUPPORTED_ZEEK_EVENT_TYPES:
         supported = ", ".join(sorted(SUPPORTED_ZEEK_EVENT_TYPES))
         raise EventContractError(f"event_type must be one of: {supported}")
 
-    for field in ("source_ip", "destination_ip"):
+    for field_name in ("source_ip", "destination_ip"):
         try:
-            ip_address(event[field])
+            ip_address(event[field_name])
         except ValueError as exc:
-            raise EventContractError(f"{field} must be a valid IPv4 or IPv6 address") from exc
+            raise EventContractError(f"{field_name} must be a valid IPv4 or IPv6 address") from exc
 
     try:
         parsed_timestamp = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
