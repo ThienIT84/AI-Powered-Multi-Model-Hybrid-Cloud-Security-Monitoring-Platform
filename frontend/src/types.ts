@@ -23,6 +23,15 @@ export interface BackendMitreDTO {
   url?: string;
 }
 
+export interface BackendRateFeaturesDTO {
+  window_seconds?: number;
+  same_src_dst_connection_count?: number;
+  destination_connection_count?: number;
+  unique_source_count?: number;
+  dos_suspected?: boolean;
+  ddos_suspected?: boolean;
+}
+
 export interface BackendZeekEvidenceDTO {
   sensor_id?: string;
   correlation_id?: string;
@@ -38,6 +47,7 @@ export interface BackendZeekEvidenceDTO {
   resp_pkts?: number;
   conn_state?: string;
   service?: string;
+  rate_features?: BackendRateFeaturesDTO | null;
 }
 
 export interface BackendSuricataEvidenceDTO {
@@ -116,6 +126,13 @@ export interface BackendAlertDTO {
   ai_analysis?: BackendAiAnalysisDTO;
   decision_flow?: BackendDecisionFlowStepDTO[];
   status?: string;
+  event_type?: string;
+  cloud_provider?: "AWS" | "Azure" | "GCP";
+  region?: string;
+  resource_id?: string;
+  resource_type?: string;
+  assigned_analyst?: string;
+  analyst_notes?: string[];
 }
 
 export interface MitreTechnique {
@@ -156,6 +173,14 @@ export interface ZeekData {
   respPkts?: number;
   connState?: string;
   service?: string;
+  rateFeatures?: {
+    windowSeconds?: number;
+    sameSrcDstConnectionCount?: number;
+    destinationConnectionCount?: number;
+    uniqueSourceCount?: number;
+    dosSuspected?: boolean;
+    ddosSuspected?: boolean;
+  };
 }
 
 export interface SuricataData {
@@ -237,10 +262,14 @@ export interface Alert {
   aiDecision: AiDecision;
   decisionFlow: DecisionFlowStep[];
   status: AlertStatus;
-  cloudProvider: "AWS" | "Azure" | "GCP";
-  region: string;
+  eventType?: string;
+  cloudProvider?: "AWS" | "Azure" | "GCP";
+  region?: string;
+  resourceId?: string;
+  resourceType?: string;
   description: string;
   assignedAnalyst?: string;
+  analystNotes?: string[];
   mitreAttack?: MitreAttack;
   timeline: TimelineEvent[];
 }
@@ -278,6 +307,29 @@ export interface TrafficData {
   isPeak?: boolean;
 }
 
+export type NetworkFlowVerdict = "NORMAL" | "ANOMALY";
+
+/** A real, retained Zeek observation returned by /api/network/activity. */
+export interface NetworkFlow {
+  id: string;
+  sensorId?: string | null;
+  source: string;
+  timestamp: string;
+  srcIp: string;
+  srcPort?: number | null;
+  dstIp: string;
+  dstPort: number;
+  protocol: string;
+  service?: string | null;
+  bytes: number;
+  packets: number;
+  verdict: NetworkFlowVerdict;
+  severity: string;
+  anomalyScore: number;
+  correlationId?: string | null;
+  relatedAlertId: string;
+}
+
 export type SocketStatus = "connecting" | "connected" | "reconnecting" | "disconnected" | "error";
 
 export interface PlatformStatus {
@@ -290,6 +342,27 @@ export interface PlatformStatus {
   eventRatePerSecond: number | null;
   lastIngestAt: string | null;
   lastError: string | null;
+  dataSources?: DataSourceRuntimeStatus[];
+  models?: ModelRuntimeStatus[];
+  databaseStatus?: "healthy" | "warning" | "offline" | "unknown";
+}
+
+export interface DataSourceRuntimeStatus {
+  id: string;
+  name: string;
+  status: "healthy" | "warning" | "offline" | "unknown";
+  eventCount?: number | null;
+  lastSeenAt?: string | null;
+  message?: string | null;
+}
+
+export interface ModelRuntimeStatus {
+  name: string;
+  status: string;
+  source: string;
+  modelVersion?: string | null;
+  lastSeenAt?: string | null;
+  message?: string | null;
 }
 
 export type FusionAlert = {
@@ -318,54 +391,16 @@ export interface FusionAlertMeta {
 }
 
 export function getAlertFusionMeta(alert: Alert): FusionAlertMeta {
-  const isAnomaly = alert.riskScore > 35;
-  const ai1Status = alert.aiDecision.ai1?.status ?? "completed";
-  const ai2aStatus = alert.aiDecision.ai2a?.status ?? "completed";
-  const ai2bStatus = alert.aiDecision.ai2b?.status ?? "completed";
-  const ai1Source = alert.aiDecision.ai1?.source ?? "legacy";
-  const ai2aSource = alert.aiDecision.ai2a?.source ?? "legacy";
-  const ai2bSource = alert.aiDecision.ai2b?.source ?? "legacy";
-
-  const ai1Completed = isModelResultPresent(ai1Status);
-  const ai2aCompleted = isModelResultPresent(ai2aStatus);
-  const ai2bCompleted = isModelResultPresent(ai2bStatus);
-
-  const ai1Result = ai1Completed
-    ? normalizeAi1Verdict(alert.aiDecision.ai1?.verdict) ?? (isAnomaly ? "ANOMALY" : "NORMAL")
-    : "NORMAL";
-
-  let ai2aClass = "Normal";
-  const attackLower = (alert.attackType || "").toLowerCase();
-  if (ai2aCompleted) {
-    ai2aClass = normalizeAi2aLabel(alert.aiDecision.ai2a?.attackType) ?? "Normal";
-  } else if (!alert.aiDecision.ai2a) {
-    if (attackLower.includes("scan")) {
-      ai2aClass = "PortScan";
-    } else if (attackLower.includes("ddos") || attackLower.includes("botnet") || attackLower.includes("beacon")) {
-      ai2aClass = "DoS";
-    } else if (attackLower.includes("brute") || attackLower.includes("credential") || attackLower.includes("stuffing")) {
-      ai2aClass = "BruteForce";
-    }
-  }
-
-  let ai2bWeb = "NONE";
-  if (ai2bCompleted) {
-    ai2bWeb = normalizeAi2bLabel(alert.aiDecision.ai2b?.webAttackType) ?? "NONE";
-  } else if (!alert.aiDecision.ai2b) {
-    if (attackLower.includes("xss")) {
-      ai2bWeb = "XSS";
-    } else if (attackLower.includes("sql") || attackLower.includes("injection") || attackLower.includes("lfi") || attackLower.includes("command")) {
-      ai2bWeb = "SQLi";
-    }
-  }
-
-  let suricataEvidence = "NO MATCH";
-  if (alert.suricataData?.signatureId) {
-    suricataEvidence = alert.suricataData.signatureId;
-  } else if (isAnomaly && (ai2aClass !== "Normal" || ai2bWeb !== "NONE")) {
-    const baseSid = 2000000 + (alert.id.match(/\d+/) ? parseInt(alert.id.match(/\d+/)![0]) : 110);
-    suricataEvidence = `SID: ${baseSid}`;
-  }
+  const ai1Status = alert.aiDecision.ai1?.status ?? "not_run";
+  const ai2aStatus = alert.aiDecision.ai2a?.status ?? "not_run";
+  const ai2bStatus = alert.aiDecision.ai2b?.status ?? "not_run";
+  const ai1Source = alert.aiDecision.ai1?.source ?? "unknown";
+  const ai2aSource = alert.aiDecision.ai2a?.source ?? "unknown";
+  const ai2bSource = alert.aiDecision.ai2b?.source ?? "unknown";
+  const ai1Result = alert.aiDecision.ai1?.verdict ?? "N/A";
+  const ai2aClass = alert.aiDecision.ai2a?.attackType ?? "N/A";
+  const ai2bWeb = alert.aiDecision.ai2b?.webAttackType ?? "N/A";
+  const suricataEvidence = alert.suricataData?.signatureId ?? "NO DATA";
 
   const sevUpper = String(alert.severity).toUpperCase();
   const attackName = alert.attackType || "Unknown Threat";
@@ -383,36 +418,6 @@ export function getAlertFusionMeta(alert: Alert): FusionAlertMeta {
     ai2bSource,
     suricataEvidence,
     fusionDecision,
-    fusionMode: alert.aiDecision.fusion?.mode ?? "LEGACY_FRONTEND"
+    fusionMode: alert.aiDecision.fusion?.mode ?? "N/A"
   };
-}
-
-function isModelResultPresent(status?: string) {
-  const normalized = (status ?? "").toLowerCase();
-  return normalized === "completed" || normalized === "simulated";
-}
-
-function normalizeAi1Verdict(value?: string) {
-  if (!value || value === "N/A") return undefined;
-  return value.toUpperCase().includes("ANOM") ? "ANOMALY" : "NORMAL";
-}
-
-function normalizeAi2aLabel(value?: string) {
-  if (!value || value === "N/A") return undefined;
-  const normalized = value.toLowerCase().replaceAll("_", " ");
-  if (normalized.includes("normal") || normalized === "none") return "Normal";
-  if (normalized.includes("scan")) return "PortScan";
-  if (normalized.includes("brute") || normalized.includes("credential")) return "BruteForce";
-  if (normalized.includes("dos") || normalized.includes("beacon") || normalized.includes("botnet")) return "DoS";
-  if (normalized.includes("web")) return "WEB_ATTACK";
-  return value;
-}
-
-function normalizeAi2bLabel(value?: string) {
-  if (!value || value === "N/A") return undefined;
-  const normalized = value.toLowerCase();
-  if (normalized.includes("xss") || normalized.includes("cross-site")) return "XSS";
-  if (normalized.includes("sql")) return "SQLi";
-  if (normalized.includes("none") || normalized.includes("normal")) return "NONE";
-  return value;
 }

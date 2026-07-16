@@ -1,4 +1,9 @@
-# AWS MVP Thin-Slice Deployment Runbook
+# AWS MVP Thin-Slice Deployment Runbook (Historical)
+
+> **Historical:** Tài liệu này mô tả CloudFront → public EC2 thin-slice cũ,
+> không phải kiến trúc đích hiện tại. Dùng
+> [`hybrid_cloud_soc_architecture.md`](hybrid_cloud_soc_architecture.md) làm nguồn
+> chuẩn cho CloudFront/WAF → ALB → private EC2 ASG → SQS/S3/RDS.
 
 Runbook này hướng dẫn triển khai bản AWS MVP nhỏ nhất để demo luồng:
 

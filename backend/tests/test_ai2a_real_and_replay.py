@@ -134,6 +134,11 @@ def test_ai2a_real_predicts_when_frozen_feature_vector_is_complete() -> None:
 
 
 def test_backend_ai2a_feature_order_matches_release_manifest() -> None:
+    if not AI2A_FEATURE_MANIFEST.is_file():
+        pytest.skip(
+            "AI2A release manifest is an external model-bundle artifact; "
+            "run this check after model sync"
+        )
     manifest = json.loads(AI2A_FEATURE_MANIFEST.read_text(encoding="utf-8"))
 
     assert manifest["experiment"] == "rf_v2_1_full_safe_plus_ssh_minimal"

@@ -47,12 +47,12 @@ export function AssetContextCard({ alert }: AssetContextCardProps) {
         <div className="grid grid-cols-2 gap-3.5 pt-2 border-t border-border/30">
           <div className="space-y-0.5">
             <span className="text-[7.5px] font-black text-muted-foreground uppercase">Cloud Provider</span>
-            <p className="text-[10px] font-mono font-black text-foreground uppercase">{alert.cloudProvider || "AWS"}</p>
+            <p className="text-[10px] font-mono font-black text-foreground uppercase">{alert.cloudProvider || "Unknown"}</p>
           </div>
 
           <div className="space-y-0.5">
             <span className="text-[7.5px] font-black text-muted-foreground uppercase">Operating Region</span>
-            <p className="text-[10px] font-mono font-black text-foreground uppercase">{alert.region || "us-east-1"}</p>
+            <p className="text-[10px] font-mono font-black text-foreground uppercase">{alert.region || "Unknown"}</p>
           </div>
 
           <div className="space-y-0.5">

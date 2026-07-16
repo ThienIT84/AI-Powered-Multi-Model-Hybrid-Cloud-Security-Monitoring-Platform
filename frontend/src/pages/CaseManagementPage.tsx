@@ -171,7 +171,10 @@ export function CaseManagementPage({ dataMode, routeCaseId, onRouteCaseChange }:
       transition={{ duration: 0.18 }}
       className="space-y-4 pb-16 select-none relative w-full"
     >
-      <DataModeBanner dataMode={dataMode} label="Case queue and investigation timeline are sample records unless backed by Case API" />
+      <DataModeBanner dataMode={dataMode} label="Case records are replay data" />
+      <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-amber-500">
+        Case API state is process-local: it is not shared across EC2 instances and disappears when the backend process restarts. Final Alerts are stored separately in RDS.
+      </div>
       {isLoading && (
         <div className="rounded-lg border border-border bg-card px-3 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
           Loading cases...

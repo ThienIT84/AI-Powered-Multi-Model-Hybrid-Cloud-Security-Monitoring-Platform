@@ -1,9 +1,5 @@
-import { useMemo } from "react";
-import { DashboardService } from "../services/dashboard.service";
-import { PlatformHealthStatus } from "../types/dashboard.types";
+import { PlatformStatus } from "../../../types";
 
-export function usePlatformHealth(isConnected: boolean): PlatformHealthStatus {
-  return useMemo(() => {
-    return DashboardService.getPlatformHealth(isConnected);
-  }, [isConnected]);
+export function usePlatformHealth(platformStatus: PlatformStatus): PlatformStatus {
+  return platformStatus;
 }

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from app.contracts import ModelOutput, ModelSource, ModelStatus
+from app.services.model_artifacts import model_artifact_root
 
 
 AI2A_CANDIDATE = "rf_v2_1_full_safe_plus_ssh_minimal"
@@ -98,7 +99,7 @@ class RealAI2AAdapter:
 
     def _load(self) -> None:
         try:
-            root = Path(__file__).resolve().parents[3]
+            root = model_artifact_root()
             scripts = root / "Dataset/tools/ai2a_modeling/scripts"
             if str(scripts) not in sys.path:
                 sys.path.insert(0, str(scripts))

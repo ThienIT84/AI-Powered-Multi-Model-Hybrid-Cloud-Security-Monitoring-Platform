@@ -8,8 +8,8 @@ interface SOCSituationSnapshotProps {
 
 export const SOCSituationSnapshot: React.FC<SOCSituationSnapshotProps> = React.memo(({ alerts }) => {
   // Compute situation values based on actual live alerts list to avoid static placeholders
-  const criticalCount = alerts.filter(a => a.severity === Severity.CRITICAL).length || 3;
-  const openCases = Math.max(12, alerts.filter(a => a.status === AlertStatus.NEW || a.status === AlertStatus.INVESTIGATING).length);
+  const criticalCount = alerts.filter(a => a.severity === Severity.CRITICAL).length;
+  const openAlerts = alerts.filter(a => a.status === AlertStatus.NEW || a.status === AlertStatus.INVESTIGATING).length;
   
   // Dynamically extract the most common attack type or fallback
   const attackTypes = alerts.map(a => a.attackType || "Anomalous Traffic");
@@ -18,7 +18,7 @@ export const SOCSituationSnapshot: React.FC<SOCSituationSnapshotProps> = React.m
     typeCounts[curr] = (typeCounts[curr] || 0) + 1;
   });
   
-  let topThreat = "SQL Injection Probe";
+  let topThreat = "—";
   let maxCount = 0;
   Object.entries(typeCounts).forEach(([type, count]) => {
     if (count > maxCount && type !== "Other") {
@@ -27,7 +27,7 @@ export const SOCSituationSnapshot: React.FC<SOCSituationSnapshotProps> = React.m
     }
   });
 
-  const affectedAssetsCount = Math.max(8, Math.round(alerts.length * 0.45));
+  const affectedAssetsCount = new Set(alerts.map((alert) => alert.destinationIp).filter(Boolean)).size;
 
   const items = [
     {
@@ -43,10 +43,10 @@ export const SOCSituationSnapshot: React.FC<SOCSituationSnapshotProps> = React.m
       desc: "Requires immediate intervention"
     },
     {
-      label: "Open Cases SUMMARY",
-      value: openCases.toString(),
+      label: "Open Alert Records",
+      value: openAlerts.toString(),
       icon: <FolderOpen size={18} className="text-cyan-500" />,
-      desc: "Active workflow investigation files"
+      desc: "New or investigating backend alerts"
     },
     {
       label: "Affected Assets",

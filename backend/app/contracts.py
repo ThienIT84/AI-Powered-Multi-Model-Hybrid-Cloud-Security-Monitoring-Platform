@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+from ipaddress import ip_address
 from typing import Any
 from uuid import uuid4
 
@@ -99,6 +101,119 @@ def normalize_event(raw: dict[str, Any]) -> dict[str, Any]:
             "suricata": evidence.get("suricata"),
         },
     }
+
+
+class EventContractError(ValueError):
+    """Raised when an external telemetry payload violates the ingest contract."""
+
+
+SUPPORTED_ZEEK_EVENT_TYPES = {"network_flow", "http", "combined"}
+MAX_ZEEK_JSON_DEPTH = 64
+
+
+def _validate_json_tree(value: Any) -> None:
+    """Reject values that cannot be represented by standards-compliant JSON.
+
+    The public ingest body has already been decoded by ``json.loads``, but the
+    standard-library decoder accepts NaN/Infinity extensions.  An iterative walk
+    also gives us a conservative depth limit before S3/SQS JSON serialization.
+    """
+
+    stack: list[tuple[Any, str, int]] = [(value, "$", 0)]
+    seen_containers: set[int] = set()
+    while stack:
+        current, path, depth = stack.pop()
+        if isinstance(current, float) and not math.isfinite(current):
+            raise EventContractError(f"{path} must not contain NaN or Infinity")
+        if not isinstance(current, (dict, list)):
+            continue
+        if depth > MAX_ZEEK_JSON_DEPTH:
+            raise EventContractError(
+                f"request JSON nesting must not exceed {MAX_ZEEK_JSON_DEPTH} levels"
+            )
+        container_id = id(current)
+        if container_id in seen_containers:
+            raise EventContractError("request JSON must not contain cyclic containers")
+        seen_containers.add(container_id)
+        if isinstance(current, dict):
+            stack.extend(
+                (child, f"{path}.{key}", depth + 1)
+                for key, child in current.items()
+            )
+        else:
+            stack.extend(
+                (child, f"{path}[{index}]", depth + 1)
+                for index, child in enumerate(current)
+            )
+
+
+def validate_zeek_ingest_event(raw: dict[str, Any]) -> dict[str, Any]:
+    """Validate and normalize a Zeek Collector/Tailer event.
+
+    Legacy local endpoints intentionally remain permissive.  The public cloud
+    ingest endpoint uses this stricter contract so malformed telemetry is never
+    placed on the shared SQS queue.
+    """
+
+    if not isinstance(raw, dict):
+        raise EventContractError("request body must be a JSON object")
+
+    _validate_json_tree(raw)
+
+    if str(raw.get("schema_version") or "") != "1.0":
+        raise EventContractError("schema_version must be 1.0")
+    if not isinstance(raw.get("evidence"), dict):
+        raise EventContractError("evidence must be a JSON object")
+    raw_evidence = raw["evidence"]
+    for evidence_name in ("http", "flow", "suricata"):
+        evidence_value = raw_evidence.get(evidence_name)
+        if evidence_value is not None and not isinstance(evidence_value, dict):
+            raise EventContractError(
+                f"evidence.{evidence_name} must be a JSON object or null"
+            )
+
+    required_text_fields = ("event_id", "sensor_id", "timestamp", "source_ip", "destination_ip")
+    missing = [field for field in required_text_fields if not str(raw.get(field) or "").strip()]
+    if missing:
+        raise EventContractError(f"missing required field(s): {', '.join(missing)}")
+    for field in ("event_id", "sensor_id"):
+        if len(str(raw[field]).encode("utf-8")) > 200:
+            raise EventContractError(f"{field} must not exceed 200 UTF-8 bytes")
+
+    event = normalize_event(raw)
+    if event["event_type"] not in SUPPORTED_ZEEK_EVENT_TYPES:
+        supported = ", ".join(sorted(SUPPORTED_ZEEK_EVENT_TYPES))
+        raise EventContractError(f"event_type must be one of: {supported}")
+
+    for field in ("source_ip", "destination_ip"):
+        try:
+            ip_address(event[field])
+        except ValueError as exc:
+            raise EventContractError(f"{field} must be a valid IPv4 or IPv6 address") from exc
+
+    try:
+        parsed_timestamp = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise EventContractError("timestamp must be an ISO-8601 value") from exc
+    if parsed_timestamp.tzinfo is None:
+        raise EventContractError("timestamp must include a timezone")
+
+    evidence = event["evidence"]
+    has_flow = isinstance(evidence.get("flow"), dict) and bool(evidence["flow"])
+    has_http = isinstance(evidence.get("http"), dict) and bool(evidence["http"])
+    if event["event_type"] == "network_flow" and not has_flow:
+        raise EventContractError("network_flow events require evidence.flow")
+    if event["event_type"] == "http" and not has_http:
+        raise EventContractError("http events require evidence.http")
+    if event["event_type"] == "combined" and not (has_flow and has_http):
+        raise EventContractError("combined events require evidence.flow and evidence.http")
+
+    if has_http:
+        http = evidence["http"]
+        if not str(http.get("method") or "").strip() or not str(http.get("uri") or "").strip():
+            raise EventContractError("evidence.http requires method and uri")
+
+    return event
 
 
 def infer_event_type(evidence: dict[str, Any]) -> str:

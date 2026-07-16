@@ -1,120 +1,131 @@
-import React from "react";
-import { Shield, Radio, Cpu, Network, Cloud, CheckCircle2, Server, Key, Activity } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, Cloud, Cpu, Network, Server, Shield } from "lucide-react";
+import { apiRequest } from "../../api/client";
+
+type HealthState =
+  | { status: "checking"; deploymentTarget: null }
+  | { status: "available"; deploymentTarget: "local" | "aws" | null }
+  | { status: "unavailable"; deploymentTarget: null };
+
+function parseDeploymentTarget(payload: unknown): "local" | "aws" | null {
+  if (!payload || typeof payload !== "object") return null;
+  const value = (payload as { deploymentTarget?: unknown }).deploymentTarget;
+  return value === "local" || value === "aws" ? value : null;
+}
+
+function isLiveResponse(payload: unknown): boolean {
+  return Boolean(
+    payload
+      && typeof payload === "object"
+      && (payload as { status?: unknown }).status === "ok",
+  );
+}
 
 export function SystemStatusPanel() {
+  const [health, setHealth] = useState<HealthState>({ status: "checking", deploymentTarget: null });
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void apiRequest<unknown>("/api/health/live", {
+      authenticated: false,
+      signal: controller.signal,
+    })
+      .then((payload) => {
+        if (!isLiveResponse(payload)) throw new Error("Unexpected liveness response");
+        setHealth({ status: "available", deploymentTarget: parseDeploymentTarget(payload) });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setHealth({ status: "unavailable", deploymentTarget: null });
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
+
   const capabilities = [
     {
       icon: Network,
-      title: "Zeek Network Telemetry",
-      subtitle: "Full-duplex non-intrusive stream capture on core backbone",
+      title: "Zeek telemetry ingestion",
+      subtitle: "Normalized network events enter through the authenticated ingestion API.",
     },
     {
       icon: Cpu,
-      title: "AI Threat Detection",
-      subtitle: "Multi-model orchestration layer evaluating pipeline entropy",
-    },
-    {
-      icon: Activity,
-      title: "Fusion Correlation Engine",
-      subtitle: "Cross-platform alerts synthesis and attack vector clustering",
+      title: "Multi-model detection",
+      subtitle: "AI1, AI2A and AI2B outputs are combined by the Fusion Layer.",
     },
     {
       icon: Cloud,
-      title: "Cloud Security Monitoring",
-      subtitle: "Multi-tenant cloud-trail ingress and asset risk indexing",
+      title: "Local and AWS deployment",
+      subtitle: "The same dashboard supports the local lab and the CloudFront-hosted environment.",
     },
   ];
 
-  const subServices = [
-    { name: "Zeek Sensors Engine", status: "ONLINE", type: "success" },
-    { name: "Suricata IDS Core", status: "ONLINE", type: "success" },
-    { name: "AWS SQS Ingress Queue", status: "HEALTHY", type: "success" },
-    { name: "Fusion Heuristics Agent", status: "ACTIVE", type: "success" },
-  ];
+  const healthLabel = health.status === "checking"
+    ? "Checking"
+    : health.status === "available"
+      ? "Available"
+      : "Unavailable";
+  const healthClasses = health.status === "available"
+    ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+    : health.status === "checking"
+      ? "border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+      : "border-slate-300 bg-slate-100 text-slate-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-500";
 
   return (
     <div className="space-y-6 text-left font-mono" id="system-status-hero-deck">
-      {/* Overview Block */}
       <div className="space-y-2">
-        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-[9px] font-black uppercase tracking-wider">
+        <div className="inline-flex items-center gap-1.5 rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-cyan-600 dark:text-cyan-400">
           <Shield size={9} className="stroke-[2.5]" />
-          Platform Cluster Architecture
+          Hybrid Cloud SOC
         </div>
-        <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-          SOVEREIGN DEFENSE PIPELINE
+        <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
+          Security monitoring workspace
         </h3>
-        <p className="text-[10.5px] text-slate-500 dark:text-zinc-400 leading-relaxed font-sans">
-          Welcome to the unified Command Security Platform. Our multi-engine architecture aggregates enterprise telemetry, validates asset trust baselines, and flags advanced persistent threat agents automatically.
+        <p className="text-[10.5px] leading-relaxed text-slate-500 dark:text-zinc-400 font-sans">
+          Sign in to inspect backend-reported alerts, model results and integration health.
         </p>
       </div>
 
-      {/* Core Static Capability Decks */}
       <div className="space-y-3">
-        <h4 className="text-[9.5px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest border-b border-slate-100 dark:border-zinc-900/60 pb-2">
-          INTEGRATED DETECTORS &amp; PLATFORM ENGELS
+        <h4 className="border-b border-slate-100 pb-2 text-[9.5px] font-black uppercase tracking-widest text-slate-400 dark:border-zinc-900/60 dark:text-zinc-500">
+          Platform capabilities
         </h4>
-        
         <div className="grid grid-cols-1 gap-2.5">
-          {capabilities.map((it, idx) => {
-            const Icon = it.icon;
-            return (
-              <div 
-                key={idx} 
-                className="flex gap-3 p-3.5 bg-slate-50/50 dark:bg-zinc-950/20 border border-slate-200/80 dark:border-zinc-900/50 rounded-xl hover:border-slate-300 dark:hover:border-zinc-800/80 transition-all"
-              >
-                <div className="p-2 rounded-lg bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 text-slate-600 dark:text-cyan-400 group-hover:text-cyan-455 shrink-0">
-                  <Icon size={14} className="stroke-2" />
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[11px] font-black uppercase text-slate-800 dark:text-zinc-200 block">
-                    {it.title}
-                  </span>
-                  <span className="text-[9.5px] text-slate-450 dark:text-zinc-550 leading-snug block">
-                    {it.subtitle}
-                  </span>
-                </div>
+          {capabilities.map(({ icon: Icon, title, subtitle }) => (
+            <div key={title} className="flex gap-3 rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 dark:border-zinc-900/50 dark:bg-zinc-950/20">
+              <div className="shrink-0 rounded-lg border border-slate-200 bg-slate-100 p-2 text-slate-600 dark:border-zinc-900 dark:bg-zinc-950 dark:text-cyan-400">
+                <Icon size={14} className="stroke-2" />
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Real-time Status Deck */}
-      <div className="space-y-3 pt-2">
-        <h4 className="text-[9.5px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest border-b border-slate-100 dark:border-zinc-900/60 pb-2">
-          INGRESS HEALTH &amp; TELEMETRY TELEMETRICS
-        </h4>
-
-        <div className="grid grid-cols-2 gap-2">
-          {subServices.map((srv, i) => (
-            <div 
-              key={i} 
-              className="flex items-center justify-between p-2.5 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-900 rounded-lg shadow-sm"
-            >
-              <div className="flex items-center gap-2 truncate">
-                <Server size={11} className="text-slate-400 dark:text-zinc-600 shrink-0" />
-                <span className="text-[9.5px] text-slate-700 dark:text-zinc-400 truncate uppercase font-bold">
-                  {srv.name}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                </span>
-                <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">
-                  {srv.status}
-                </span>
+              <div className="space-y-0.5">
+                <span className="block text-[11px] font-black uppercase text-slate-800 dark:text-zinc-200">{title}</span>
+                <span className="block text-[9.5px] leading-snug text-slate-500 dark:text-zinc-500">{subtitle}</span>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Compliance / Signature Status */}
-      <div className="flex items-center gap-2 py-2 px-3 bg-slate-50 dark:bg-zinc-950/40 border border-slate-200 dark:border-zinc-900 rounded-lg text-[9px] uppercase font-semibold text-slate-500 dark:text-zinc-500">
-        <CheckCircle2 size={11} className="text-emerald-500 dark:text-emerald-400 shrink-0" />
-        <span>FIPS 140-3 Cryptographic Cryptosystem Core: Certified &amp; Operational</span>
+      <div className="space-y-3 pt-2">
+        <h4 className="border-b border-slate-100 pb-2 text-[9.5px] font-black uppercase tracking-widest text-slate-400 dark:border-zinc-900/60 dark:text-zinc-500">
+          Backend liveness
+        </h4>
+        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-zinc-900 dark:bg-zinc-950">
+          <div className="flex items-center gap-2">
+            {health.status === "checking" ? <Activity size={12} className="animate-pulse text-amber-500" /> : <Server size={12} className="text-slate-400 dark:text-zinc-600" />}
+            <div>
+              <span className="block text-[9.5px] font-bold uppercase text-slate-700 dark:text-zinc-400">FastAPI service</span>
+              <span className="block text-[8px] text-slate-400 dark:text-zinc-600">
+                {health.deploymentTarget ? `Reported target: ${health.deploymentTarget}` : "No dependency health inferred"}
+              </span>
+            </div>
+          </div>
+          <span className={`rounded border px-2 py-1 text-[8.5px] font-black uppercase ${healthClasses}`}>{healthLabel}</span>
+        </div>
+        <p className="text-[8px] leading-relaxed text-slate-400 dark:text-zinc-600">
+          Liveness confirms only that the backend responded. It does not claim Zeek, Amazon SQS, Amazon RDS, storage, or AI models are healthy.
+        </p>
       </div>
     </div>
   );

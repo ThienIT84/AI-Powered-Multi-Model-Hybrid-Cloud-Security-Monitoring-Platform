@@ -1,290 +1,234 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { 
-  Play, 
-  Pause, 
-  RefreshCw,
-  Activity
-} from "lucide-react";
+import { useMemo, useState } from "react";
+import { Activity, Database, Network, Radio, Search, ShieldAlert, X } from "lucide-react";
+import { Alert, Severity } from "../types";
+import {
+  deriveNetworkRows,
+  deriveNetworkSummary,
+  displayValue,
+  EMPTY_VALUE,
+  formatTimestamp,
+  NetworkAlertRow,
+  severityClass,
+} from "../data/derive";
 
-// Only import components strictly within the Network Observability scope
-import { TopologyMap } from "../components/network/TopologyMap";
-import { FlowDetailModal } from "../components/network/FlowDetailModal";
-import { FlowDetailPanel } from "../components/network/FlowDetailPanel";
-import { AssetInventory } from "../components/network/AssetInventory";
+interface NetworkMonitoringPageProps {
+  alerts: Alert[];
+}
 
-// Refactored Sub-components
-import { NetworkMonitoringHeader } from "../components/network/NetworkMonitoringHeader";
-import { NetworkMonitoringKPIs } from "../components/network/NetworkMonitoringKPIs";
-import { NetworkMonitoringChart } from "../components/network/NetworkMonitoringChart";
-import { NetworkWipeConfirm } from "../components/network/NetworkWipeConfirm";
-import { NetworkFlowTable } from "../components/network/NetworkFlowTable";
+function formatBytes(value: number | null): string {
+  if (value === null) return EMPTY_VALUE;
+  if (value < 1024) return `${value.toLocaleString()} B`;
+  if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} KB`;
+  if (value < 1024 ** 3) return `${(value / 1024 ** 2).toFixed(1)} MB`;
+  return `${(value / 1024 ** 3).toFixed(2)} GB`;
+}
 
-// Custom hooks & type references
-import { useNetworkStream } from "../hooks/useNetworkStream";
-import { NetworkLog } from "../components/network/NetworkConfig";
-import { DataMode } from "../config";
+function formatPercent(value: number | null): string {
+  if (value === null) return EMPTY_VALUE;
+  const normalized = Math.abs(value) <= 1 ? value * 100 : value;
+  return `${normalized.toFixed(1)}%`;
+}
 
-export const NetworkMonitoringPage: React.FC<{ dataMode: DataMode }> = ({ dataMode }) => {
-  // Load custom streaming logs and hook controllers
-  const {
-    isRunning,
-    setIsRunning,
-    logs,
-    chartHistory,
-    clearLogs,
-  } = useNetworkStream(dataMode);
+function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="mt-2 text-xl font-black text-foreground">{value}</p>
+      <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
 
-  // Selected Log for inspection inside modal/drawer
-  const [selectedLog, setSelectedLog] = useState<NetworkLog | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+function DetailField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/10 p-3">
+      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="mt-1 break-all font-mono text-[11px] font-bold text-foreground">{value}</p>
+    </div>
+  );
+}
 
-  // Filter for topology clicked IP or text filters
-  const [selectedTopologyIP, setSelectedTopologyIP] = useState<string | null>(null);
-  const [selectedAssetIP, setSelectedAssetIP] = useState<string | null>(null);
+export function NetworkMonitoringPage({ alerts }: NetworkMonitoringPageProps) {
+  const [query, setQuery] = useState("");
+  const [severity, setSeverity] = useState<"ALL" | Severity>("ALL");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Inline Wipe Safety State
-  const [showWipeConfirm, setShowWipeConfirm] = useState(false);
-
-  // Inspector action feedback triggers
-  const [actionFeedback, setActionFeedback] = useState<{
-    type: "success" | "warning";
-    message: string;
-  } | null>(null);
-
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"));
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains("dark"));
+  const rows = useMemo(() => deriveNetworkRows(alerts), [alerts]);
+  const summary = useMemo(() => deriveNetworkSummary(rows), [rows]);
+  const filteredRows = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (severity !== "ALL" && row.severity !== severity) return false;
+      if (!normalizedQuery) return true;
+      return [
+        row.id,
+        row.sourceIp,
+        row.destinationIp,
+        row.protocol,
+        row.service,
+        row.attackType,
+        row.sensorId,
+        row.signatureId,
+        row.correlationId,
+      ].some((value) => value.toLowerCase().includes(normalizedQuery));
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-
-  // Sync selected log if updated inside the logs buffer
-  useEffect(() => {
-    if (selectedLog) {
-      const match = logs.find(l => l.id === selectedLog.id);
-      if (match && match !== selectedLog) {
-        setSelectedLog(match);
-      }
-    }
-  }, [logs, selectedLog]);
-
-  // Handle global escape key to clear drawers
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSelectedLog(null);
-        setIsModalOpen(false);
-        setActionFeedback(null);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  // Compute dynamic live packet throughput rates
-  const livePacketRate = useMemo(() => {
-    if (!isRunning) return 0;
-    return dataMode === "demo" ? Math.round(Math.min(185, logs.length * 0.45 + 12)) : logs.length;
-  }, [dataMode, logs, isRunning]);
-
-  const anomalousFlowsCount = useMemo(() => {
-    return logs.filter(l => l.verdict === "ANOMALY").length;
-  }, [logs]);
-
-  const handleWipeLogs = useCallback(() => {
-    clearLogs();
-    setSelectedLog(null);
-    setIsModalOpen(false);
-    setShowWipeConfirm(false);
-    setActionFeedback(null);
-  }, [clearLogs]);
+  }, [query, rows, severity]);
+  const selected = rows.find((row) => row.id === selectedId) ?? null;
 
   return (
-    <motion.div
-      key="network-monitoring"
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 10 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="space-y-6 pt-2 select-none font-mono text-slate-800 dark:text-slate-100 pb-12"
-      id="network-monitoring-page-layout"
-    >
-      
-      {/* 1. GLOBAL SOC HEADER TELEMETRY AND STATUS PANEL */}
-      {dataMode !== "live" && (
-        <div className="rounded-lg border border-purple-500/25 bg-purple-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-purple-400">
-          {dataMode === "demo" ? "Simulated network telemetry" : "Replay network telemetry"} - source is not live backend traffic
-        </div>
-      )}
-      {dataMode === "live" && logs.length === 0 && (
-        <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-amber-500">
-          No live network flows received from backend
-        </div>
-      )}
-      <NetworkMonitoringHeader isRunning={isRunning} livePacketRate={livePacketRate} />
-
-      {/* 2. OPERATIONAL KPI MATRIX CARDS */}
-      <NetworkMonitoringKPIs 
-        logs={logs}
-        isRunning={isRunning}
-        anomalousFlowsCount={anomalousFlowsCount}
-      />
-
-      {/* 3. LIGHTWEIGHT SENSOR CONTROL BAR */}
-      <div className="border border-border flex flex-wrap items-center justify-between gap-3 bg-card p-2.5 rounded-lg shadow-sm">
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-emerald-500 animate-pulse" />
-          <span className="text-[10px] font-black tracking-widest uppercase text-muted-foreground">
-            Zeek-First Network Observability Layer
-          </span>
-        </div>
-
-        {/* Zeek Simulator controllers right-aligned */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setIsRunning(!isRunning)}
-            className={`px-3 py-1.5 rounded text-[9px] font-black tracking-wider uppercase flex items-center gap-1.5 cursor-pointer border transition-colors ${
-              isRunning 
-                ? "bg-secondary hover:bg-secondary/80 text-emerald-600 dark:text-emerald-400 border-border" 
-                : "bg-emerald-500 hover:bg-emerald-600 text-white dark:bg-emerald-505 dark:hover:bg-emerald-555 dark:text-slate-950 border-transparent font-black"
-            }`}
-          >
-            {isRunning ? (
-              <>
-                <Pause className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-450" /> Pause Sensor
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 fill-current" /> Initialize Sensor
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={() => setShowWipeConfirm(true)}
-            className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 border border-border text-muted-foreground hover:text-foreground text-[9px] font-extrabold uppercase rounded cursor-pointer transition-colors flex items-center gap-1"
-          >
-            <RefreshCw className="w-3 h-3" /> Flush Buffer
-          </button>
-        </div>
-      </div>
-
-      {/* Wipe Confirmation Banner Utility */}
-      {showWipeConfirm && (
-        <NetworkWipeConfirm onConfirm={handleWipeLogs} onCancel={() => setShowWipeConfirm(false)} />
-      )}
-
-      {/* Global Action Messages feedback drawer */}
-      {actionFeedback && (
-        <div className={`p-2.5 rounded-lg text-[9px] font-extrabold uppercase tracking-wide flex items-center gap-2 border shadow-xs animate-fade-in ${
-          actionFeedback.type === "success" 
-            ? "bg-emerald-950/40 border-emerald-500/20 text-emerald-400" 
-            : "bg-red-950/35 border-red-500/15 text-red-400"
-        }`}>
-          <span className="w-1.5 h-3 bg-current block" />
-          {actionFeedback.message}
-        </div>
-      )}
-
-      {/* 4. REALTIME NETWORK OBSERVED CHANNELS */}
-      <div className="space-y-6">
-        {/* REALTIME NETWORK TRAFFIC CHART (The primary layered line graph requested) */}
-        <NetworkMonitoringChart chartHistory={chartHistory} isRunning={isRunning} isDark={isDark} />
-
-        {/* MIDDLE ZONE GRID: Graph Map */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5" id="middle-network-zone">
-          
-          {/* Dynamic Topology Chart SVG */}
-          <div className="xl:col-span-12 h-full">
-            <TopologyMap 
-              logs={logs}
-              selectedNodeIP={selectedTopologyIP}
-              onSelectNodeIP={setSelectedTopologyIP}
-            />
+    <div className="space-y-6 pb-16 font-mono text-foreground" id="network-monitoring-page">
+      <header className="flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-cyan-500">
+            <Network size={18} />
+            <span className="text-[9px] font-black uppercase tracking-[0.24em]">Backend evidence view</span>
           </div>
-
+          <h1 className="mt-2 text-xl font-black uppercase tracking-tight">Network Observability</h1>
+          <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+            Network facts attached to the currently loaded backend alerts
+          </p>
         </div>
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-[9px] uppercase text-muted-foreground">
+          <Radio size={12} className="text-cyan-500" />
+          {rows.length > 0 ? `${rows.length} evidence records loaded` : "No network evidence loaded"}
+        </div>
+      </header>
 
-        {/* 5. DEPLOYED LABORATORY ASSET INVENTORY */}
-        <AssetInventory 
-          logs={logs} 
-          selectedAssetIP={selectedAssetIP} 
-          onSelectAssetIP={setSelectedAssetIP} 
-        />
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+        <MetricCard label="Alert records" value={summary.records.toLocaleString()} detail="Loaded from backend" />
+        <MetricCard label="Unique sources" value={summary.uniqueSources.toLocaleString()} detail="Known source addresses" />
+        <MetricCard label="Unique targets" value={summary.uniqueDestinations.toLocaleString()} detail="Known destination addresses" />
+        <MetricCard label="Observed bytes" value={formatBytes(summary.bytes)} detail="Only attached Zeek evidence" />
+        <MetricCard label="Zeek evidence" value={summary.zeekEvidence.toLocaleString()} detail="Sensor or correlation ID" />
+        <MetricCard label="Suricata evidence" value={summary.suricataEvidence.toLocaleString()} detail="Signature ID present" />
+      </section>
 
-        {/* FLUID FLOW EXPLORER WORKBENCH GRID AREA */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          
-          {/* Left Column: ZEEK EXPLORER FRAME */}
-          <div 
-            className={`${selectedLog ? "lg:col-span-7" : "lg:col-span-12"} bg-card border border-border rounded-lg p-4 shadow-sm space-y-4 transition-all duration-300`}
-          >
-            <NetworkFlowTable
-              logs={logs}
-              selectedLog={selectedLog}
-              onSelectLog={setSelectedLog}
-              onActionFeedback={(fb) => {
-                if (fb) {
-                  setActionFeedback(fb);
-                  setTimeout(() => setActionFeedback(null), 3500);
-                }
-              }}
-              selectedTopologyIP={selectedTopologyIP}
-              selectedAssetIP={selectedAssetIP}
-            />
+      <section className="rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2">
+            <Activity size={14} className="text-cyan-500" />
+            <h2 className="text-[11px] font-black uppercase tracking-widest">Observed alert flows</h2>
           </div>
-
-          {/* Right Column: Embedded SIEM Forensic Panel */}
-          <AnimatePresence>
-            {selectedLog && (
-              <motion.div 
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 50 }}
-                transition={{ type: "tween", duration: 0.3 }}
-                className="lg:col-span-5 h-full w-full"
-              >
-                <FlowDetailPanel
-                  log={selectedLog}
-                  onClose={() => setSelectedLog(null)}
-                  onActionFeedback={(msg) => {
-                    if (msg) {
-                      setActionFeedback({
-                        type: msg.type,
-                        message: msg.text
-                      });
-                      setTimeout(() => setActionFeedback(null), 4500);
-                    }
-                  }}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <label className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2">
+              <Search size={12} className="text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search IP, alert, protocol, evidence..."
+                className="w-full bg-transparent text-[10px] outline-none placeholder:text-muted-foreground sm:w-72"
+              />
+            </label>
+            <select
+              value={severity}
+              onChange={(event) => setSeverity(event.target.value as "ALL" | Severity)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-[9px] font-black uppercase outline-none"
+            >
+              <option value="ALL">All severities</option>
+              {Object.values(Severity).map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </div>
         </div>
-      </div>
 
-      {/* 6. INSPECTION POPUP MODAL */}
-      <FlowDetailModal
-        isOpen={isModalOpen}
-        onClose={() => { setSelectedLog(null); setIsModalOpen(false); }}
-        log={selectedLog}
-        onActionFeedback={(msg) => {
-          if (msg) {
-            setActionFeedback({
-              type: msg.type,
-              message: msg.text
-            });
-            setTimeout(() => setActionFeedback(null), 4500);
-          }
-        }}
-      />
+        {rows.length === 0 ? (
+          <div className="mt-4 flex min-h-56 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/5 text-center">
+            <Database size={24} className="text-muted-foreground" />
+            <p className="mt-3 text-[11px] font-black uppercase">No backend network evidence</p>
+            <p className="mt-1 max-w-md text-[9px] text-muted-foreground">
+              This view stays empty until alerts containing source, destination, Zeek, or Suricata evidence are loaded.
+            </p>
+          </div>
+        ) : filteredRows.length === 0 ? (
+          <div className="mt-4 rounded-xl border border-dashed border-border p-10 text-center text-[10px] uppercase text-muted-foreground">
+            No records match the active filters.
+          </div>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-lg border border-border/70">
+            <table className="w-full min-w-275 text-left text-[9px]">
+              <thead className="bg-muted/30 text-[8px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-3">Time</th>
+                  <th className="px-3 py-3">Source</th>
+                  <th className="px-3 py-3">Destination</th>
+                  <th className="px-3 py-3">Protocol / service</th>
+                  <th className="px-3 py-3">Detection</th>
+                  <th className="px-3 py-3">Risk</th>
+                  <th className="px-3 py-3">Evidence</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/40">
+                {filteredRows.map((row) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => setSelectedId(row.id)}
+                    className="cursor-pointer transition-colors hover:bg-muted/20"
+                  >
+                    <td className="px-3 py-3 text-muted-foreground">{formatTimestamp(row.timestamp)}</td>
+                    <td className="px-3 py-3 font-bold">{row.sourceIp}:{row.sourcePort ?? EMPTY_VALUE}</td>
+                    <td className="px-3 py-3 font-bold">{row.destinationIp}:{row.destinationPort ?? EMPTY_VALUE}</td>
+                    <td className="px-3 py-3">
+                      <span className="block font-black">{row.protocol}</span>
+                      <span className="text-muted-foreground">{row.service}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="block font-black">{row.attackType}</span>
+                      <span className={`mt-1 inline-flex rounded border px-1.5 py-0.5 text-[7px] font-black uppercase ${severityClass(row.severity)}`}>
+                        {row.severity}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="block">Risk: {row.riskScore ?? EMPTY_VALUE}</span>
+                      <span className="text-muted-foreground">Confidence: {formatPercent(row.confidenceScore)}</span>
+                    </td>
+                    <td className="px-3 py-3 text-muted-foreground">
+                      <span className="block">Sensor: {row.sensorId}</span>
+                      <span className="block">Signature: {row.signatureId}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
-    </motion.div>
+      {selected && <NetworkEvidenceDrawer row={selected} onClose={() => setSelectedId(null)} />}
+    </div>
   );
-};
+}
+
+function NetworkEvidenceDrawer({ row, onClose }: { row: NetworkAlertRow; onClose: () => void }) {
+  return (
+    <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-lg overflow-y-auto border-l border-border bg-background/98 p-5 shadow-2xl backdrop-blur">
+      <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <div className="flex items-center gap-2 text-cyan-500">
+            <ShieldAlert size={15} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Backend evidence</span>
+          </div>
+          <h2 className="mt-2 break-all text-sm font-black">{row.id}</h2>
+          <p className="mt-1 text-[9px] text-muted-foreground">{formatTimestamp(row.timestamp)}</p>
+        </div>
+        <button onClick={onClose} className="rounded-lg border border-border p-2 text-muted-foreground hover:text-foreground" aria-label="Close evidence">
+          <X size={14} />
+        </button>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <DetailField label="Source" value={`${row.sourceIp}:${row.sourcePort ?? EMPTY_VALUE}`} />
+        <DetailField label="Destination" value={`${row.destinationIp}:${row.destinationPort ?? EMPTY_VALUE}`} />
+        <DetailField label="Protocol" value={row.protocol} />
+        <DetailField label="Direction" value={row.direction} />
+        <DetailField label="Service" value={row.service} />
+        <DetailField label="Observed bytes" value={formatBytes(row.bytes)} />
+        <DetailField label="Observed packets" value={row.packets?.toLocaleString() ?? EMPTY_VALUE} />
+        <DetailField label="Risk / confidence" value={`${row.riskScore ?? EMPTY_VALUE} / ${formatPercent(row.confidenceScore)}`} />
+        <DetailField label="Zeek sensor" value={displayValue(row.sensorId, "Unknown")} />
+        <DetailField label="Correlation ID" value={displayValue(row.correlationId, "Unknown")} />
+        <DetailField label="Suricata signature" value={displayValue(row.signatureId, "Unknown")} />
+        <DetailField label="Detection" value={`${row.severity} · ${row.attackType}`} />
+      </div>
+    </aside>
+  );
+}
 
 export default NetworkMonitoringPage;

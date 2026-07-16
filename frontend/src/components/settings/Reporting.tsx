@@ -164,7 +164,8 @@ export function Reporting({ data, onChange, onToast }: ReportingSettingsProps) {
               <input
                 type="text"
                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-border/80 focus:border-cyan-500 rounded-lg px-3 py-1.5 text-xs font-medium"
-                value={data.emailSubscribers || "phutd@security.net, admin-alert@corp.internal"}
+                value={data.emailSubscribers}
+                placeholder="No recipients configured"
                 onChange={(e) => handleDropdown("emailSubscribers", e.target.value)}
               />
             </div>

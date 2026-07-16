@@ -1,22 +1,49 @@
 # AI-Powered Multi-Model Hybrid Cloud Security Monitoring Platform
 
+> **Kiến trúc hiện hành:** xem
+> [`docs/hybrid_cloud_soc_architecture.md`](docs/hybrid_cloud_soc_architecture.md).
+> Luồng chuẩn là Zeek Collector/Tailer → CloudFront + AWS WAF → ALB → FastAPI
+> `/ingest/zeek` → Amazon SQS → AI/Fusion worker → Amazon S3 Data Bucket +
+> Amazon RDS for PostgreSQL → REST/WebSocket Dashboard. Các phần mô tả
+> mock-first/thin-slice bên dưới được giữ như lịch sử lập kế hoạch, không phải
+> trạng thái triển khai AWS hiện tại.
+
 Nền tảng giám sát bảo mật hybrid cloud tích hợp AI đa mô hình, được thiết kế để thu thập log từ Local Lab, xử lý qua backend realtime và hiển thị cảnh báo trên SOC Dashboard.
 
 README này phản ánh hướng phân công đã được nhóm cập nhật: do việc chia riêng Backend và Frontend gây nhiều phụ thuộc và dễ rối khi tích hợp, **2 thành viên CNPM sẽ làm fullstack theo 2 track chính**. Các thành viên AI và BMTT vẫn giữ vai trò chuyên môn, cung cấp model, dataset, lab và security evidence để tích hợp vào hệ thống.
 
 ## Trạng Thái Hiện Tại
 
-Repo hiện đang ở giai đoạn **thiết kế/đề cương dự án**. Source code backend, AI engine và simulator sẽ được bổ sung trong các giai đoạn tiếp theo; frontend hiện có dashboard mock-first để phục vụ demo UI và chuẩn bị contract tích hợp backend.
+Repo hiện đã có luồng ứng dụng end-to-end cho local lab và application contract
+cho AWS:
 
-Dashboard hiện tại là **AI-generated concept UI** dựa trên mô tả tính năng của hệ thống, dùng dữ liệu mock theo contract backend dự kiến và chưa tích hợp backend/AI thật.
+- Zeek Collector/Tailer chuẩn hóa `conn.log` + `http.log`;
+- FastAPI canonical ingest, HMAC, S3 raw archive và SQS envelope;
+- worker chạy AI1/AI2A/AI2B + Fusion, lưu S3 evidence và RDS Final Alert;
+- REST/WebSocket trả dữ liệu backend thật cho React/Vite dashboard;
+- cấu hình AWS fail-closed, model bundle có manifest/checksum và systemd templates.
 
-Chạy frontend mock dashboard:
+Điều này **không có nghĩa tài nguyên AWS trong sơ đồ đã được triển khai**. Repo
+chưa có IaC deployable; CloudFront/WAF/ALB/ASG/SQS/S3/RDS/IAM/KMS/CloudWatch/SNS
+phải được tạo và xác minh riêng. Xác thực Admin/Analyst production cũng chưa
+được chốt; login/token hiện tại chỉ phù hợp local development.
+
+Chạy frontend local:
 
 ```bash
 cd frontend
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
+
+Xem contract, biến môi trường và checklist triển khai tại
+[`docs/hybrid_cloud_soc_architecture.md`](docs/hybrid_cloud_soc_architecture.md)
+và [`infra/README.md`](infra/README.md).
+
+## Tài Liệu Kế Hoạch Lịch Sử
+
+Các phần phân công/roadmap dưới đây được giữ để tham khảo quá trình hình thành
+dự án. Chúng không phải nguồn chuẩn về trạng thái runtime hiện tại.
 
 ## Thành Viên Và Vai Trò Cập Nhật
 
@@ -524,7 +551,9 @@ Hướng cập nhật của nhóm là hợp lý: **2 thành viên CNPM làm full
 Luồng sản phẩm cốt lõi:
 
 ```text
-Zeek/Suricata Logs -> SQS -> FastAPI Backend -> AI/Fusion -> PostgreSQL/RDS -> WebSocket/API -> React Dashboard
+Zeek Collector/Tailer -> CloudFront/WAF -> ALB -> FastAPI /ingest/zeek -> SQS -> AI/Fusion Worker -> S3 + RDS -> WebSocket/API -> React Dashboard
 ```
 
-Ưu tiên trước mắt là làm dashboard chạy được end-to-end bằng mock/replay data, sau đó thay dần bằng SQS thật, AI output thật, Fusion Layer hoàn chỉnh và log thật từ Local Lab.
+Ưu tiên tiếp theo là triển khai IaC theo contract, chọn authentication production,
+áp dụng migration RDS, rồi kiểm chứng end-to-end/scale/failover trên AWS bằng
+evidence đã redacted.

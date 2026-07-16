@@ -29,6 +29,7 @@ import { DashboardHeader } from "./components/dashboard/DashboardHeader";
 import { ExecutiveKPIBar } from "./components/dashboard/ExecutiveKPIBar";
 import { SOCOperationalOverview } from "./components/dashboard/SOCOperationalOverview";
 import { RealtimeIncidentStream } from "./components/dashboard/RealtimeIncidentStream";
+import { LatestNetworkFlows } from "./components/dashboard/LatestNetworkFlows";
 import { FusionOverviewPanel } from "./components/dashboard/FusionOverviewPanel";
 import { SecurityPostureSummary } from "./components/dashboard/SecurityPostureSummary";
 import { AlertDistributionChart } from "./components/dashboard/AlertDistributionChart";
@@ -47,7 +48,6 @@ import { usePanelState } from "./hooks/usePanelState";
 import { Alert } from "./types";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "./lib/utils";
-import { mockDataSourceHealth, mockModelStatus, mockSummary } from "./mocks/securityData";
 import { AppView } from "./types/views";
 import { useTheme } from "./context/ThemeContext";
 import { Loader2 } from "lucide-react";
@@ -123,11 +123,12 @@ export default function App() {
     socketStatus,
     alerts,
     traffic,
+    networkFlows,
     error: socketError,
     dataMode,
     platformStatus,
     reconnect,
-  } = useSocket();
+  } = useSocket(isAuthenticated);
 
   // Call unified SOC command center dashboard hooks
   const {
@@ -138,7 +139,7 @@ export default function App() {
     openCasesSummary
   } = useDashboardMetrics(alerts, traffic);
 
-  const platformHealth = usePlatformHealth(isConnected);
+  const platformHealth = usePlatformHealth(platformStatus);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleRefresh = React.useCallback(() => {
@@ -322,6 +323,7 @@ export default function App() {
                   isConnected={isConnected} 
                   onRefresh={handleRefresh} 
                   isSyncing={isSyncing} 
+                  platformStatus={platformStatus}
                 />
 
                 {/* SECTION B - EXECUTIVE KPI BAR */}
@@ -366,6 +368,9 @@ export default function App() {
                   </AnimatePresence>
                 </div>
 
+                {/* LIVE NETWORK TRAFFIC - NORMAL AND ANOMALOUS FLOWS */}
+                <LatestNetworkFlows flows={networkFlows} isConnected={isConnected} />
+
                 {/* SECTIONS E, F - OPERATIONAL SUMMARIES */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* FUSION OVERVIEW */}
@@ -388,7 +393,7 @@ export default function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                   <div className="lg:col-span-8 flex flex-col h-full">
                     {/* PLATFORM HEALTH */}
-                    <PlatformHealthPanel health={platformHealth} />
+                    <PlatformHealthPanel platformStatus={platformHealth} />
                   </div>
                   
                   <div className="lg:col-span-4 flex flex-col h-full justify-between">
@@ -408,27 +413,27 @@ export default function App() {
                 onRouteAlertChange={(alertId) => navigateToView("alerts", alertId)}
               />
             ) : currentView === "network" ? (
-              <NetworkMonitoringPage key="network" dataMode={dataMode} />
+              <NetworkMonitoringPage key="network" alerts={alerts} />
             ) : currentView === "endpoints" ? (
-              <EndpointPage key="endpoints" dataMode={dataMode} />
+              <EndpointPage key="endpoints" alerts={alerts} />
             ) : currentView === "cloud" ? (
-              <CloudPage key="cloud" dataMode={dataMode} />
+              <CloudPage key="cloud" alerts={alerts} />
             ) : currentView === "threat-intel" ? (
-              <ThreatIntelPage key="threat-intel" dataMode={dataMode} />
+              <ThreatIntelPage key="threat-intel" alerts={alerts} />
             ) : currentView === "ai-threat-detection" ? (
-              <AIThreatDetectionPage key="ai-threat-detection" dataMode={dataMode} />
+              <AIThreatDetectionPage key="ai-threat-detection" alerts={alerts} platformStatus={platformStatus} />
             ) : currentView === "attack-surface" ? (
-              <AttackSurfacePage key="attack-surface" />
+              <AttackSurfacePage key="attack-surface" alerts={alerts} />
             ) : currentView === "mitre-attack" ? (
-              <MitreAttackPage key="mitre-attack" />
+              <MitreAttackPage key="mitre-attack" alerts={alerts} />
             ) : currentView === "case-management" ? (
               <CaseManagementPage key="case-management" dataMode={dataMode} routeCaseId={routeState.caseId} onRouteCaseChange={(caseId) => navigateToView("case-management", caseId)} />
             ) : currentView === "integrations" ? (
-              <IntegrationsPage key="integrations" dataMode={dataMode} />
+              <IntegrationsPage key="integrations" platformStatus={platformStatus} />
             ) : currentView === "playbooks" ? (
-              <PlaybooksPage key="playbooks" dataMode={dataMode} />
+              <PlaybooksPage key="playbooks" />
             ) : currentView === "reports" ? (
-              <ReportsPage key="reports" dataMode={dataMode} />
+              <ReportsPage key="reports" alerts={alerts} />
             ) : (
               <SettingsPage 
                 key="settings" 

@@ -79,9 +79,7 @@ export function AlertsPage({ alerts, isConnected, dataMode, routeAlertId, onRout
   const [toastNotification, setToastNotification] = useState<string | null>(null);
 
   // Local state overrides to show instant results of analyst quick actions
-  const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<Alert>>>(() =>
-    dataMode === "demo" ? alertActionService.getStoredDemoOverrides() : {}
-  );
+  const [localOverrides, setLocalOverrides] = useState<Record<string, Partial<Alert>>>({});
   const [actionStates, setActionStates] = useState<Record<string, AlertActionState>>({});
 
   useEffect(() => {
@@ -205,7 +203,7 @@ export function AlertsPage({ alerts, isConnected, dataMode, routeAlertId, onRout
 
       // 5. Cloud Platform providers
       if (cloudProviders.length > 0) {
-        if (!cloudProviders.includes(alert.cloudProvider.toUpperCase())) return false;
+        if (!alert.cloudProvider || !cloudProviders.includes(alert.cloudProvider.toUpperCase())) return false;
       }
 
       // 6. AI Confidence Level

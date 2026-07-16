@@ -5,18 +5,18 @@ export function SecurityNotice() {
   const notices = [
     {
       icon: Key,
-      title: "MFA Authentication Enforced",
-      desc: "Multi-factor verification is heavily recommended for administrator and high-clearance SOC operator credentials.",
+      title: "Backend Authentication Required",
+      desc: "Sign-in and any multi-factor challenge are controlled by the configured authentication service.",
     },
     {
       icon: Eye,
-      title: "Real-time Auditing Active",
-      desc: "All keyboard interactions, query histories, session allocations, and active tasks are logged to secure backend systems.",
+      title: "Audit Status Verified After Sign-in",
+      desc: "This page does not assume that session or activity auditing is enabled; review backend runtime settings after authentication.",
     },
     {
       icon: FileSpreadsheet,
-      title: "RBAC Policies Enabled",
-      desc: "Access control matrices restrict operators to specific cluster environments, telemetry levels, and case updates.",
+      title: "Authorization Is Deployment-Specific",
+      desc: "Roles and permissions depend on the backend identity policy and are not inferred by the browser.",
     },
   ];
 
@@ -35,13 +35,13 @@ export function SecurityNotice() {
             AUTHORIZED SECURE ACCESS ONLY
           </h4>
           <span className="text-[9px] text-slate-400 dark:text-zinc-500 font-semibold uppercase block">
-            Government &amp; Enterprise Compliance Mandate
+            Deployment authentication boundary
           </span>
         </div>
       </div>
 
       <p className="text-[10px] text-slate-500 dark:text-zinc-400 leading-normal font-medium border-t border-slate-100 dark:border-zinc-900/60 pt-3">
-        This is a guarded operational security hub. Unauthorized connection, exploitation, or credential mining is strictly prohibited and subject to immediate civil and criminal penalties under federal cyber protection standard statutes.
+        Use credentials issued for this deployment. Availability of MFA, audit logging, and role-based access is reported by backend configuration; this frontend does not claim those controls are active on its own.
       </p>
 
       {/* Mini bullets list */}

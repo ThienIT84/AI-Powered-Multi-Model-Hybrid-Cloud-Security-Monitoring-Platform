@@ -11,7 +11,7 @@ import {
   FileCheck
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { useSettingsStore } from "../../store/useSettingsStore";
+import { useSettingsNavigationStore } from "../../store/useSettingsNavigationStore";
 
 // The 9 groups requested by the user, in exact order
 const SETTINGS_CATEGORIES = [
@@ -19,7 +19,7 @@ const SETTINGS_CATEGORIES = [
   { id: 'appearance', label: 'Appearance Preferences', icon: Palette, group: 'SYSTEM' },
   { id: 'detection', label: 'Detection Policies', icon: Brain, group: 'DETECTION & ALERTS' },
   { id: 'alerts', label: 'Alert Management', icon: BellRing, group: 'DETECTION & ALERTS' },
-  { id: 'integrations', label: 'Integrations Config', icon: Boxes, group: 'INTEGRATIONS' },
+  { id: 'integrations', label: 'Runtime Integrations', icon: Boxes, group: 'INTEGRATIONS' },
   { id: 'access', label: 'Users & Access Control', icon: Users2, group: 'ADMINISTRATIVE CONTROL' },
   { id: 'reporting', label: 'Reporting Config', icon: FileSpreadsheet, group: 'ADMINISTRATIVE CONTROL' },
   { id: 'backup', label: 'Backup & Recovery', icon: FolderSync, group: 'ADMINISTRATIVE CONTROL' },
@@ -27,7 +27,7 @@ const SETTINGS_CATEGORIES = [
 ];
 
 export function SettingsSidebar() {
-  const { activeCategory, setCategory } = useSettingsStore();
+  const { activeCategory, setCategory } = useSettingsNavigationStore();
 
   const renderCategoryButton = (cat: typeof SETTINGS_CATEGORIES[0]) => {
     const isActive = activeCategory === cat.id;
@@ -64,11 +64,8 @@ export function SettingsSidebar() {
             SOC CONTROL
           </h1>
           <p className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest mt-1 flex items-center gap-1.5">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-            </span>
-            SYSTEM v3.0 ACTIVE
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-cyan-500"></span>
+            BACKEND-SYNCED SETTINGS
           </p>
         </div>
 

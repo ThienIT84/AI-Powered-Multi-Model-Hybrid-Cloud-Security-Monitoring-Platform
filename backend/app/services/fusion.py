@@ -30,6 +30,15 @@ class FusionService:
             return self._web_attack("SQL Injection", ai2b_conf, outputs, contributors, completed_any, excluded)
         if ai2b_label == "XSS":
             return self._web_attack("Cross-Site Scripting", ai2b_conf, outputs, contributors, completed_any, excluded)
+        if ai1_label == "ANOMALY" and ai2a_label in {"DOS_INDICATOR", "DDOS_INDICATOR"}:
+            return self._denial_of_service(
+                ai2a_label,
+                max(ai1_conf, ai2a_conf),
+                outputs,
+                contributors,
+                completed_any,
+                excluded,
+            )
         if self._is_ai2a_real_attack(outputs):
             return self._ai2a_attack(ai2a_label, ai2a_conf, outputs, contributors, completed_any, excluded)
         if ai2a_label and ai2a_label not in {"NORMAL", "NONE", "UNKNOWN"} and ai1_label == "ANOMALY":
@@ -94,6 +103,32 @@ class FusionService:
             reason=f"AI2B HTTP semantic detector classified the request as {final_label}.",
         )
 
+    def _denial_of_service(
+        self,
+        ai2a_label: str,
+        confidence: float,
+        outputs: dict[str, dict],
+        real_contributors: list[str],
+        completed_any: list[str],
+        excluded: dict[str, str],
+    ) -> FusionOutput:
+        distributed = ai2a_label == "DDOS_INDICATOR"
+        final_label = AI2A_ATTACK_LABELS[ai2a_label]
+        minimum_risk = 94 if distributed else 85
+        maximum_risk = 99 if distributed else 95
+        risk = min(maximum_risk, max(minimum_risk, int(confidence * 100)))
+        return FusionOutput(
+            mode=self._mode(outputs, real_contributors, completed_any),
+            final_label=final_label,
+            risk_score=risk,
+            severity="CRITICAL" if distributed else "HIGH",
+            contributors=self._contributors(outputs, real_contributors, completed_any),
+            excluded_models=excluded,
+            reason=(
+                f"AI1 confirmed an anomalous rate burst and AI2A classified it as {final_label}."
+            ),
+        )
+
     def _ai2a_attack(
         self,
         ai2a_label: str,
@@ -148,6 +183,8 @@ class FusionService:
 
 
 AI2A_ATTACK_LABELS = {
+    "DOS_INDICATOR": "Denial of Service",
+    "DDOS_INDICATOR": "Distributed Denial of Service",
     "HTTP_BEACONING_INDICATOR": "HTTP Beaconing / Callback",
     "CONTROLLED_EXFILTRATION": "Controlled Exfiltration",
     "PORT_SCAN_OR_RECON": "Port Scan / Reconnaissance",

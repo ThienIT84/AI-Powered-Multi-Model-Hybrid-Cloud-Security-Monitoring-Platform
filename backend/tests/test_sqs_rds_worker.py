@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import pytest
@@ -29,6 +30,45 @@ def test_process_message_body_persists_alert_and_returns_ids() -> None:
     assert calls["alert"]["attack_type"] == "SQL Injection"
 
 
+def test_process_envelope_reuses_raw_s3_uri_and_archives_final_evidence() -> None:
+    calls: dict[str, Any] = {"raw_archives": 0}
+
+    def raw_archiver(event: dict[str, Any]) -> str:  # noqa: ARG001
+        calls["raw_archives"] += 1
+        return "s3://bucket/raw/unexpected.json"
+
+    def alert_archiver(alert: dict[str, Any]) -> str:
+        calls["archived_alert"] = dict(alert)
+        return "s3://bucket/evidence/evt-envelope.json"
+
+    def alert_writer(alert: dict[str, Any]) -> None:
+        calls["persisted_alert"] = dict(alert)
+
+    body = json.dumps(
+        {
+            "envelope_type": "hybrid-soc.normalized-zeek-event",
+            "envelope_version": 1,
+            "event": {"event_id": "evt-envelope", "event_type": "network_flow"},
+            "storage": {"raw_s3_uri": "s3://bucket/raw/evt-envelope.json"},
+            "metadata": {},
+        }
+    )
+    result = sqs_rds_worker._process_message_body(
+        body,
+        event_processor=lambda event: {"id": event["event_id"], "attack_type": "Denial of Service"},
+        alert_writer=alert_writer,
+        raw_event_archiver=raw_archiver,
+        alert_archiver=alert_archiver,
+    )
+
+    assert result == {"event_id": "evt-envelope", "alert_id": "evt-envelope"}
+    assert calls["raw_archives"] == 0
+    persisted = calls["persisted_alert"]
+    assert persisted["event_id"] == "evt-envelope"
+    assert persisted["raw_s3_uri"] == "s3://bucket/raw/evt-envelope.json"
+    assert persisted["evidence_s3_uri"] == "s3://bucket/evidence/evt-envelope.json"
+
+
 def test_process_message_body_rejects_non_object_json() -> None:
     with pytest.raises(ValueError, match="SQS message body must be a JSON object"):
         sqs_rds_worker._process_message_body("[]")
@@ -37,6 +77,13 @@ def test_process_message_body_rejects_non_object_json() -> None:
 def test_process_message_body_rejects_invalid_json() -> None:
     with pytest.raises(json.JSONDecodeError):
         sqs_rds_worker._process_message_body("{not-json")
+
+
+def test_process_message_body_rejects_nonstandard_json_numbers() -> None:
+    with pytest.raises(ValueError, match="non-standard JSON number"):
+        sqs_rds_worker._process_message_body(
+            '{"event_id":"evt-worker-nan","score":NaN}'
+        )
 
 
 def test_process_message_body_requires_event_id() -> None:
@@ -55,15 +102,22 @@ def test_process_message_body_requires_dict_alert() -> None:
         )
 
 
-def test_process_message_body_requires_alert_id() -> None:
+def test_process_message_body_uses_event_id_when_processor_omits_alert_id() -> None:
+    persisted: list[dict[str, Any]] = []
+
     def event_processor(event: dict[str, Any]) -> dict[str, Any]:  # noqa: ARG001
         return {"attack_type": "SQL Injection"}
 
-    with pytest.raises(ValueError, match="alert DTO must contain id or event_id"):
-        sqs_rds_worker._process_message_body(
-            json.dumps({"event_id": "evt-worker-3"}),
-            event_processor=event_processor,
-        )
+    result = sqs_rds_worker._process_message_body(
+        json.dumps({"event_id": "evt-worker-3"}),
+        event_processor=event_processor,
+        alert_writer=lambda alert: persisted.append(dict(alert)),
+        raw_event_archiver=lambda _event: None,
+        alert_archiver=lambda _alert: None,
+    )
+
+    assert result == {"event_id": "evt-worker-3", "alert_id": "evt-worker-3"}
+    assert persisted[0]["event_id"] == "evt-worker-3"
 
 
 def test_main_refuses_to_start_without_queue_url(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -169,3 +223,27 @@ def test_main_does_not_delete_message_after_processing_error(monkeypatch: pytest
         sqs_rds_worker.RUNNING = True
 
     assert calls["deleted"] == []
+
+
+def test_visibility_heartbeat_renews_long_running_message() -> None:
+    calls: list[dict[str, Any]] = []
+
+    class FakeSQSClient:
+        def change_message_visibility(self, **kwargs: Any) -> None:
+            calls.append(kwargs)
+
+    with sqs_rds_worker._visibility_heartbeat(
+        FakeSQSClient(),
+        queue_url="https://sqs.example/main",
+        receipt_handle="receipt-long",
+        visibility_timeout=120,
+        heartbeat_interval=0.01,
+    ):
+        time.sleep(0.035)
+
+    assert calls
+    assert calls[0] == {
+        "QueueUrl": "https://sqs.example/main",
+        "ReceiptHandle": "receipt-long",
+        "VisibilityTimeout": 120,
+    }

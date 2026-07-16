@@ -14,10 +14,16 @@ def send_event_to_sqs(event: dict[str, Any]) -> dict[str, Any]:
     if not queue_url:
         raise RuntimeError("SQS_QUEUE_URL is not configured")
 
+    message_body = json.dumps(
+        event,
+        ensure_ascii=False,
+        allow_nan=False,
+        separators=(",", ":"),
+    )
     client = boto3.client("sqs", region_name=region)
     response = client.send_message(
         QueueUrl=queue_url,
-        MessageBody=json.dumps(event, ensure_ascii=False),
+        MessageBody=message_body,
     )
 
     return {

@@ -7,11 +7,12 @@ interface ExecutiveKPIBarProps {
 }
 
 export const ExecutiveKPIBar: React.FC<ExecutiveKPIBarProps> = React.memo(({ metrics }) => {
+  const displayNumber = (value: number | null) => value === null ? "—" : value.toLocaleString();
   const cards = [
     {
       id: "flows",
       label: "Total Network Flows",
-      value: metrics.totalNetworkFlows.toLocaleString(),
+      value: displayNumber(metrics.totalNetworkFlows),
       icon: <Activity size={14} />,
       colorClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:border-emerald-500/40",
       caption: "Zeek Ingress Stream"
@@ -19,7 +20,7 @@ export const ExecutiveKPIBar: React.FC<ExecutiveKPIBarProps> = React.memo(({ met
     {
       id: "fusion",
       label: "Total Fusion Alerts",
-      value: metrics.totalFusionAlerts.toLocaleString(),
+      value: displayNumber(metrics.totalFusionAlerts),
       icon: <ShieldAlert size={14} />,
       colorClass: "bg-sky-500/10 text-sky-500 border-sky-500/20 hover:border-sky-500/40",
       caption: "Neural Evaluated"
@@ -27,7 +28,7 @@ export const ExecutiveKPIBar: React.FC<ExecutiveKPIBarProps> = React.memo(({ met
     {
       id: "critical",
       label: "Critical Alerts",
-      value: metrics.criticalAlerts.toLocaleString(),
+      value: displayNumber(metrics.criticalAlerts),
       icon: <AlertOctagon size={14} />,
       colorClass: "bg-red-500/10 text-red-500 border-red-500/25 hover:border-red-500/40",
       caption: "Execution Priority"
@@ -35,23 +36,23 @@ export const ExecutiveKPIBar: React.FC<ExecutiveKPIBarProps> = React.memo(({ met
     {
       id: "cases",
       label: "Open Cases",
-      value: metrics.openCases.toLocaleString(),
+      value: displayNumber(metrics.openCases),
       icon: <FolderKanban size={14} />,
       colorClass: "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:border-amber-500/40",
       caption: "SLA Active Enclaves"
     },
     {
       id: "endpoints",
-      label: "Active Endpoints",
-      value: metrics.activeEndpoints.toLocaleString(),
+      label: "Observed Destinations",
+      value: displayNumber(metrics.observedDestinations),
       icon: <Sliders size={14} />,
       colorClass: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20 hover:border-indigo-500/40",
-      caption: "Connected Sentinel agents"
+      caption: "Unique backend destinations"
     },
     {
       id: "assets",
       label: "Cloud Assets",
-      value: metrics.cloudAssets.toLocaleString(),
+      value: displayNumber(metrics.cloudAssets),
       icon: <Cloud size={14} />,
       colorClass: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20 hover:border-cyan-500/40",
       caption: "Multi-tenant inventory"
@@ -59,7 +60,7 @@ export const ExecutiveKPIBar: React.FC<ExecutiveKPIBarProps> = React.memo(({ met
     {
       id: "threats",
       label: "Threat Intel Matches",
-      value: metrics.threatIntelMatches.toLocaleString(),
+      value: displayNumber(metrics.threatIntelMatches),
       icon: <Target size={14} />,
       colorClass: "bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/20 hover:border-fuchsia-500/40",
       caption: "IOC Confidence Hits"

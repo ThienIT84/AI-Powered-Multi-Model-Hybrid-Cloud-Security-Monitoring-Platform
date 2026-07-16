@@ -17,7 +17,8 @@ const COLORS: Record<string, string> = {
 export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = React.memo(({ data }) => {
   const totalCount = data.reduce((sum, item) => sum + item.value, 0);
 
-  const getTrendIcon = (trend: string) => {
+  const getTrendIcon = (trend: string | null) => {
+    if (!trend) return <Minus size={11} className="text-zinc-500 shrink-0" />;
     if (trend.startsWith("+")) {
       return <TrendingUp size={11} className="text-red-500 shrink-0" />;
     }
@@ -27,7 +28,8 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = Rea
     return <Minus size={11} className="text-zinc-500 shrink-0" />;
   };
 
-  const getTrendColor = (trend: string) => {
+  const getTrendColor = (trend: string | null) => {
+    if (!trend) return "text-zinc-500";
     if (trend.startsWith("+")) return "text-red-450 dark:text-red-400";
     if (trend.startsWith("-")) return "text-emerald-500 dark:text-emerald-400";
     return "text-zinc-500";
@@ -107,7 +109,7 @@ export const AlertDistributionChart: React.FC<AlertDistributionChartProps> = Rea
                     </span>
                     <span className={`text-[8.5px] font-extrabold flex items-center gap-0.5 shrink-0 ${getTrendColor(item.trend)}`}>
                       {getTrendIcon(item.trend)}
-                      {item.trend}
+                      {item.trend ?? "—"}
                     </span>
                   </div>
                 </div>

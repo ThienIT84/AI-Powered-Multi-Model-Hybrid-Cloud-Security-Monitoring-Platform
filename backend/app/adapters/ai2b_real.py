@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.contracts import ModelOutput, ModelSource, ModelStatus
+from app.services.model_artifacts import model_artifact_root
 
 
 class RealAI2BAdapter:
@@ -76,7 +77,7 @@ class RealAI2BAdapter:
 
     def _load(self) -> None: 
         try:
-            root = Path(__file__).resolve().parents[3]
+            root = model_artifact_root()
             scripts = root / "Dataset/tools/ai2b_modeling/scripts"
             if str(scripts) not in sys.path:
                 sys.path.insert(0, str(scripts))
@@ -92,8 +93,8 @@ class RealAI2BAdapter:
 
             __main__.AI2BHybridTextLexicalModel = AI2BHybridTextLexicalModel
             self._manifest = json.loads((root / self.freeze_manifest).read_text(encoding="utf-8"))
-            policy_path = self._manifest.get("policy_path") or self.policy_path
-            self._policy = load_json(policy_path)
+            policy_path = Path(self._manifest.get("policy_path") or self.policy_path)
+            self._policy = load_json(root / policy_path if not policy_path.is_absolute() else policy_path)
             self._model = joblib.load(root / self._manifest["selected_model_path"])
             self._helpers = {
                 "candidate_classes": candidate_classes,
@@ -111,7 +112,7 @@ class RealAI2BAdapter:
         raise ValueError(f"AI2B candidate not found in policy: {name}")
 
     def _candidate_text(self, frame: Any, candidate: dict[str, Any]) -> Any:
-        scripts = Path(__file__).resolve().parents[3] / "Dataset/tools/ai2b_modeling/scripts"
+        scripts = model_artifact_root() / "Dataset/tools/ai2b_modeling/scripts"
         if str(scripts) not in sys.path:
             sys.path.insert(0, str(scripts))
         from ai2b_common import build_text  # noqa: PLC0415

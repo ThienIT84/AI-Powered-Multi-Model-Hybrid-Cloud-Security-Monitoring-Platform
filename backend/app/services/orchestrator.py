@@ -45,6 +45,7 @@ def build_alert(event: dict[str, Any], outputs: dict[str, dict[str, Any]], fusio
     detected_by = list(fusion.get("contributors") or [])
     return {
         "id": event["event_id"],
+        "event_id": event["event_id"],
         "timestamp": event["timestamp"],
         "severity": title_severity(str(fusion["severity"])),
         "attack_type": final_label,
@@ -74,6 +75,7 @@ def build_alert(event: dict[str, Any], outputs: dict[str, dict[str, Any]], fusio
             "resp_pkts": flow.get("resp_pkts"),
             "conn_state": flow.get("conn_state"),
             "service": flow.get("service") or ("http" if http else None),
+            "rate_features": flow.get("network_rate_features"),
         },
         "suricata_evidence": {
             "signature_id": suricata.get("signature_id"),
@@ -170,6 +172,12 @@ def decision_flow(outputs: dict[str, dict[str, Any]], fusion: dict[str, Any]) ->
 
 def mitre_for_label(label: str) -> dict[str, str]:
     lower = label.lower()
+    if "denial of service" in lower:
+        return {
+            "technique_id": "T1498",
+            "technique_name": "Network Denial of Service",
+            "tactic": "Impact",
+        }
     if "sql" in lower or "scripting" in lower or "web" in lower:
         return {
             "technique_id": "T1190",

@@ -1,83 +1,43 @@
 import React from "react";
-import { Activity, ShieldCheck, HelpCircle, CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
-import { PlatformHealthStatus } from "./types/dashboard.types";
+import { AlertCircle, CheckCircle2, ShieldCheck } from "lucide-react";
+import { PlatformStatus } from "../../types";
 
-interface PlatformHealthPanelProps {
-  health: PlatformHealthStatus;
+function statusStyle(status: string) {
+  const normalized = status.toLowerCase();
+  if (["healthy", "connected", "completed", "real"].includes(normalized)) return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+  if (["warning", "reconnecting", "connecting", "unavailable", "not_available"].includes(normalized)) return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+  if (["offline", "error", "failed", "disconnected"].includes(normalized)) return "bg-red-500/15 text-red-500 border-red-500/25";
+  return "bg-zinc-500/10 text-zinc-400 border-border";
 }
 
-export const PlatformHealthPanel: React.FC<PlatformHealthPanelProps> = React.memo(({ health }) => {
-  const getBadgeStyle = (status: "Healthy" | "Warning" | "Offline") => {
-    switch (status) {
-      case "Healthy":
-        return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
-      case "Warning":
-        return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-      case "Offline":
-        return "bg-red-500/15 text-red-500 border-red-500/25";
-      default:
-        return "bg-zinc-500/10 text-zinc-400 border-border";
-    }
-  };
-
-  const getIcon = (status: "Healthy" | "Warning" | "Offline") => {
-    switch (status) {
-      case "Healthy":
-        return <CheckCircle2 size={11} className="text-emerald-500" />;
-      case "Warning":
-        return <AlertTriangle size={11} className="text-amber-500" />;
-      case "Offline":
-        return <AlertCircle size={11} className="text-red-500" />;
-    }
-  };
-
+export const PlatformHealthPanel: React.FC<{ platformStatus: PlatformStatus }> = React.memo(({ platformStatus }) => {
   const services = [
-    { id: "zeek", label: "Zeek Ingress Engine", status: health.Zeek, desc: "Network protocol parser" },
-    { id: "suricata", label: "Suricata Signature IDS", status: health.Suricata, desc: "Passive alert stream" },
-    { id: "fusion", label: "Neural Fusion Core", status: health.Fusion, desc: "Decisions voting layer" },
-    { id: "database", label: "ScyllaDB Core SQL", status: health.Database, desc: "Unified cases database" },
-    { id: "ws", label: "Node Socket Proxy Gateway", status: health.WebSocket, desc: "Frontend socket frame" },
-    { id: "aws", label: "AWS Security Hub Sync", status: health.AWS, desc: "Cloud audit log channel" }
+    { id: "websocket", label: "WebSocket", status: platformStatus.socketStatus, description: platformStatus.lastError ?? "Realtime alert channel" },
+    { id: "database", label: "Database", status: platformStatus.databaseStatus ?? "unknown", description: "Backend persistence" },
+    ...(platformStatus.dataSources ?? []).map((source) => ({ id: `source-${source.id}`, label: source.name, status: source.status, description: source.message ?? `Events: ${source.eventCount ?? "—"}` })),
+    ...(platformStatus.models ?? []).map((model) => ({ id: `model-${model.name}`, label: model.name, status: model.status || "unknown", description: model.message ?? `${model.source || "unknown"} · ${model.modelVersion || "version unavailable"}` })),
   ];
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 md:p-5 flex flex-col justify-between" id="platform-health-panel">
+    <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-4 md:p-5" id="platform-health-panel">
       <div>
-        <div className="flex items-center gap-2 border-b border-border/20 pb-2 mb-4 select-none">
-          <ShieldCheck size={14} className="text-emerald-500 animate-pulse" />
-          <h3 className="text-[10px] font-black uppercase text-foreground tracking-widest font-mono">
-            Platform Engine Integration Health
-          </h3>
+        <div className="mb-4 flex items-center gap-2 border-b border-border/20 pb-2">
+          <ShieldCheck size={14} className="text-emerald-500" />
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-foreground">Backend platform health</h3>
         </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 font-mono select-none">
-          {services.map((svc) => (
-            <div
-              key={svc.id}
-              className="bg-secondary/15 border border-border/40 hover:border-emerald-500/10 p-3 rounded-xl flex items-center justify-between gap-3 transition-colors"
-            >
-              <div className="min-w-0">
-                <span className="text-[9px] font-extrabold text-foreground tracking-tight block truncate">
-                  {svc.label}
-                </span>
-                <span className="text-[7.5px] text-zinc-500 block truncate" title={svc.desc}>
-                  {svc.desc}
-                </span>
-              </div>
-
-              {/* Status Indicator Pill */}
-              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border flex items-center gap-1 shrink-0 ${getBadgeStyle(svc.status)}`}>
-                {getIcon(svc.status)}
-                {svc.status}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {services.map((service) => (
+            <div key={service.id} className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-secondary/15 p-3">
+              <div className="min-w-0"><p className="truncate text-[10px] font-black text-foreground">{service.label}</p><p className="mt-1 truncate text-[8px] text-muted-foreground" title={service.description}>{service.description}</p></div>
+              <span className={`flex shrink-0 items-center gap-1 rounded border px-2 py-1 text-[8px] font-black uppercase ${statusStyle(service.status)}`}>
+                {statusStyle(service.status).includes("emerald") ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}{service.status}
               </span>
             </div>
           ))}
         </div>
       </div>
-
-      <div className="text-[7.5px] text-zinc-500 font-mono mt-4 uppercase select-none border-t border-border/10 pt-2 flex items-center justify-between leading-none font-bold">
-        <span>Framework health sync: OK</span>
-        <span className="text-emerald-500">All Core Systems Live</span>
+      <div className="mt-4 border-t border-border/10 pt-2 text-[8px] font-bold uppercase text-muted-foreground">
+        Last ingest: {platformStatus.lastIngestAt ? new Date(platformStatus.lastIngestAt).toLocaleString() : "not reported"}
       </div>
     </div>
   );
